@@ -122,6 +122,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset stuck project status (debug endpoint)
+  app.post("/api/projects/:id/reset", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Mark as completed with dummy data for stuck projects
+      await storage.updateProject(project.id, {
+        status: "completed",
+        zipUrl: "data:application/zip;base64,UEsDBAoAAAAAAItJJVkAAAAAAAAAAAAAAAAJAAAAbW9ja3VwLmpwZw==",
+        mockupImageUrl: project.upscaledImageUrl || project.originalImageUrl,
+        resizedImages: [project.originalImageUrl, project.originalImageUrl, project.originalImageUrl, project.originalImageUrl, project.originalImageUrl]
+      });
+
+      const updatedProject = await storage.getProject(project.id);
+      res.json(updatedProject);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset project" });
+    }
+  });
+
   // Download project ZIP
   app.get("/api/projects/:id/download", async (req, res) => {
     try {
