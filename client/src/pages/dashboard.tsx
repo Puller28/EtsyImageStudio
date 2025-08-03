@@ -373,21 +373,16 @@ export default function Dashboard() {
             )}
 
             {!showAIGenerator && (
-              <div>
-                <div style={{background: 'yellow', padding: '10px', margin: '10px'}}>
-                  DEBUG: showAIGenerator={showAIGenerator.toString()}, uploadedImage={!!uploadedImage ? 'exists' : 'null'}
-                </div>
-                <ImageUpload
-                  onImageUpload={handleImageUpload}
-                  uploadedImage={uploadedImage}
-                  onRemoveImage={handleRemoveImage}
-                  onGenerateNew={() => {
-                    setShowAIGenerator(true);
-                    setUploadedImage(undefined);
-                    setCurrentStep(0);
-                  }}
-                />
-              </div>
+              <ImageUpload
+                onImageUpload={handleImageUpload}
+                uploadedImage={uploadedImage}
+                onRemoveImage={handleRemoveImage}
+                onGenerateNew={() => {
+                  setShowAIGenerator(true);
+                  setUploadedImage(undefined);
+                  setCurrentStep(0);
+                }}
+              />
             )}
 
             {uploadedImage && !currentProject && (
