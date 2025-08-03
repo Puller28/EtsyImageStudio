@@ -192,13 +192,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         zip.file("original-image.jpg", base64Data, { base64: true });
       }
 
-      // Add upscaled image (using original as placeholder)
+      // Add upscaled image
       if (project.upscaledImageUrl && project.upscaledImageUrl.startsWith('data:image/')) {
         const base64Data = project.upscaledImageUrl.split(',')[1];
         zip.file("upscaled-image.jpg", base64Data, { base64: true });
       }
 
-      // Add print format sizes (using original as placeholder)
+      // Add print format sizes
       const printFormats = ["4x5-8x10.jpg", "3x4-18x24.jpg", "2x3-12x18.jpg", "11x14.jpg", "A4-ISO.jpg"];
       printFormats.forEach((filename, index) => {
         if (project.resizedImages?.[index] && project.resizedImages[index].startsWith('data:image/')) {
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Add mockup images (using original as placeholder)
+      // Add mockup images
       if (project.mockupImages) {
         Object.entries(project.mockupImages).forEach(([key, url], index) => {
           if (url && typeof url === 'string' && url.startsWith('data:image/')) {
@@ -297,7 +297,7 @@ async function processProjectAsync(project: any) {
     const base64Data = project.originalImageUrl.split(',')[1];
     const originalBuffer = Buffer.from(base64Data, 'base64');
     
-    // Step 1: Upscale image using Segmind
+    // Step 1: Upscale image using Segmind or fallback
     console.log('Step 1: Upscaling image...');
     let upscaledImageUrl = project.originalImageUrl;
     
@@ -313,12 +313,24 @@ async function processProjectAsync(project: any) {
         });
         
         upscaledImageUrl = `data:image/jpeg;base64,${upscaledBase64}`;
-        console.log('✅ Image upscaled successfully');
+        console.log('✅ Image upscaled successfully with Segmind');
       } else {
-        console.log('⚠️ Segmind API key not found, using original image');
+        console.log('⚠️ Segmind API key not found, using fallback upscaler');
+        throw new Error('No Segmind API key');
       }
     } catch (error) {
-      console.error('❌ Upscaling failed, using original:', error);
+      console.error('❌ Segmind upscaling failed, trying fallback:', error);
+      try {
+        const { fallbackUpscale } = await import('./services/image-upscaler-fallback');
+        const upscaleOption = project.upscaleOption || '2x';
+        const scale = upscaleOption === '4x' ? 4 : 2;
+        
+        const upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
+        upscaledImageUrl = `data:image/jpeg;base64,${upscaledBuffer.toString('base64')}`;
+        console.log('✅ Image upscaled successfully with fallback');
+      } catch (fallbackError) {
+        console.error('❌ Fallback upscaling also failed, using original:', fallbackError);
+      }
     }
     
     // Step 2: Create print format sizes
