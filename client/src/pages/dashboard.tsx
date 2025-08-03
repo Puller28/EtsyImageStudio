@@ -77,31 +77,7 @@ export default function Dashboard() {
     },
   });
 
-  // Process project mutation
-  const processProjectMutation = useMutation({
-    mutationFn: async (projectId: string) => {
-      console.log("processProjectMutation: Starting API call for project", projectId);
-      const response = await apiRequest("POST", `/api/projects/${projectId}/process`);
-      console.log("processProjectMutation: API call successful");
-      return response.json();
-    },
-    onSuccess: () => {
-      console.log("processProjectMutation: onSuccess called");
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", currentProject?.id] });
-      toast({
-        title: "Processing Completed",
-        description: "Your artwork has been processed successfully!",
-      });
-    },
-    onError: (error) => {
-      console.log("processProjectMutation: onError called", error);
-      toast({
-        title: "Processing Failed",
-        description: "Failed to start processing. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // Removed complex mutation system in favor of direct fetch calls
 
   // Generate listing mutation
   const generateListingMutation = useMutation({
@@ -198,13 +174,33 @@ export default function Dashboard() {
     createProjectMutation.mutate(formData);
   };
 
-  const handleProcessProject = () => {
-    console.log("handleProcessProject called with project:", currentProject?.id);
-    if (currentProject) {
-      console.log("Calling processProjectMutation.mutate with ID:", currentProject.id);
-      processProjectMutation.mutate(currentProject.id);
-    } else {
-      console.log("No currentProject available");
+  // Direct processing handler - bypasses mutation complexity
+  const handleProcessProject = async (projectId: string) => {
+    console.log("Direct processing for project:", projectId);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Processing completed:", result);
+        queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
+        toast({
+          title: "Processing Completed",
+          description: "Your artwork has been processed successfully!",
+        });
+      } else {
+        throw new Error(`API returned ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Processing failed:", error);
+      toast({
+        title: "Processing Failed",
+        description: "Failed to process. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -394,18 +390,13 @@ export default function Dashboard() {
             {currentProject && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <button
-                  onClick={(e) => {
-                    console.log("Button clicked!", e, "Project status:", projectStatus?.status);
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleProcessProject();
+                  onClick={() => {
+                    console.log("Button clicked for project:", currentProject.id);
+                    handleProcessProject(currentProject.id);
                   }}
-                  disabled={processProjectMutation.isPending}
-                  className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200"
                 >
-                  {processProjectMutation.isPending ? "Processing..." : 
-                   projectStatus?.status === "completed" ? "Process Again" : 
-                   projectStatus?.status === "processing" ? "Process Again" : "Start Processing"}
+                  {projectStatus?.status === "completed" ? "Process Again" : "Start Processing"}
                 </button>
               </div>
             )}
