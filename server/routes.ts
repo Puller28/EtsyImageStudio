@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process project (upscale, resize, mockup, SEO) - IMMEDIATE COMPLETION
+  // Process project (upscale, resize, mockup, SEO) - REAL PROCESSING
   app.post("/api/projects/:id/process", async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
@@ -93,35 +93,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
 
-      console.log(`IMMEDIATE processing for project: ${project.id}`);
+      console.log(`🔧 Starting REAL processing for project: ${project.id}`);
       
-      // Complete processing immediately without any background tasks
-      await storage.updateProject(project.id, {
-        upscaledImageUrl: project.originalImageUrl,
-        mockupImageUrl: project.originalImageUrl,
-        mockupImages: {
-          'living-room-1': project.originalImageUrl,
-          'living-room-2': project.originalImageUrl,
-          'living-room-3': project.originalImageUrl,
-          'living-room-4': project.originalImageUrl,
-          'living-room-5': project.originalImageUrl
-        },
-        resizedImages: [
-          project.originalImageUrl,
-          project.originalImageUrl,
-          project.originalImageUrl,
-          project.originalImageUrl,
-          project.originalImageUrl
-        ],
-        zipUrl: "data:application/zip;base64,UEsDBAoAAAAAAItJJVkAAAAAAAAAAAAAAAAJAAAAbW9ja3VwLmpwZw==",
-        status: "completed"
+      // Update status to processing
+      await storage.updateProject(project.id, { status: "processing" });
+      
+      // Start real processing in background
+      processProjectAsync(project).catch(error => {
+        console.error(`🔧❌ Background processing failed for ${project.id}:`, error);
       });
       
-      console.log(`IMMEDIATE processing completed for project: ${project.id}`);
-      res.json({ message: "Processing completed immediately" });
+      res.json({ message: "Real processing started" });
       
     } catch (error) {
-      console.error("Immediate processing failed:", error);
+      console.error("🔧❌ Failed to start real processing:", error);
       await storage.updateProject(req.params.id, { status: "failed" });
       res.status(500).json({ error: "Failed to process project" });
     }
