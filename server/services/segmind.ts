@@ -1,5 +1,6 @@
 // Segmind API integration for image upscaling
 // Uses Real-ESRGAN models for 2x and 4x image enhancement
+import sharp from 'sharp';
 
 interface SegmindUpscaleOptions {
   scale: 2 | 4;
@@ -67,10 +68,19 @@ export class SegmindService {
         console.log('Segmind upscaling completed successfully (JSON format)');
         return result.image;
       } else {
-        // Binary image response format
+        // Binary image response format - process through Sharp to set 300 DPI
         const imageBuffer = Buffer.from(await response.arrayBuffer());
-        const base64Image = imageBuffer.toString('base64');
-        console.log('Segmind upscaling completed successfully (binary format)');
+        
+        // Process with Sharp to ensure 300 DPI metadata
+        const processedBuffer = await sharp(imageBuffer)
+          .jpeg({ quality: 95 })
+          .withMetadata({
+            density: 300 // Ensure 300 DPI
+          })
+          .toBuffer();
+        
+        const base64Image = processedBuffer.toString('base64');
+        console.log('Segmind upscaling completed successfully (binary format with 300 DPI)');
         return base64Image;
       }
     } catch (error) {

@@ -16,6 +16,9 @@ export async function fallbackUpscale(imageBuffer: Buffer, scale: number): Promi
         fit: 'fill'
       })
       .jpeg({ quality: 95 })
+      .withMetadata({
+        density: 300 // Set DPI to 300
+      })
       .toBuffer();
 
     return upscaledBuffer;

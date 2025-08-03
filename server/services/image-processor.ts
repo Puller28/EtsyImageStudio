@@ -20,7 +20,12 @@ export async function resizeImageToFormats(imageBuffer: Buffer): Promise<{ [form
           withoutEnlargement: true,
           background: { r: 255, g: 255, b: 255, alpha: 1 }
         })
-        .jpeg({ quality: 95 })
+        .jpeg({ 
+          quality: 95,
+        })
+        .withMetadata({
+          density: 300 // Set DPI to 300
+        })
         .toBuffer();
       
       results[format] = resized;
