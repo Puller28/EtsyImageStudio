@@ -1,8 +1,5 @@
-import { type User, type InsertUser, type Project, type InsertProject, users, projects } from "@shared/schema";
+import { type User, type InsertUser, type Project, type InsertProject } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
-import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -18,62 +15,7 @@ export interface IStorage {
   updateProject(id: string, updates: Partial<Project>): Promise<Project>;
 }
 
-// Database connection
-const connectionString = process.env.DATABASE_URL;
-const sql = neon(connectionString!);
-const db = drizzle(sql);
 
-export class DbStorage implements IStorage {
-  async getUser(id: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0];
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
-  }
-
-  async updateUserCredits(userId: string, credits: number): Promise<void> {
-    await db.update(users).set({ credits }).where(eq(users.id, userId));
-  }
-
-  async createProject(insertProject: InsertProject): Promise<Project> {
-    const projectData = {
-      ...insertProject,
-      mockupTemplate: insertProject.mockupTemplate || null,
-      upscaledImageUrl: null,
-      mockupImageUrl: null,
-      etsyListing: null,
-      resizedImages: null,
-      zipUrl: null
-    };
-    const result = await db.insert(projects).values(projectData).returning();
-    return result[0];
-  }
-
-  async getProject(id: string): Promise<Project | undefined> {
-    const result = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getUserProjects(userId: string): Promise<Project[]> {
-    return await db.select().from(projects).where(eq(projects.userId, userId));
-  }
-
-  async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
-    const result = await db.update(projects).set(updates).where(eq(projects.id, id)).returning();
-    if (result.length === 0) {
-      throw new Error("Project not found");
-    }
-    return result[0];
-  }
-}
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
@@ -161,5 +103,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use database storage if DATABASE_URL is available, otherwise fallback to memory storage
-export const storage = connectionString?.trim() ? new DbStorage() : new MemStorage();
+// Use memory storage for now due to database connection issues
+export const storage = new MemStorage();

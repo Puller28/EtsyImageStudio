@@ -5,7 +5,7 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { insertProjectSchema } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
-import { upscaleImage } from "./services/replicate";
+import { segmindService } from "./services/segmind";
 import { resizeImageToFormats, generateMockup } from "./services/image-processor";
 import { generateProjectZip } from "./services/zip-generator";
 
@@ -24,6 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(user);
     } catch (error) {
+      console.error("Error getting user:", error);
       res.status(500).json({ error: "Failed to get user" });
     }
   });
@@ -151,13 +152,17 @@ async function processProjectAsync(project: any) {
     const imageData = project.originalImageUrl.split(',')[1];
     const originalBuffer = Buffer.from(imageData, 'base64');
 
-    // Step 1: Upscale image
-    const upscaledImageUrl = await upscaleImage(project.originalImageUrl, project.upscaleOption);
+    // Step 1: Upscale image using Segmind
+    const scale = project.upscaleOption === "4x" ? 4 : 2;
+    const upscaledBase64 = await segmindService.upscaleImage({
+      scale: scale as 2 | 4,
+      image: imageData
+    });
+    const upscaledImageUrl = `data:image/jpeg;base64,${upscaledBase64}`;
     await storage.updateProject(project.id, { upscaledImageUrl });
 
     // Step 2: Resize to print formats
-    const upscaledResponse = await fetch(upscaledImageUrl);
-    const upscaledBuffer = Buffer.from(await upscaledResponse.arrayBuffer());
+    const upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
     const resizedImages = await resizeImageToFormats(upscaledBuffer);
     
     // Convert to base64 URLs for storage

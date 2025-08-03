@@ -47,7 +47,13 @@ export default function Dashboard() {
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await apiRequest("POST", "/api/projects", data);
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        body: data,
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create project");
+      }
       return response.json();
     },
     onSuccess: (project) => {
@@ -132,11 +138,18 @@ export default function Dashboard() {
   };
 
   const handleStartProcessing = async (options: { upscaleOption: "2x" | "4x" }) => {
-    if (!uploadedImage) return;
+    if (!uploadedImage) {
+      toast({
+        title: "No Image",
+        description: "Please upload an image first.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const formData = new FormData();
     formData.append("image", uploadedImage.file);
-    formData.append("artworkTitle", "Untitled Artwork");
+    formData.append("artworkTitle", uploadedImage.file.name.replace(/\.[^/.]+$/, ""));
     formData.append("styleKeywords", "digital art");
     formData.append("upscaleOption", options.upscaleOption);
     formData.append("mockupTemplate", selectedTemplate);
@@ -193,59 +206,63 @@ export default function Dashboard() {
     {
       id: "upload",
       label: "Image uploaded successfully",
-      status: (uploadedImage ? "completed" : "pending") as const
+      status: uploadedImage ? "completed" : "pending"
     },
     {
       id: "upscale",
       label: `Upscaling image...`,
-      status: (projectStatus?.status === "processing" ? "processing" : projectStatus?.upscaledImageUrl ? "completed" : "pending") as const
+      status: projectStatus?.status === "processing" ? "processing" : projectStatus?.upscaledImageUrl ? "completed" : "pending"
     },
     {
       id: "resize",
       label: "Generate print formats",
-      status: (projectStatus?.resizedImages && projectStatus.resizedImages.length > 0 ? "completed" : "pending") as const
+      status: projectStatus?.resizedImages && projectStatus.resizedImages.length > 0 ? "completed" : "pending"
     },
     {
       id: "mockup",
       label: "Create mockup",
-      status: (projectStatus?.mockupImageUrl ? "completed" : "pending") as const
+      status: projectStatus?.mockupImageUrl ? "completed" : "pending"
     },
     {
       id: "package",
       label: "Package assets",
-      status: (projectStatus?.zipUrl ? "completed" : "pending") as const
+      status: projectStatus?.zipUrl ? "completed" : "pending"
     }
-  ];
+  ] as Array<{id: string; label: string; status: "pending" | "processing" | "completed" | "failed"}>;
 
-  // Download items for download component
+  // Download items for download component  
   const downloadItems = [
     {
       id: "original",
       label: "Original upscaled image",
-      status: (projectStatus?.upscaledImageUrl ? "completed" : "pending") as const
+      status: projectStatus?.upscaledImageUrl ? "completed" : "pending"
     },
     {
       id: "formats",
       label: "5 print-ready formats",
-      status: (projectStatus?.resizedImages && projectStatus.resizedImages.length > 0 ? "completed" : "pending") as const
+      status: projectStatus?.resizedImages && projectStatus.resizedImages.length > 0 ? "completed" : "pending"
     },
     {
       id: "mockup",
       label: "Mockup image",
-      status: (projectStatus?.mockupImageUrl ? "completed" : "pending") as const
+      status: projectStatus?.mockupImageUrl ? "completed" : "pending"
     },
     {
       id: "listing",
       label: "Etsy listing text",
-      status: (projectStatus?.etsyListing ? "completed" : "pending") as const
+      status: projectStatus?.etsyListing ? "completed" : "pending"
     }
-  ];
+  ] as Array<{id: string; label: string; status: "pending" | "processing" | "completed" | "failed"}>;
 
   const progress = processingSteps.filter(step => step.status === "completed").length / processingSteps.length * 100;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation user={user} />
+      <Navigation user={user ? {
+        name: user.name,
+        avatar: user.avatar || undefined,
+        credits: user.credits
+      } : undefined} />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <WorkflowProgress currentStep={currentStep} />
@@ -288,7 +305,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <EtsyListingGenerator
               onGenerate={handleGenerateListing}
-              generatedListing={projectStatus?.etsyListing}
+              generatedListing={projectStatus?.etsyListing || undefined}
               isGenerating={isGeneratingListing}
             />
 
@@ -312,7 +329,13 @@ export default function Dashboard() {
         {/* Recent Projects */}
         <div className="mt-8">
           <RecentProjects
-            projects={projects}
+            projects={projects.map(p => ({
+              id: p.id,
+              title: p.title,
+              createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+              status: p.status,
+              thumbnailUrl: p.originalImageUrl
+            }))}
             onViewProject={(id) => console.log("View project:", id)}
           />
         </div>
