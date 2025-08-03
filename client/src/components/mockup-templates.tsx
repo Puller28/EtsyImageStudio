@@ -70,6 +70,7 @@ export default function MockupTemplates({ onSelectTemplate, selectedTemplate }: 
                 />
               </div>
               <p className="mt-2 text-sm font-medium text-gray-900">{template.name}</p>
+              <p className="text-xs text-gray-500">5 different mockups included</p>
             </div>
           ))}
         </div>

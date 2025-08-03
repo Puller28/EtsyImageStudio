@@ -254,7 +254,7 @@ export default function Dashboard() {
     },
     {
       id: "mockup",
-      label: "Create mockup",
+      label: "Generate 5 professional mockups",
       status: projectStatus?.mockupImageUrl ? "completed" : "pending"
     },
     {
@@ -278,7 +278,7 @@ export default function Dashboard() {
     },
     {
       id: "mockup",
-      label: "Mockup image",
+      label: "5 professional mockups",
       status: projectStatus?.mockupImageUrl ? "completed" : "pending"
     },
     {

@@ -8,7 +8,8 @@ import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
 import { fallbackUpscale, base64ToBuffer, bufferToBase64 } from "./services/image-upscaler-fallback";
-import { resizeImageToFormats, generateMockup } from "./services/image-processor";
+import { resizeImageToFormats } from "./services/image-processor";
+import { generateMockupsForCategory } from "./services/mockup-templates";
 import { generateProjectZip } from "./services/zip-generator";
 
 const upload = multer({ 
@@ -252,16 +253,23 @@ async function processProjectAsync(project: any) {
       ])
     );
 
-    // Step 3: Generate mockup
-    const mockupBuffer = await generateMockup(upscaledBuffer, project.mockupTemplate);
-    const mockupImageUrl = `data:image/jpeg;base64,${mockupBuffer.toString('base64')}`;
+    // Step 3: Generate 5 mockups for the selected category
+    const mockups = await generateMockupsForCategory(upscaledBuffer, project.mockupTemplate);
+    
+    // Convert mockups to base64 URLs for storage
+    const mockupImageUrls = Object.fromEntries(
+      Object.entries(mockups).map(([mockupId, buffer]) => [
+        mockupId,
+        `data:image/jpeg;base64,${buffer.toString('base64')}`
+      ])
+    );
 
-    // Step 4: Generate ZIP
+    // Step 4: Generate ZIP with all mockups
     const zipBuffer = await generateProjectZip({
       originalImage: originalBuffer,
       upscaledImage: upscaledBuffer,
       resizedImages,
-      mockupImage: mockupBuffer,
+      mockupImages: mockups, // Pass all mockups instead of single mockup
       etsyListing: project.etsyListing || { title: "", tags: [], description: "" },
       projectTitle: project.title
     });
@@ -270,7 +278,8 @@ async function processProjectAsync(project: any) {
 
     // Update project with final results
     await storage.updateProject(project.id, {
-      mockupImageUrl,
+      mockupImageUrl: Object.values(mockupImageUrls)[0], // First mockup as preview
+      mockupImages: mockupImageUrls, // Store all mockup URLs
       resizedImages: Object.values(resizedImageUrls),
       zipUrl,
       status: "completed"

@@ -19,6 +19,7 @@ export const projects = pgTable("projects", {
   originalImageUrl: text("original_image_url").notNull(),
   upscaledImageUrl: text("upscaled_image_url"),
   mockupImageUrl: text("mockup_image_url"),
+  mockupImages: jsonb("mockup_images").$type<Record<string, string>>(),
   resizedImages: jsonb("resized_images").$type<string[]>().default([]),
   etsyListing: jsonb("etsy_listing").$type<{
     title: string;
