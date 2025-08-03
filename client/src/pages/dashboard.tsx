@@ -109,13 +109,13 @@ export default function Dashboard() {
     if (projectStatus) {
       switch (projectStatus.status) {
         case "uploading":
-          setCurrentStep(0);
+          setCurrentStep(1); // Show processing controls after upload
           break;
         case "processing":
-          setCurrentStep(1);
+          setCurrentStep(2); // Show processing status
           break;
         case "completed":
-          setCurrentStep(3);
+          setCurrentStep(3); // Show completed status
           break;
         default:
           break;
