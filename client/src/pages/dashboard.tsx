@@ -374,14 +374,14 @@ export default function Dashboard() {
               />
             )}
 
-            {currentProject && currentStep < 2 && (
+            {currentProject && (currentStep < 2 || projectStatus?.status === "uploading") && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <button
                   onClick={handleProcessProject}
-                  disabled={processProjectMutation.isPending}
+                  disabled={processProjectMutation.isPending || projectStatus?.status === "processing"}
                   className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 disabled:bg-gray-300"
                 >
-                  {processProjectMutation.isPending ? "Starting..." : "Start Processing"}
+                  {processProjectMutation.isPending || projectStatus?.status === "processing" ? "Processing..." : "Start Processing"}
                 </button>
               </div>
             )}
