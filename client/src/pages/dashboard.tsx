@@ -345,7 +345,10 @@ export default function Dashboard() {
                     </button>
                     
                     <button
-                      onClick={() => setShowAIGenerator(false)}
+                      onClick={() => {
+                        console.log("Upload Your Art button clicked, setting showAIGenerator to false");
+                        setShowAIGenerator(false);
+                      }}
                       className="p-6 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200 group"
                     >
                       <div className="flex flex-col items-center space-y-3">
@@ -370,16 +373,21 @@ export default function Dashboard() {
             )}
 
             {!showAIGenerator && (
-              <ImageUpload
-                onImageUpload={handleImageUpload}
-                uploadedImage={uploadedImage}
-                onRemoveImage={handleRemoveImage}
-                onGenerateNew={() => {
-                  setShowAIGenerator(true);
-                  setUploadedImage(undefined);
-                  setCurrentStep(0);
-                }}
-              />
+              <div>
+                <div style={{background: 'yellow', padding: '10px', margin: '10px'}}>
+                  DEBUG: showAIGenerator={showAIGenerator.toString()}, uploadedImage={!!uploadedImage ? 'exists' : 'null'}
+                </div>
+                <ImageUpload
+                  onImageUpload={handleImageUpload}
+                  uploadedImage={uploadedImage}
+                  onRemoveImage={handleRemoveImage}
+                  onGenerateNew={() => {
+                    setShowAIGenerator(true);
+                    setUploadedImage(undefined);
+                    setCurrentStep(0);
+                  }}
+                />
+              </div>
             )}
 
             {uploadedImage && !currentProject && (
