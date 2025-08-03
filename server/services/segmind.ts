@@ -57,9 +57,22 @@ export class SegmindService {
         }
       }
 
-      const result: SegmindResponse = await response.json();
-      console.log('Segmind upscaling completed successfully');
-      return result.image;
+      // Check if response is JSON or binary image
+      const contentType = response.headers.get('content-type');
+      console.log('Segmind response content-type:', contentType);
+      
+      if (contentType && contentType.includes('application/json')) {
+        // JSON response format
+        const result: SegmindResponse = await response.json();
+        console.log('Segmind upscaling completed successfully (JSON format)');
+        return result.image;
+      } else {
+        // Binary image response format
+        const imageBuffer = Buffer.from(await response.arrayBuffer());
+        const base64Image = imageBuffer.toString('base64');
+        console.log('Segmind upscaling completed successfully (binary format)');
+        return base64Image;
+      }
     } catch (error) {
       console.error('Segmind upscaling error:', error);
       throw new Error(`Failed to upscale image: ${error instanceof Error ? error.message : 'Unknown error'}`);

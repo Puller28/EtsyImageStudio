@@ -149,9 +149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 async function processProjectAsync(project: any) {
   try {
+    console.log('Starting project processing for:', project.id);
+    
     // Convert base64 to buffer
     const imageData = project.originalImageUrl.split(',')[1];
     const originalBuffer = Buffer.from(imageData, 'base64');
+    
+    console.log('Original image size:', originalBuffer.length, 'bytes');
 
     // Step 1: Upscale image using Segmind (with fallback)
     const scale = project.upscaleOption === "4x" ? 4 : 2;
