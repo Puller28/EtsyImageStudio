@@ -190,6 +190,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate and download ZIP file with actual assets
+  app.get("/api/projects/:id/download-zip", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.status !== "completed") {
+        return res.status(404).json({ error: "Project not ready for download" });
+      }
+
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+
+      // Add project files to ZIP
+      if (project.originalImageUrl && project.originalImageUrl.startsWith('data:image/')) {
+        const base64Data = project.originalImageUrl.split(',')[1];
+        zip.file("original-image.jpg", base64Data, { base64: true });
+      }
+
+      // Add upscaled image (using original as placeholder)
+      if (project.upscaledImageUrl && project.upscaledImageUrl.startsWith('data:image/')) {
+        const base64Data = project.upscaledImageUrl.split(',')[1];
+        zip.file("upscaled-image.jpg", base64Data, { base64: true });
+      }
+
+      // Add print format sizes (using original as placeholder)
+      const printFormats = ["4x5-8x10.jpg", "3x4-18x24.jpg", "2x3-12x18.jpg", "11x14.jpg", "A4-ISO.jpg"];
+      printFormats.forEach((filename, index) => {
+        if (project.resizedImages?.[index] && project.resizedImages[index].startsWith('data:image/')) {
+          const base64Data = project.resizedImages[index].split(',')[1];
+          zip.file(`print-formats/${filename}`, base64Data, { base64: true });
+        }
+      });
+
+      // Add mockup images (using original as placeholder)
+      if (project.mockupImages) {
+        Object.entries(project.mockupImages).forEach(([key, url], index) => {
+          if (url && typeof url === 'string' && url.startsWith('data:image/')) {
+            const base64Data = url.split(',')[1];
+            zip.file(`mockups/mockup-${index + 1}.jpg`, base64Data, { base64: true });
+          }
+        });
+      }
+
+      // Add Etsy listing content if available
+      if (project.etsyListing) {
+        zip.file("etsy-listing.txt", 
+          `TITLE: ${project.etsyListing.title}\n\n` +
+          `TAGS: ${project.etsyListing.tags.join(', ')}\n\n` +
+          `DESCRIPTION:\n${project.etsyListing.description}`
+        );
+      }
+
+      // Generate ZIP file
+      const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="${project.title || 'project'}.zip"`);
+      res.send(zipBuffer);
+
+    } catch (error) {
+      console.error("ZIP generation error:", error);
+      res.status(500).json({ error: "Failed to generate ZIP file" });
+    }
+  });
+
   // AI Art Generation endpoint
   app.post("/api/generate-art", async (req, res) => {
     try {
@@ -260,7 +324,7 @@ async function processProjectAsync(project: any) {
         project.originalImageUrl,
         project.originalImageUrl
       ],
-      zipUrl: "data:application/zip;base64,UEsDBAoAAAAAAItJJVkAAAAAAAAAAAAAAAAJAAAAbW9ja3VwLmpwZw==",
+      zipUrl: `/api/projects/${project.id}/download-zip`, // Generate actual ZIP endpoint
       status: "completed"
     });
 
