@@ -394,7 +394,10 @@ export default function Dashboard() {
             {currentProject && projectStatus?.status !== "processing" && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <button
-                  onClick={handleProcessProject}
+                  onClick={(e) => {
+                    console.log("Button clicked!", e);
+                    handleProcessProject();
+                  }}
                   disabled={processProjectMutation.isPending || projectStatus?.status === "processing"}
                   className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 disabled:bg-gray-300"
                 >
