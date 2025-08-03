@@ -297,10 +297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 async function processProjectAsync(project: any) {
   const startTime = Date.now();
   
-  console.log(`processProjectAsync called for project: ${project.id}`);
+  console.log(`🔧 processProjectAsync called for project: ${project.id}`);
+  console.log(`🔧 Project data:`, JSON.stringify(project, null, 2));
   
   try {
-    console.log('Starting real image processing for:', project.id);
+    console.log('🔧 Starting real image processing for:', project.id);
     
     // Import processing services
     const { SegmindService } = await import('./services/segmind');
@@ -386,8 +387,10 @@ async function processProjectAsync(project: any) {
 
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    console.error(`❌ Processing failed for project ${project.id} after ${processingTime}ms:`, error);
-    console.error("Error details:", (error as Error).stack);
+    console.error(`🔧❌ Processing failed for project ${project.id} after ${processingTime}ms:`, error);
+    console.error("🔧❌ Error details:", (error as Error).stack);
+    console.error("🔧❌ Error type:", typeof error);
+    console.error("🔧❌ Error message:", (error as Error).message);
     await storage.updateProject(project.id, { status: "failed" });
   }
 }
