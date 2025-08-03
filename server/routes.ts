@@ -218,6 +218,7 @@ async function processProjectAsync(project: any) {
 
   } catch (error) {
     console.error("Processing failed:", error);
+    console.error("Error details:", error.stack);
     await storage.updateProject(project.id, { status: "failed" });
   }
 }
