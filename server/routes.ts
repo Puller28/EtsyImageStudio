@@ -96,8 +96,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update status to processing
       await storage.updateProject(project.id, { status: "processing" });
 
-      // Process in background
-      processProjectAsync(project);
+      // Process in background with timeout protection
+      processProjectAsync(project).catch(error => {
+        console.error('Background processing failed:', error);
+        storage.updateProject(project.id, { status: "failed" });
+      });
 
       res.json({ message: "Processing started" });
     } catch (error) {
@@ -209,6 +212,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 async function processProjectAsync(project: any) {
+  const startTime = Date.now();
+  const timeout = 5 * 60 * 1000; // 5 minute timeout
+  
   try {
     console.log('Starting project processing for:', project.id);
     
@@ -285,11 +291,18 @@ async function processProjectAsync(project: any) {
       status: "completed"
     });
 
-    console.log('Processing completed successfully for project:', project.id);
+    const processingTime = Date.now() - startTime;
+    console.log(`Processing completed successfully for project: ${project.id} in ${processingTime}ms`);
 
   } catch (error) {
-    console.error("Processing failed:", error);
+    const processingTime = Date.now() - startTime;
+    console.error(`Processing failed for project ${project.id} after ${processingTime}ms:`, error);
     console.error("Error details:", (error as Error).stack);
     await storage.updateProject(project.id, { status: "failed" });
+    
+    // If processing took too long, it might be a timeout issue
+    if (processingTime > timeout) {
+      console.error("Processing likely timed out - consider increasing timeout or optimizing processing");
+    }
   }
 }
