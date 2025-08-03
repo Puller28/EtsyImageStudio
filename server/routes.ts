@@ -300,40 +300,93 @@ async function processProjectAsync(project: any) {
   console.log(`processProjectAsync called for project: ${project.id}`);
   
   try {
-    console.log('Starting simplified project processing for:', project.id);
+    console.log('Starting real image processing for:', project.id);
     
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Processing delay completed');
+    // Import processing services
+    const { SegmindService } = await import('./services/segmind');
+    const { resizeImageToFormats } = await import('./services/image-processor');
+    const { generateMockupsForCategory, getTemplatesForCategory } = await import('./services/mockup-templates');
     
-    // Create minimal completion data
+    // Convert base64 image to buffer for processing
+    const base64Data = project.originalImageUrl.split(',')[1];
+    const originalBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Step 1: Upscale image using Segmind
+    console.log('Step 1: Upscaling image...');
+    let upscaledImageUrl = project.originalImageUrl;
+    
+    try {
+      if (process.env.SEGMIND_API_KEY) {
+        const segmind = new SegmindService(process.env.SEGMIND_API_KEY);
+        const upscaleOption = project.upscaleOption || '2x';
+        const scale = upscaleOption === '4x' ? 4 : 2;
+        
+        const upscaledBase64 = await segmind.upscaleImage({
+          scale,
+          image: base64Data
+        });
+        
+        upscaledImageUrl = `data:image/jpeg;base64,${upscaledBase64}`;
+        console.log('✅ Image upscaled successfully');
+      } else {
+        console.log('⚠️ Segmind API key not found, using original image');
+      }
+    } catch (error) {
+      console.error('❌ Upscaling failed, using original:', error);
+    }
+    
+    // Step 2: Create print format sizes
+    console.log('Step 2: Creating print formats...');
+    const upscaledBuffer = Buffer.from(upscaledImageUrl.split(',')[1], 'base64');
+    const resizedFormats = await resizeImageToFormats(upscaledBuffer);
+    
+    const resizedImages = Object.values(resizedFormats).map(buffer => 
+      `data:image/jpeg;base64,${buffer.toString('base64')}`
+    );
+    
+    console.log('✅ Created', resizedImages.length, 'print formats');
+    
+    // Step 3: Generate mockups
+    console.log('Step 3: Generating mockups...');
+    const mockupTemplate = project.mockupTemplate || 'living-room';
+    
+    const mockupImages: { [key: string]: string } = {};
+    
+    try {
+      // Generate mockups for the selected template category
+      const mockupBuffers = await generateMockupsForCategory(upscaledBuffer, mockupTemplate);
+      
+      for (const [mockupId, buffer] of Object.entries(mockupBuffers)) {
+        mockupImages[mockupId] = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+      }
+      
+      console.log('✅ Generated', Object.keys(mockupImages).length, 'mockups');
+    } catch (error) {
+      console.error('❌ Mockup generation failed:', error);
+      // Use upscaled image as fallback for mockups
+      const templates = getTemplatesForCategory(mockupTemplate);
+      for (let i = 0; i < Math.min(5, templates.length); i++) {
+        const template = templates[i];
+        mockupImages[template.id] = upscaledImageUrl;
+      }
+    }
+    
+    // Update project with processed assets
     await storage.updateProject(project.id, {
-      upscaledImageUrl: project.originalImageUrl, // Use original as placeholder
-      mockupImageUrl: project.originalImageUrl,
-      mockupImages: {
-        'living-room-1': project.originalImageUrl,
-        'living-room-2': project.originalImageUrl,
-        'living-room-3': project.originalImageUrl,
-        'living-room-4': project.originalImageUrl,
-        'living-room-5': project.originalImageUrl
-      },
-      resizedImages: [
-        project.originalImageUrl,
-        project.originalImageUrl,
-        project.originalImageUrl,
-        project.originalImageUrl,
-        project.originalImageUrl
-      ],
-      zipUrl: `/api/projects/${project.id}/download-zip`, // Generate actual ZIP endpoint
+      upscaledImageUrl,
+      mockupImageUrl: Object.values(mockupImages)[0] || upscaledImageUrl,
+      mockupImages,
+      resizedImages,
+      zipUrl: `/api/projects/${project.id}/download-zip`,
       status: "completed"
     });
 
     const processingTime = Date.now() - startTime;
-    console.log(`Simplified processing completed successfully for project: ${project.id} in ${processingTime}ms`);
+    console.log(`✅ Real processing completed successfully for project: ${project.id} in ${processingTime}ms`);
 
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    console.error(`Processing failed for project ${project.id} after ${processingTime}ms:`, error);
+    console.error(`❌ Processing failed for project ${project.id} after ${processingTime}ms:`, error);
     console.error("Error details:", (error as Error).stack);
     await storage.updateProject(project.id, { status: "failed" });
   }
