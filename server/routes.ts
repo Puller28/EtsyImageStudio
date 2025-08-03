@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const base64Image = await aiArtGeneratorService.generateArtwork({
         prompt: optimizedPrompt,
         negativePrompt,
-        aspectRatio: aspectRatio as 'SQUARE' | 'PORTRAIT' | 'LANDSCAPE',
+        aspectRatio: aspectRatio as '1:1' | '3:4' | '4:3' | '9:16' | '16:9',
       });
       
       console.log('AI art generation completed successfully');

@@ -6,7 +6,7 @@ import sharp from 'sharp';
 interface ArtGenerationOptions {
   prompt: string;
   negativePrompt?: string;
-  aspectRatio?: 'SQUARE' | 'PORTRAIT' | 'LANDSCAPE';
+  aspectRatio?: '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
   outputFormat?: 'JPEG' | 'PNG';
   seed?: number;
   safetyTolerance?: string;
@@ -42,7 +42,7 @@ export class AIArtGeneratorService {
         body: JSON.stringify({
           prompt: options.prompt,
           negative_prompt: options.negativePrompt || "blurry, low quality, distorted, watermark, text, signature",
-          aspect_ratio: options.aspectRatio || "SQUARE",
+          aspect_ratio: options.aspectRatio || "1:1",
           output_format: options.outputFormat || "JPEG",
           seed: options.seed || Math.floor(Math.random() * 1000000),
           safety_tolerance: options.safetyTolerance || "BLOCK_SOME",
@@ -93,7 +93,7 @@ export class AIArtGeneratorService {
     try {
       await this.generateArtwork({ 
         prompt: "simple test image", 
-        aspectRatio: "SQUARE"
+        aspectRatio: "1:1"
       });
       return true;
     } catch (error) {
@@ -105,9 +105,9 @@ export class AIArtGeneratorService {
   // Get available aspect ratios for Imagen 3
   getAspectRatios(): Array<{value: string, label: string}> {
     return [
-      { value: "SQUARE", label: "Square (1:1)" },
-      { value: "PORTRAIT", label: "Portrait (3:4)" },
-      { value: "LANDSCAPE", label: "Landscape (4:3)" }
+      { value: "1:1", label: "Square (1:1)" },
+      { value: "3:4", label: "Portrait (3:4)" },
+      { value: "4:3", label: "Landscape (4:3)" }
     ];
   }
 

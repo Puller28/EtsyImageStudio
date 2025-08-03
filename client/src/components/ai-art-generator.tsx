@@ -18,7 +18,7 @@ interface AIArtGeneratorProps {
 export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState("SQUARE");
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState("1:1");
   const [artCategory, setArtCategory] = useState("digital art");
   const { toast } = useToast();
 
@@ -80,9 +80,9 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
   };
 
   const aspectRatios = [
-    { value: "SQUARE", label: "Square (1:1)" },
-    { value: "PORTRAIT", label: "Portrait (3:4)" },
-    { value: "LANDSCAPE", label: "Landscape (4:3)" },
+    { value: "1:1", label: "Square (1:1)" },
+    { value: "3:4", label: "Portrait (3:4)" },
+    { value: "4:3", label: "Landscape (4:3)" },
   ];
 
   const artCategories = [
