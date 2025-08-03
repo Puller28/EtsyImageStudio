@@ -6,6 +6,7 @@ import { storage } from "./storage";
 import { insertProjectSchema } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
+import { aiArtGeneratorService } from "./services/ai-art-generator";
 import { fallbackUpscale, base64ToBuffer, bufferToBase64 } from "./services/image-upscaler-fallback";
 import { resizeImageToFormats, generateMockup } from "./services/image-processor";
 import { generateProjectZip } from "./services/zip-generator";
@@ -163,6 +164,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ downloadUrl: project.zipUrl });
     } catch (error) {
       res.status(500).json({ error: "Failed to download project" });
+    }
+  });
+
+  // AI Art Generation endpoint
+  app.post("/api/generate-art", async (req, res) => {
+    try {
+      const { prompt, negativePrompt, aspectRatio, category } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      console.log('Starting AI art generation with prompt:', prompt);
+      
+      // Generate optimized prompt for Etsy
+      const optimizedPrompt = aiArtGeneratorService.generateEtsyPrompt(prompt, category);
+      
+      // Generate artwork using Imagen 3
+      const base64Image = await aiArtGeneratorService.generateArtwork({
+        prompt: optimizedPrompt,
+        negativePrompt,
+        aspectRatio: aspectRatio as 'SQUARE' | 'PORTRAIT' | 'LANDSCAPE',
+      });
+      
+      console.log('AI art generation completed successfully');
+      
+      res.json({ 
+        image: base64Image,
+        prompt: optimizedPrompt
+      });
+      
+    } catch (error) {
+      console.error("AI art generation error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate artwork" 
+      });
     }
   });
 

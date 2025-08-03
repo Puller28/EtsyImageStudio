@@ -1,17 +1,15 @@
-// AI Art Generation service using Segmind SDXL models
-// Provides text-to-image generation for users without existing artwork
+// AI Art Generation service using Segmind Imagen 3 model
+// Google DeepMind's highest quality text-to-image model for professional artwork
 
 import sharp from 'sharp';
 
 interface ArtGenerationOptions {
   prompt: string;
   negativePrompt?: string;
-  style?: string;
-  width?: number;
-  height?: number;
-  steps?: number;
-  guidance?: number;
+  aspectRatio?: 'SQUARE' | 'PORTRAIT' | 'LANDSCAPE';
+  outputFormat?: 'JPEG' | 'PNG';
   seed?: number;
+  safetyTolerance?: string;
 }
 
 interface SegmindTextToImageResponse {
@@ -35,7 +33,7 @@ export class AIArtGeneratorService {
     console.log('Starting AI art generation with prompt:', options.prompt);
     
     try {
-      const response = await fetch(`${this.baseUrl}/sdxl1.0-txt2img`, {
+      const response = await fetch(`${this.baseUrl}/imagen`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,16 +42,11 @@ export class AIArtGeneratorService {
         body: JSON.stringify({
           prompt: options.prompt,
           negative_prompt: options.negativePrompt || "blurry, low quality, distorted, watermark, text, signature",
-          style: options.style || "enhance",
-          samples: 1,
-          scheduler: "UniPC",
-          num_inference_steps: options.steps || 25,
-          guidance_scale: options.guidance || 8,
-          strength: 1,
+          aspect_ratio: options.aspectRatio || "SQUARE",
+          output_format: options.outputFormat || "JPEG",
           seed: options.seed || Math.floor(Math.random() * 1000000),
-          img_width: options.width || 1024,
-          img_height: options.height || 1024,
-          base64: false // Request binary response for better quality
+          safety_tolerance: options.safetyTolerance || "BLOCK_SOME",
+          person_generation: "allow_adult"
         }),
       });
 
@@ -69,40 +62,26 @@ export class AIArtGeneratorService {
         } else if (response.status === 402) {
           throw new Error('Insufficient credits in your Segmind account. Please add more credits.');
         } else if (response.status === 404) {
-          throw new Error('Segmind SDXL model not found. Please check the API documentation.');
+          throw new Error('Segmind Imagen 3 model not found. Please check the API documentation.');
         } else {
           throw new Error(`Segmind API error (${response.status}): ${errorText}`);
         }
       }
 
-      // Check if response is JSON or binary image
-      const contentType = response.headers.get('content-type');
-      console.log('Segmind art generation response content-type:', contentType);
+      // Imagen 3 returns binary image data directly
+      const imageBuffer = Buffer.from(await response.arrayBuffer());
       
-      if (contentType && contentType.includes('application/json')) {
-        // JSON response format
-        const result: SegmindTextToImageResponse = await response.json();
-        console.log('AI art generation completed successfully (JSON format)');
-        if (!result.image) {
-          throw new Error('No image data in response');
-        }
-        return result.image;
-      } else {
-        // Binary image response format - process through Sharp to set 300 DPI
-        const imageBuffer = Buffer.from(await response.arrayBuffer());
-        
-        // Process with Sharp to ensure 300 DPI metadata and optimize for printing
-        const processedBuffer = await sharp(imageBuffer)
-          .jpeg({ quality: 95 })
-          .withMetadata({
-            density: 300 // Ensure 300 DPI for print quality
-          })
-          .toBuffer();
-        
-        const base64Image = processedBuffer.toString('base64');
-        console.log('AI art generation completed successfully (binary format with 300 DPI)');
-        return base64Image;
-      }
+      // Process with Sharp to ensure 300 DPI metadata and optimize for printing
+      const processedBuffer = await sharp(imageBuffer)
+        .jpeg({ quality: 95 })
+        .withMetadata({
+          density: 300 // Ensure 300 DPI for print quality
+        })
+        .toBuffer();
+      
+      const base64Image = processedBuffer.toString('base64');
+      console.log('Imagen 3 art generation completed successfully (with 300 DPI)');
+      return base64Image;
     } catch (error) {
       console.error('AI art generation error:', error);
       throw new Error(`Failed to generate artwork: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -113,10 +92,8 @@ export class AIArtGeneratorService {
   async testConnection(): Promise<boolean> {
     try {
       await this.generateArtwork({ 
-        prompt: "test image", 
-        width: 512, 
-        height: 512, 
-        steps: 10 
+        prompt: "simple test image", 
+        aspectRatio: "SQUARE"
       });
       return true;
     } catch (error) {
@@ -125,21 +102,12 @@ export class AIArtGeneratorService {
     }
   }
 
-  // Get popular art styles for Etsy
-  getPopularStyles(): string[] {
+  // Get available aspect ratios for Imagen 3
+  getAspectRatios(): Array<{value: string, label: string}> {
     return [
-      "enhance", // Default enhancement
-      "photographic", // Photorealistic style
-      "digital-art", // Digital art style
-      "comic-book", // Comic book style
-      "fantasy-art", // Fantasy artwork
-      "line-art", // Line art style
-      "origami", // Paper craft style
-      "neon-punk", // Cyberpunk neon style
-      "isometric", // Isometric style
-      "low-poly", // Low polygon style
-      "pixel-art", // Pixel art style
-      "watercolor" // Watercolor painting style
+      { value: "SQUARE", label: "Square (1:1)" },
+      { value: "PORTRAIT", label: "Portrait (3:4)" },
+      { value: "LANDSCAPE", label: "Landscape (4:3)" }
     ];
   }
 

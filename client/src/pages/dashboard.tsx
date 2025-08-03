@@ -7,6 +7,7 @@ import type { User, Project } from "@shared/schema";
 import Navigation from "@/components/navigation";
 import WorkflowProgress from "@/components/workflow-progress";
 import ImageUpload from "@/components/image-upload";
+import AIArtGenerator from "@/components/ai-art-generator";
 import ProcessingControls from "@/components/processing-controls";
 import MockupTemplates from "@/components/mockup-templates";
 import EtsyListingGenerator from "@/components/etsy-listing-generator";
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const { toast } = useToast();
 
   // Fetch user data
@@ -132,6 +134,26 @@ export default function Dashboard() {
     setUploadedImage({ file, preview });
   };
 
+  const handleArtworkGenerated = (imageData: string, prompt: string) => {
+    // Convert base64 to blob and create file
+    const byteCharacters = atob(imageData);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    const file = new File([blob], 'ai-generated-artwork.jpg', { type: 'image/jpeg' });
+    
+    const preview = URL.createObjectURL(blob);
+    setUploadedImage({ file, preview });
+    
+    toast({
+      title: "AI Artwork Ready",
+      description: "Your generated artwork is ready to process!",
+    });
+  };
+
   const handleRemoveImage = () => {
     if (uploadedImage) {
       URL.revokeObjectURL(uploadedImage.preview);
@@ -139,6 +161,7 @@ export default function Dashboard() {
     }
     setCurrentProject(null);
     setCurrentStep(0);
+    setShowAIGenerator(false); // Reset to show options again
   };
 
   const handleStartProcessing = async (options: { upscaleOption: "2x" | "4x" }) => {
@@ -281,11 +304,62 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            <ImageUpload
-              onImageUpload={handleImageUpload}
-              uploadedImage={uploadedImage}
-              onRemoveImage={handleRemoveImage}
-            />
+            {!uploadedImage && !showAIGenerator && (
+              <div className="bg-white rounded-lg shadow-sm p-8">
+                <div className="text-center space-y-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Start Your Etsy Art Project</h2>
+                  <p className="text-gray-600">Choose how you want to begin:</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setShowAIGenerator(true)}
+                      className="p-6 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors duration-200 group"
+                    >
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-200">
+                          <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">Generate AI Art</h3>
+                          <p className="text-sm text-gray-500">Create artwork using Google's Imagen 3</p>
+                        </div>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowAIGenerator(false)}
+                      className="p-6 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200 group"
+                    >
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200">
+                          <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">Upload Your Art</h3>
+                          <p className="text-sm text-gray-500">Use existing digital artwork</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showAIGenerator && !uploadedImage && (
+              <AIArtGenerator onArtworkGenerated={handleArtworkGenerated} />
+            )}
+
+            {!showAIGenerator && (
+              <ImageUpload
+                onImageUpload={handleImageUpload}
+                uploadedImage={uploadedImage}
+                onRemoveImage={handleRemoveImage}
+              />
+            )}
 
             {uploadedImage && !currentProject && (
               <ProcessingControls

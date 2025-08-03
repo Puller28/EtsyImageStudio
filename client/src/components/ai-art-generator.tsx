@@ -18,7 +18,7 @@ interface AIArtGeneratorProps {
 export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
-  const [selectedStyle, setSelectedStyle] = useState("enhance");
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState("SQUARE");
   const [artCategory, setArtCategory] = useState("digital art");
   const { toast } = useToast();
 
@@ -26,13 +26,22 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
     mutationFn: async (data: {
       prompt: string;
       negativePrompt?: string;
-      style?: string;
+      aspectRatio?: string;
       category?: string;
     }) => {
-      return apiRequest("/api/generate-art", {
+      const response = await fetch("/api/generate-art", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data),
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate artwork");
+      }
+      
+      return response.json();
     },
     onSuccess: (result) => {
       if (result.image) {
@@ -65,22 +74,15 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
     generateArtMutation.mutate({
       prompt,
       negativePrompt: negativePrompt || undefined,
-      style: selectedStyle,
+      aspectRatio: selectedAspectRatio,
       category: artCategory,
     });
   };
 
-  const artStyles = [
-    { value: "enhance", label: "Enhanced (Default)" },
-    { value: "photographic", label: "Photographic" },
-    { value: "digital-art", label: "Digital Art" },
-    { value: "fantasy-art", label: "Fantasy Art" },
-    { value: "comic-book", label: "Comic Book" },
-    { value: "line-art", label: "Line Art" },
-    { value: "watercolor", label: "Watercolor" },
-    { value: "neon-punk", label: "Cyberpunk" },
-    { value: "isometric", label: "Isometric" },
-    { value: "pixel-art", label: "Pixel Art" },
+  const aspectRatios = [
+    { value: "SQUARE", label: "Square (1:1)" },
+    { value: "PORTRAIT", label: "Portrait (3:4)" },
+    { value: "LANDSCAPE", label: "Landscape (4:3)" },
   ];
 
   const artCategories = [
@@ -114,7 +116,7 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
           <Sparkles className="h-6 w-6 text-purple-600" />
         </div>
         <p className="text-gray-600 dark:text-gray-400">
-          Create unique digital artwork perfect for Etsy using AI
+          Generate high-quality artwork using Google's Imagen 3 AI model
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -179,17 +181,17 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">Advanced Options</h4>
           
-          {/* Art Style */}
+          {/* Aspect Ratio */}
           <div className="space-y-2">
-            <Label htmlFor="style">Art Style</Label>
-            <Select value={selectedStyle} onValueChange={setSelectedStyle}>
+            <Label htmlFor="aspectRatio">Image Format</Label>
+            <Select value={selectedAspectRatio} onValueChange={setSelectedAspectRatio}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose art style" />
+                <SelectValue placeholder="Choose image format" />
               </SelectTrigger>
               <SelectContent>
-                {artStyles.map((style) => (
-                  <SelectItem key={style.value} value={style.value}>
-                    {style.label}
+                {aspectRatios.map((ratio) => (
+                  <SelectItem key={ratio.value} value={ratio.value}>
+                    {ratio.label}
                   </SelectItem>
                 ))}
               </SelectContent>
