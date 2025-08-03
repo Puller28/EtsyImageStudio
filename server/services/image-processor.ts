@@ -12,8 +12,14 @@ export const PRINT_FORMATS = {
 export async function resizeImageToFormats(imageBuffer: Buffer): Promise<{ [format: string]: Buffer }> {
   const results: { [format: string]: Buffer } = {};
   
+  // Get original image dimensions for debugging
+  const originalMeta = await sharp(imageBuffer).metadata();
+  console.log(`🖼️ Original image dimensions: ${originalMeta.width}x${originalMeta.height}`);
+  
   for (const [format, dimensions] of Object.entries(PRINT_FORMATS)) {
     try {
+      console.log(`🔄 Resizing to ${format}: ${dimensions.width}x${dimensions.height}`);
+      
       const resized = await sharp(imageBuffer)
         .resize(dimensions.width, dimensions.height, {
           fit: "inside",
@@ -28,12 +34,17 @@ export async function resizeImageToFormats(imageBuffer: Buffer): Promise<{ [form
         })
         .toBuffer();
       
+      // Check actual dimensions of resized image
+      const resizedMeta = await sharp(resized).metadata();
+      console.log(`✅ ${format} resized to: ${resizedMeta.width}x${resizedMeta.height}`);
+      
       results[format] = resized;
     } catch (error) {
       console.error(`Failed to resize to ${format}:`, error);
     }
   }
   
+  console.log(`🎯 Created ${Object.keys(results).length} print format variations`);
   return results;
 }
 
