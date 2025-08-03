@@ -64,8 +64,22 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
           </div>
         </div>
 
+        <div style={{background: 'blue', color: 'white', padding: '5px', marginBottom: '10px', fontSize: '12px'}}>
+          DEBUG PROCESSING: upscaleOption={upscaleOption}, disabled={disabled?.toString()}
+        </div>
         <Button
-          onClick={() => onStartProcessing({ upscaleOption })}
+          onClick={(e) => {
+            console.log("🔵 PROCESSING CONTROLS: Start Processing clicked!", {
+              upscaleOption,
+              disabled,
+              event: e,
+              timestamp: new Date().toISOString()
+            });
+            e.preventDefault();
+            e.stopPropagation();
+            onStartProcessing({ upscaleOption });
+          }}
+          onMouseEnter={() => console.log("🟢 Processing button hover detected")}
           disabled={disabled}
           className="w-full"
           size="lg"
