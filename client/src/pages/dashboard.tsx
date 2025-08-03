@@ -87,10 +87,10 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       console.log("processProjectMutation: onSuccess called");
-      setCurrentStep(2);
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", currentProject?.id] });
       toast({
-        title: "Processing Started",
-        description: "Your artwork is being processed. This may take a few minutes.",
+        title: "Processing Completed",
+        description: "Your artwork has been processed successfully!",
       });
     },
     onError: (error) => {
