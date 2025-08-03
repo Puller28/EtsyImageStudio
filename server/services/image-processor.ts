@@ -17,7 +17,7 @@ export async function resizeImageToFormats(imageBuffer: Buffer): Promise<{ [form
       const resized = await sharp(imageBuffer)
         .resize(dimensions.width, dimensions.height, {
           fit: "inside",
-          withoutEnlargement: true,
+          withoutEnlargement: false, // Allow enlargement for print formats
           background: { r: 255, g: 255, b: 255, alpha: 1 }
         })
         .jpeg({ 
