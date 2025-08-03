@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
 
   // Fetch user data
@@ -250,6 +251,7 @@ export default function Dashboard() {
   const handleDownload = async () => {
     if (!currentProject) return;
 
+    setIsPackaging(true);
     try {
       // Use the new ZIP generation endpoint that creates real ZIP files
       const response = await fetch(`/api/projects/${currentProject.id}/download-zip`);
@@ -277,6 +279,8 @@ export default function Dashboard() {
         description: "Failed to download project assets.",
         variant: "destructive",
       });
+    } finally {
+      setIsPackaging(false);
     }
   };
 
@@ -458,6 +462,7 @@ export default function Dashboard() {
                 items={downloadItems}
                 onDownload={handleDownload}
                 downloadReady={projectStatus?.status === "completed"}
+                isPackaging={isPackaging}
               />
             )}
           </div>
