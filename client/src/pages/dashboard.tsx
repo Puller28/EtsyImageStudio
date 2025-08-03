@@ -269,7 +269,7 @@ export default function Dashboard() {
       } : undefined} />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <WorkflowProgress currentStep={currentStep} />
+        <WorkflowProgress currentStep={currentStep} hasActiveProject={!!currentProject} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}

@@ -2,9 +2,10 @@ import { Check, Clock, Cog } from "lucide-react";
 
 interface WorkflowProgressProps {
   currentStep: number;
+  hasActiveProject?: boolean;
 }
 
-export default function WorkflowProgress({ currentStep }: WorkflowProgressProps) {
+export default function WorkflowProgress({ currentStep, hasActiveProject = false }: WorkflowProgressProps) {
   const steps = [
     { label: "Upload", icon: Check },
     { label: "Processing", icon: Cog },
@@ -36,7 +37,7 @@ export default function WorkflowProgress({ currentStep }: WorkflowProgressProps)
                   >
                     {isCompleted ? (
                       <Check className="w-4 h-4" />
-                    ) : isCurrent ? (
+                    ) : isCurrent && hasActiveProject ? (
                       <Cog className="w-4 h-4 animate-spin" />
                     ) : (
                       <span>{index + 1}</span>
