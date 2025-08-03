@@ -119,8 +119,10 @@ export default function Dashboard() {
   }, [projectStatus]);
 
   const handleImageUpload = (file: File) => {
+    console.log("handleImageUpload called with file:", file.name);
     const preview = URL.createObjectURL(file);
     setUploadedImage({ file, preview });
+    console.log("Image uploaded successfully, preview set");
   };
 
   const handleArtworkGenerated = (imageData: string, prompt: string) => {
