@@ -251,25 +251,27 @@ export default function Dashboard() {
     if (!currentProject) return;
 
     try {
-      const response = await fetch(`/api/projects/${currentProject.id}/download`);
+      // Use the new ZIP generation endpoint that creates real ZIP files
+      const response = await fetch(`/api/projects/${currentProject.id}/download-zip`);
       if (!response.ok) throw new Error("Download failed");
       
-      const data = await response.json();
-      if (data.downloadUrl) {
-        // Create a link element and trigger download
-        const link = document.createElement('a');
-        link.href = data.downloadUrl;
-        link.download = `${currentProject.title || 'project'}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        toast({
-          title: "Download Started",
-          description: "Your project assets are being downloaded.",
-        });
-      }
+      // Create blob from response and download it directly
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${currentProject.title || 'project'}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download Started",
+        description: "Your project assets are being downloaded.",
+      });
     } catch (error) {
+      console.error("Download error:", error);
       toast({
         title: "Download Failed",
         description: "Failed to download project assets.",
