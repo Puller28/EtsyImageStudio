@@ -147,10 +147,11 @@ export default function Dashboard() {
     
     const preview = URL.createObjectURL(blob);
     setUploadedImage({ file, preview });
+    setShowAIGenerator(false); // Hide AI generator to show preview
     
     toast({
       title: "AI Artwork Ready",
-      description: "Your generated artwork is ready to process!",
+      description: "Preview your artwork below. Choose to process it further if you like it!",
     });
   };
 
@@ -358,6 +359,7 @@ export default function Dashboard() {
                 onImageUpload={handleImageUpload}
                 uploadedImage={uploadedImage}
                 onRemoveImage={handleRemoveImage}
+                onGenerateNew={() => setShowAIGenerator(true)}
               />
             )}
 

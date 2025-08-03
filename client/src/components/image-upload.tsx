@@ -10,9 +10,10 @@ interface ImageUploadProps {
     preview: string;
   };
   onRemoveImage: () => void;
+  onGenerateNew?: () => void; // For AI-generated images
 }
 
-export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImage }: ImageUploadProps) {
+export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImage, onGenerateNew }: ImageUploadProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onImageUpload(acceptedFiles[0]);
@@ -55,27 +56,46 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center space-x-4">
+          <div className="space-y-4">
+            {/* Large Preview */}
+            <div className="relative">
               <img
                 src={uploadedImage.preview}
-                alt="Uploaded artwork preview"
-                className="w-20 h-16 object-cover rounded-lg"
+                alt="Artwork preview"
+                className="w-full max-w-lg mx-auto rounded-lg shadow-sm border border-gray-200"
               />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{uploadedImage.file.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(uploadedImage.file.size / (1024 * 1024)).toFixed(1)} MB
-                </p>
+            </div>
+            
+            {/* Image Info */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">{uploadedImage.file.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {(uploadedImage.file.size / (1024 * 1024)).toFixed(1)} MB • Ready to process
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {onGenerateNew && uploadedImage.file.name.includes('ai-generated') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onGenerateNew}
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                    >
+                      Generate New
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRemoveImage}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemoveImage}
-                className="text-red-500 hover:text-red-700"
-              >
-                <X className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         )}
