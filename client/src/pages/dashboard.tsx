@@ -359,7 +359,11 @@ export default function Dashboard() {
                 onImageUpload={handleImageUpload}
                 uploadedImage={uploadedImage}
                 onRemoveImage={handleRemoveImage}
-                onGenerateNew={() => setShowAIGenerator(true)}
+                onGenerateNew={() => {
+                  setShowAIGenerator(true);
+                  setUploadedImage(undefined);
+                  setCurrentStep(0);
+                }}
               />
             )}
 
