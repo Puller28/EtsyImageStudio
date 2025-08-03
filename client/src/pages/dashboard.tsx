@@ -59,14 +59,38 @@ export default function Dashboard() {
       }
       return response.json();
     },
-    onSuccess: (project) => {
+    onSuccess: async (project) => {
+      console.log("🟠 Project created successfully:", project.id);
       setCurrentProject(project);
       setCurrentStep(1);
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "Project Created",
-        description: "Your artwork has been uploaded successfully.",
+        description: "Your artwork has been uploaded successfully. Starting processing...",
       });
+      
+      // Automatically start processing after project creation
+      console.log("🟠 Auto-starting processing for project:", project.id);
+      try {
+        const response = await fetch(`/api/projects/${project.id}/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          console.log("🟠 Processing started successfully");
+          queryClient.invalidateQueries({ queryKey: ["/api/projects", project.id] });
+        } else {
+          throw new Error(`Processing API returned ${response.status}`);
+        }
+      } catch (error) {
+        console.error("🟠 Failed to start processing:", error);
+        toast({
+          title: "Processing Failed",
+          description: "Project created but processing failed. Use the button to retry.",
+          variant: "destructive",
+        });
+      }
     },
     onError: () => {
       toast({
@@ -157,6 +181,8 @@ export default function Dashboard() {
   };
 
   const handleStartProcessing = async (options: { upscaleOption: "2x" | "4x" }) => {
+    console.log("🟠 handleStartProcessing called with options:", options);
+    
     if (!uploadedImage) {
       toast({
         title: "No Image",
@@ -173,6 +199,7 @@ export default function Dashboard() {
     formData.append("upscaleOption", options.upscaleOption);
     formData.append("mockupTemplate", selectedTemplate);
 
+    console.log("🟠 About to call createProjectMutation.mutate with FormData");
     createProjectMutation.mutate(formData);
   };
 
