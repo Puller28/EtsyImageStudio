@@ -1,5 +1,5 @@
 // Professional mockup template system using HTML5 Canvas
-// Implements template overlay method with pre-defined drop zones
+// Creates realistic artwork presentations in professional interior settings
 
 import { createCanvas, loadImage } from "canvas";
 import sharp from 'sharp';
@@ -465,25 +465,11 @@ async function generateMockupFromTemplate(imageBuffer: Buffer, template: MockupT
     const canvas = createCanvas(template.width, template.height);
     const ctx = canvas.getContext("2d");
 
-    // Set background
-    ctx.fillStyle = template.background;
-    ctx.fillRect(0, 0, template.width, template.height);
+    // Create realistic room background
+    await drawRealisticRoom(ctx, template);
 
-    // Draw overlays (background elements like walls, furniture)
-    if (template.overlays) {
-      for (const overlay of template.overlays) {
-        ctx.save();
-        
-        if (overlay.opacity) {
-          ctx.globalAlpha = overlay.opacity;
-        }
-        
-        ctx.fillStyle = overlay.color || "#cccccc";
-        ctx.fillRect(overlay.x, overlay.y, overlay.width, overlay.height);
-        
-        ctx.restore();
-      }
-    }
+    // Draw frame border (realistic picture frame)
+    drawPictureFrame(ctx, template.dropZone);
 
     // Load and process the artwork image
     const image = await loadImage(imageBuffer);
@@ -541,6 +527,144 @@ async function generateMockupFromTemplate(imageBuffer: Buffer, template: MockupT
   } catch (error) {
     throw new Error(`Failed to generate mockup from template: ${(error as Error).message}`);
   }
+}
+
+// Create realistic room backgrounds
+async function drawRealisticRoom(ctx: any, template: MockupTemplate) {
+  const { width, height } = template;
+  
+  // Create gradient backgrounds for depth
+  if (template.id.includes('living-room-1')) {
+    // Modern living room with accent wall
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, "#f8f9fa");
+    gradient.addColorStop(0.6, "#e9ecef");
+    gradient.addColorStop(1, "#dee2e6");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Accent wall behind artwork
+    ctx.fillStyle = "#343a40";
+    ctx.fillRect(200, 0, 1200, height * 0.7);
+    
+    // Floor
+    ctx.fillStyle = "#8b5a3c";
+    ctx.fillRect(0, height * 0.7, width, height * 0.3);
+    
+  } else if (template.id.includes('living-room-2')) {
+    // Cozy warm living room
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, "#fff8f0");
+    gradient.addColorStop(0.65, "#f5ebe0");
+    gradient.addColorStop(1, "#d6ad7d");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Sofa area
+    ctx.fillStyle = "#8b4513";
+    ctx.fillRect(150, height * 0.6, width - 300, height * 0.4);
+    
+  } else if (template.id.includes('living-room-3')) {
+    // Minimalist white room
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    
+    // Subtle wall texture
+    ctx.fillStyle = "#f8f9fa";
+    ctx.fillRect(0, 0, width, height * 0.75);
+    
+    // Light hardwood floor
+    ctx.fillStyle = "#deb887";
+    ctx.fillRect(0, height * 0.75, width, height * 0.25);
+    
+  } else if (template.id.includes('living-room-4')) {
+    // Contemporary room with dramatic lighting
+    const gradient = ctx.createRadialGradient(width/2, height/3, 0, width/2, height/3, width/2);
+    gradient.addColorStop(0, "#f0f0f0");
+    gradient.addColorStop(0.7, "#e0e0e0");
+    gradient.addColorStop(1, "#c0c0c0");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Dark floor
+    ctx.fillStyle = "#2f2f2f";
+    ctx.fillRect(0, height * 0.8, width, height * 0.2);
+    
+  } else {
+    // Gallery/boutique setting
+    ctx.fillStyle = "#fafafa";
+    ctx.fillRect(0, 0, width, height);
+    
+    // Gallery wall
+    ctx.fillStyle = "#f0f0f0";
+    ctx.fillRect(0, 0, width, height * 0.8);
+    
+    // Polished floor
+    ctx.fillStyle = "#8b4513";
+    ctx.fillRect(0, height * 0.8, width, height * 0.2);
+  }
+  
+  // Add subtle lighting effects
+  addLightingEffects(ctx, width, height);
+}
+
+// Draw realistic picture frame
+function drawPictureFrame(ctx: any, dropZone: any) {
+  const frameWidth = 15;
+  const shadowOffset = 8;
+  
+  // Frame shadow
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ctx.fillRect(
+    dropZone.x + shadowOffset, 
+    dropZone.y + shadowOffset, 
+    dropZone.width + frameWidth * 2, 
+    dropZone.height + frameWidth * 2
+  );
+  
+  // Frame outer border (dark wood)
+  ctx.fillStyle = "#4a4a4a";
+  ctx.fillRect(
+    dropZone.x - frameWidth, 
+    dropZone.y - frameWidth, 
+    dropZone.width + frameWidth * 2, 
+    dropZone.height + frameWidth * 2
+  );
+  
+  // Frame inner border (highlight)
+  ctx.fillStyle = "#6a6a6a";
+  ctx.fillRect(
+    dropZone.x - frameWidth + 3, 
+    dropZone.y - frameWidth + 3, 
+    dropZone.width + (frameWidth - 3) * 2, 
+    dropZone.height + (frameWidth - 3) * 2
+  );
+  
+  // Mat/inner frame
+  ctx.fillStyle = "#f8f8f8";
+  ctx.fillRect(
+    dropZone.x - 5, 
+    dropZone.y - 5, 
+    dropZone.width + 10, 
+    dropZone.height + 10
+  );
+}
+
+// Add realistic lighting effects
+function addLightingEffects(ctx: any, width: number, height: number) {
+  // Subtle window light from left
+  const lightGradient = ctx.createLinearGradient(0, 0, width * 0.3, 0);
+  lightGradient.addColorStop(0, "rgba(255, 255, 255, 0.1)");
+  lightGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = lightGradient;
+  ctx.fillRect(0, 0, width * 0.3, height * 0.7);
+  
+  // Ambient room shadow in corners
+  const cornerGradient = ctx.createRadialGradient(width, height, 0, width, height, width * 0.8);
+  cornerGradient.addColorStop(0, "rgba(0, 0, 0, 0.05)");
+  cornerGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = cornerGradient;
+  ctx.fillRect(0, 0, width, height);
 }
 
 // Get available categories
