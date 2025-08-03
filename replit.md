@@ -45,7 +45,7 @@ Currently implements a demo user system with plans for full authentication:
 ### External Service Integrations
 The application integrates with multiple third-party services for core functionality:
 
-- **Image Upscaling**: Replicate API using Real-ESRGAN model for 2x and 4x image enhancement
+- **Image Upscaling**: Segmind API using Real-ESRGAN models for 2x and 4x image enhancement
 - **AI Content Generation**: OpenAI GPT-4o for automated Etsy listing creation (titles, tags, descriptions)
 - **Image Processing**: Sharp library for high-performance image resizing and format conversion
 - **Mockup Generation**: Canvas API for programmatic mockup creation with template-based backgrounds
@@ -53,7 +53,7 @@ The application integrates with multiple third-party services for core functiona
 ## External Dependencies
 
 ### Core Services
-- **Replicate API**: AI-powered image upscaling service using Real-ESRGAN models
+- **Segmind API**: AI-powered image upscaling service using Real-ESRGAN models
 - **OpenAI API**: GPT-4o integration for SEO-optimized Etsy listing content generation
 - **Neon Database**: Serverless PostgreSQL hosting for production data storage
 
