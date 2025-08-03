@@ -64,12 +64,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const projectData = insertProjectSchema.parse({
         userId: "demo-user-1",
-        title: artworkTitle,
+        title: artworkTitle || "Untitled Artwork",
         originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
-        upscaleOption,
-        mockupTemplate,
-        artworkTitle,
-        styleKeywords
+        upscaleOption: upscaleOption || "2x",
+        mockupTemplate: mockupTemplate || "living-room",
+        artworkTitle: artworkTitle || "Untitled Artwork",
+        styleKeywords: styleKeywords || "digital art"
       });
 
       const project = await storage.createProject(projectData);
