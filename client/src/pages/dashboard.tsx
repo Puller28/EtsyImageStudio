@@ -190,10 +190,17 @@ export default function Dashboard() {
       
       const data = await response.json();
       if (data.downloadUrl) {
-        // In a real implementation, this would trigger an actual file download
+        // Create a link element and trigger download
+        const link = document.createElement('a');
+        link.href = data.downloadUrl;
+        link.download = `${currentProject.title || 'project'}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
         toast({
-          title: "Download Ready",
-          description: "Your project assets are ready for download.",
+          title: "Download Started",
+          description: "Your project assets are being downloaded.",
         });
       }
     } catch (error) {
