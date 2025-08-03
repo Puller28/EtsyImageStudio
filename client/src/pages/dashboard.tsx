@@ -394,12 +394,23 @@ export default function Dashboard() {
 
             {currentProject && (
               <div className="bg-white rounded-lg shadow-sm p-6">
+                <div style={{background: 'red', color: 'white', padding: '5px', marginBottom: '10px', fontSize: '12px'}}>
+                  DEBUG: currentProject={currentProject.id}, status={projectStatus?.status}
+                </div>
                 <button
-                  onClick={() => {
-                    console.log("Button clicked for project:", currentProject.id);
+                  onClick={(e) => {
+                    console.log("🔴 PROCESSING BUTTON CLICKED!", {
+                      projectId: currentProject.id,
+                      projectStatus: projectStatus?.status,
+                      event: e
+                    });
+                    e.preventDefault();
+                    e.stopPropagation();
                     handleProcessProject(currentProject.id);
                   }}
+                  onMouseEnter={() => console.log("🟡 Button hover detected")}
                   className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200"
+                  style={{cursor: 'pointer', zIndex: 1000}}
                 >
                   {projectStatus?.status === "completed" ? "Process Again" : "Start Processing"}
                 </button>
