@@ -179,29 +179,67 @@ async function processProjectAsync(project: any) {
     const originalBuffer = Buffer.from(imageData, 'base64');
     
     console.log('Original image size:', originalBuffer.length, 'bytes');
-    
-    // Skip expensive processing for demo - just mark as completed with sample data
-    console.log('Using demo mode - completing immediately');
-    
-    await storage.updateProject(project.id, {
-      status: "completed",
-      upscaledImageUrl: project.originalImageUrl, // Use original as demo
-      mockupImageUrl: project.originalImageUrl,   // Use original as demo  
-      zipUrl: "data:application/zip;base64,UEsDBAoAAAAAAItJJVkAAAAAAAAAAAAAAAAJAAAAbW9ja3VwLmpwZw==",
-      resizedImages: [
-        project.originalImageUrl,
-        project.originalImageUrl, 
-        project.originalImageUrl,
-        project.originalImageUrl,
-        project.originalImageUrl
-      ]
-    });
-    
-    console.log('Demo processing completed for project:', project.id);
-    return;
 
     // Step 1: Upscale image using Segmind (with fallback)
     const scale = project.upscaleOption === "4x" ? 4 : 2;
+    let upscaledBase64: string;
+    
+    try {
+      console.log('Attempting Segmind API upscaling...');
+      upscaledBase64 = await segmindService.upscaleImage({
+        scale: scale as 2 | 4,
+        image: imageData
+      });
+      console.log('Segmind upscaling successful');
+    } catch (segmindError: any) {
+      console.log('Segmind API failed, using fallback upscaling:', segmindError.message);
+      
+      // Fallback to Sharp-based upscaling
+      const upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
+      upscaledBase64 = bufferToBase64(upscaledBuffer);
+      console.log('Fallback upscaling completed');
+    }
+    
+    const upscaledImageUrl = `data:image/jpeg;base64,${upscaledBase64}`;
+    await storage.updateProject(project.id, { upscaledImageUrl });
+
+    // Step 2: Resize to print formats
+    const upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
+    const resizedImages = await resizeImageToFormats(upscaledBuffer);
+    
+    // Convert to base64 URLs for storage
+    const resizedImageUrls = Object.fromEntries(
+      Object.entries(resizedImages).map(([format, buffer]) => [
+        format,
+        `data:image/jpeg;base64,${buffer.toString('base64')}`
+      ])
+    );
+
+    // Step 3: Generate mockup
+    const mockupBuffer = await generateMockup(upscaledBuffer, project.mockupTemplate);
+    const mockupImageUrl = `data:image/jpeg;base64,${mockupBuffer.toString('base64')}`;
+
+    // Step 4: Generate ZIP
+    const zipBuffer = await generateProjectZip({
+      originalImage: originalBuffer,
+      upscaledImage: upscaledBuffer,
+      resizedImages,
+      mockupImage: mockupBuffer,
+      etsyListing: project.etsyListing || { title: "", tags: [], description: "" },
+      projectTitle: project.title
+    });
+
+    const zipUrl = `data:application/zip;base64,${zipBuffer.toString('base64')}`;
+
+    // Update project with final results
+    await storage.updateProject(project.id, {
+      mockupImageUrl,
+      resizedImages: Object.values(resizedImageUrls),
+      zipUrl,
+      status: "completed"
+    });
+
+    console.log('Processing completed successfully for project:', project.id);
     let upscaledBase64: string;
     
     try {
