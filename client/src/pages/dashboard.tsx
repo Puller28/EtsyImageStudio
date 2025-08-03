@@ -41,7 +41,8 @@ export default function Dashboard() {
   const { data: projectStatus } = useQuery<Project>({
     queryKey: ["/api/projects", currentProject?.id],
     enabled: !!currentProject?.id,
-    refetchInterval: currentProject?.status === "processing" ? 2000 : false,
+    refetchInterval: 1000, // Always poll every second for active projects
+    staleTime: 0, // Always consider data stale
   });
 
   // Create project mutation
@@ -107,6 +108,9 @@ export default function Dashboard() {
   // Update current step based on project status
   useEffect(() => {
     if (projectStatus) {
+      // Update currentProject with latest data
+      setCurrentProject(projectStatus);
+      
       switch (projectStatus.status) {
         case "uploading":
           setCurrentStep(1); // Show processing controls after upload
