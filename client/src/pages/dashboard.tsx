@@ -80,14 +80,25 @@ export default function Dashboard() {
   // Process project mutation
   const processProjectMutation = useMutation({
     mutationFn: async (projectId: string) => {
+      console.log("processProjectMutation: Starting API call for project", projectId);
       const response = await apiRequest("POST", `/api/projects/${projectId}/process`);
+      console.log("processProjectMutation: API call successful");
       return response.json();
     },
     onSuccess: () => {
+      console.log("processProjectMutation: onSuccess called");
       setCurrentStep(2);
       toast({
         title: "Processing Started",
         description: "Your artwork is being processed. This may take a few minutes.",
+      });
+    },
+    onError: (error) => {
+      console.log("processProjectMutation: onError called", error);
+      toast({
+        title: "Processing Failed",
+        description: "Failed to start processing. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -112,6 +123,8 @@ export default function Dashboard() {
     if (projectStatus) {
       // Update currentProject with latest data
       setCurrentProject(projectStatus);
+      
+      console.log("Project status changed:", projectStatus.status, "Current step:", currentStep);
       
       switch (projectStatus.status) {
         case "uploading":
@@ -186,8 +199,12 @@ export default function Dashboard() {
   };
 
   const handleProcessProject = () => {
+    console.log("handleProcessProject called with project:", currentProject?.id);
     if (currentProject) {
+      console.log("Calling processProjectMutation.mutate with ID:", currentProject.id);
       processProjectMutation.mutate(currentProject.id);
+    } else {
+      console.log("No currentProject available");
     }
   };
 
@@ -374,14 +391,15 @@ export default function Dashboard() {
               />
             )}
 
-            {currentProject && (currentStep < 2 || projectStatus?.status === "uploading") && (
+            {currentProject && projectStatus?.status !== "processing" && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <button
                   onClick={handleProcessProject}
                   disabled={processProjectMutation.isPending || projectStatus?.status === "processing"}
                   className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 disabled:bg-gray-300"
                 >
-                  {processProjectMutation.isPending || projectStatus?.status === "processing" ? "Processing..." : "Start Processing"}
+                  {processProjectMutation.isPending || projectStatus?.status === "processing" ? "Processing..." : 
+                   projectStatus?.status === "completed" ? "Process Again" : "Start Processing"}
                 </button>
               </div>
             )}
