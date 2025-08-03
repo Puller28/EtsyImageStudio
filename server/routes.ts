@@ -6,6 +6,7 @@ import { storage } from "./storage";
 import { insertProjectSchema } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
+import { fallbackUpscale, base64ToBuffer, bufferToBase64 } from "./services/image-upscaler-fallback";
 import { resizeImageToFormats, generateMockup } from "./services/image-processor";
 import { generateProjectZip } from "./services/zip-generator";
 
@@ -152,12 +153,26 @@ async function processProjectAsync(project: any) {
     const imageData = project.originalImageUrl.split(',')[1];
     const originalBuffer = Buffer.from(imageData, 'base64');
 
-    // Step 1: Upscale image using Segmind
+    // Step 1: Upscale image using Segmind (with fallback)
     const scale = project.upscaleOption === "4x" ? 4 : 2;
-    const upscaledBase64 = await segmindService.upscaleImage({
-      scale: scale as 2 | 4,
-      image: imageData
-    });
+    let upscaledBase64: string;
+    
+    try {
+      console.log('Attempting Segmind API upscaling...');
+      upscaledBase64 = await segmindService.upscaleImage({
+        scale: scale as 2 | 4,
+        image: imageData
+      });
+      console.log('Segmind upscaling successful');
+    } catch (segmindError: any) {
+      console.log('Segmind API failed, using fallback upscaling:', segmindError.message);
+      
+      // Fallback to Sharp-based upscaling
+      const upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
+      upscaledBase64 = bufferToBase64(upscaledBuffer);
+      console.log('Fallback upscaling completed');
+    }
+    
     const upscaledImageUrl = `data:image/jpeg;base64,${upscaledBase64}`;
     await storage.updateProject(project.id, { upscaledImageUrl });
 
