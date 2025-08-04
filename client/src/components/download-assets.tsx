@@ -51,8 +51,17 @@ export default function DownloadAssets({ items, onDownload, downloadReady, isPac
           className="w-full bg-green-600 hover:bg-green-700"
           size="lg"
         >
-          <FileArchive className="w-4 h-4 mr-2" />
-          {isPackaging ? "Packaging..." : "Download ZIP Package"}
+          {isPackaging ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Packaging...
+            </>
+          ) : (
+            <>
+              <FileArchive className="w-4 h-4 mr-2" />
+              Download ZIP Package
+            </>
+          )}
         </Button>
         
         {!downloadReady && (

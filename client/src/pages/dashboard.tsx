@@ -324,10 +324,8 @@ export default function Dashboard() {
       });
     } finally {
       console.log("🎁 Resetting packaging state");
-      // Use setTimeout to ensure state updates properly after download
-      setTimeout(() => {
-        setIsPackaging(false);
-      }, 100);
+      // Force immediate state update
+      setIsPackaging(false);
     }
   };
 
