@@ -15,12 +15,14 @@ function Router() {
   // Debug authentication state
   console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user });
 
-  // Always show the main app content since we can see the dashboard is working
+  if (!isAuthenticated) {
+    return <Auth onLogin={(result) => login(result.user, result.token)} />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
-      <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
       <Route component={NotFound} />
     </Switch>
   );
