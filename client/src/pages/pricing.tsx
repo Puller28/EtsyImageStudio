@@ -8,6 +8,20 @@ import Navigation from "@/components/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  credits: number;
+  usdPrice: number;
+  zarPrice: number;
+  interval: string;
+  description: string;
+  type: string;
+  features: string[];
+  paystackPlanCode?: string;
+}
 
 interface PricingTier {
   name: string;
@@ -76,6 +90,7 @@ interface PricingProps {
 
 export default function Pricing({ onSelectPlan }: PricingProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
@@ -84,10 +99,26 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     queryKey: ["/api/user"],
   });
 
+  // Fetch subscription plans from API
+  const { data: allPlans } = useQuery<{
+    subscriptionPlans: SubscriptionPlan[];
+  }>({
+    queryKey: ["/api/all-plans", "v2"],
+  });
+
   // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser;
 
-  const handleSelectPlan = (planName: string) => {
+  const handleSelectPlan = async (planName: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to select a plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedPlan(planName);
     
     if (planName === "Starter") {
@@ -95,11 +126,50 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
         title: "Welcome to EtsyArt Pro!",
         description: "Your free credits are ready to use. Start creating amazing artwork!",
       });
-    } else {
+      onSelectPlan?.(planName);
+      return;
+    }
+
+    // Find matching subscription plan
+    const subscriptionPlan = allPlans?.subscriptionPlans.find(plan => 
+      plan.name.toLowerCase().includes(planName.toLowerCase())
+    );
+
+    if (!subscriptionPlan) {
       toast({
-        title: "Payment Coming Soon",
-        description: `${planName} plan selected. Payment integration will be available soon!`,
+        title: "Plan Not Found",
+        description: "Unable to find subscription plan details.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    setProcessingPlan(planName);
+
+    try {
+      console.log("🛒 Starting subscription for plan:", subscriptionPlan.name);
+      
+      const response = await apiRequest("POST", "/api/subscribe", {
+        planId: subscriptionPlan.id,
+      });
+
+      console.log("🔗 Subscription response:", response);
+
+      if (response.authorization_url) {
+        console.log("🔗 Redirecting to Paystack:", response.authorization_url);
+        window.location.href = response.authorization_url;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (error: any) {
+      console.error("❌ Subscription error:", error);
+      toast({
+        title: "Subscription Failed",
+        description: error.message || "Unable to start subscription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPlan(null);
     }
     
     onSelectPlan?.(planName);
@@ -173,10 +243,11 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
                     className="w-full"
                     variant={tier.buttonVariant || "default"}
                     onClick={() => handleSelectPlan(tier.name)}
-                    disabled={selectedPlan === tier.name}
+                    disabled={selectedPlan === tier.name || processingPlan === tier.name}
                     data-testid={`button-plan-${tier.name.toLowerCase()}`}
                   >
-                    {selectedPlan === tier.name ? "Selected" : tier.buttonText}
+                    {processingPlan === tier.name ? "Processing..." : 
+                     selectedPlan === tier.name ? "Selected" : tier.buttonText}
                   </Button>
                 </CardFooter>
               </Card>
