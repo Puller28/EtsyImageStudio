@@ -284,10 +284,14 @@ export default function Dashboard() {
   const handleDownload = async () => {
     if (!currentProject) return;
 
+    console.log("🎁 Starting download for project:", currentProject.id);
     setIsPackaging(true);
+    
     try {
       // Use the new ZIP generation endpoint that creates real ZIP files
       const response = await fetch(`/api/projects/${currentProject.id}/download-zip`);
+      console.log("🎁 Download response status:", response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Download failed: ${response.status} - ${errorText}`);
@@ -295,6 +299,8 @@ export default function Dashboard() {
       
       // Create blob from response and download it directly
       const blob = await response.blob();
+      console.log("🎁 Blob created, size:", blob.size);
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -304,19 +310,24 @@ export default function Dashboard() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
+      console.log("🎁 Download completed successfully");
       toast({
         title: "Download Complete",
         description: "Your project assets have been downloaded successfully.",
       });
     } catch (error) {
-      console.error("Download error:", error);
+      console.error("🎁 Download error:", error);
       toast({
         title: "Download Failed",
         description: error instanceof Error ? error.message : "Failed to download project assets.",
         variant: "destructive",
       });
     } finally {
-      setIsPackaging(false);
+      console.log("🎁 Resetting packaging state");
+      // Use setTimeout to ensure state updates properly after download
+      setTimeout(() => {
+        setIsPackaging(false);
+      }, 100);
     }
   };
 
