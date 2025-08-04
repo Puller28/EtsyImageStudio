@@ -165,15 +165,26 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     try {
       console.log("🛒 Starting subscription for plan:", subscriptionPlan.name, "ID:", subscriptionPlan.id);
       
-      const response = await apiRequest("POST", "/api/subscribe", {
-        planId: subscriptionPlan.id,
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          planId: subscriptionPlan.id,
+        }),
       });
 
-      console.log("🔗 Subscription response:", response);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if ((response as any)?.authorization_url) {
-        console.log("🔗 Redirecting to Paystack:", (response as any).authorization_url);
-        window.location.href = (response as any).authorization_url;
+      const data = await response.json();
+      console.log("🔗 Subscription response:", data);
+
+      if (data?.authorization_url) {
+        console.log("🔗 Redirecting to Paystack:", data.authorization_url);
+        window.location.href = data.authorization_url;
       } else {
         throw new Error("No payment URL received");
       }
@@ -206,15 +217,26 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     try {
       console.log("🛒 Starting credit purchase for package:", packageId);
       
-      const response = await apiRequest("POST", "/api/purchase", {
-        packageId: packageId,
+      const response = await fetch("/api/purchase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          packageId: packageId,
+        }),
       });
 
-      console.log("🔗 Purchase response:", response);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if ((response as any)?.authorization_url) {
-        console.log("🔗 Redirecting to Paystack:", (response as any).authorization_url);
-        window.location.href = (response as any).authorization_url;
+      const data = await response.json();
+      console.log("🔗 Purchase response:", data);
+
+      if (data?.authorization_url) {
+        console.log("🔗 Redirecting to Paystack:", data.authorization_url);
+        window.location.href = data.authorization_url;
       } else {
         throw new Error("No payment URL received");
       }

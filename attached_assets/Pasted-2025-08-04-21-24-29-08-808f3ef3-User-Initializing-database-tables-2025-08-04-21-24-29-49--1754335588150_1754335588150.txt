@@ -1,0 +1,104 @@
+2025-08-04 21:24:29.08
+808f3ef3
+User
+🔄 Initializing database tables...
+2025-08-04 21:24:29.49
+808f3ef3
+User
+{
+2025-08-04 21:24:29.49
+808f3ef3
+User
+severity_local: 'NOTICE',
+2025-08-04 21:24:29.49
+808f3ef3
+User
+severity: 'NOTICE',
+2025-08-04 21:24:29.49
+808f3ef3
+User
+code: '42P07',
+2025-08-04 21:24:29.49
+808f3ef3
+User
+message: 'relation "users" already exists, skipping',
+2025-08-04 21:24:29.49
+808f3ef3
+User
+file: 'parse_utilcmd.c',
+2025-08-04 21:24:29.49
+808f3ef3
+User
+line: '207',
+2025-08-04 21:24:29.49
+808f3ef3
+User
+routine: 'transformCreateStmt'
+2025-08-04 21:24:29.49
+808f3ef3
+User
+}
+2025-08-04 21:24:29.53
+808f3ef3
+User
+{
+2025-08-04 21:24:29.53
+808f3ef3
+User
+severity_local: 'NOTICE',
+2025-08-04 21:24:29.53
+808f3ef3
+User
+severity: 'NOTICE',
+2025-08-04 21:24:29.53
+808f3ef3
+User
+code: '42P07',
+2025-08-04 21:24:29.53
+808f3ef3
+User
+message: 'relation "projects" already exists, skipping',
+2025-08-04 21:24:29.53
+808f3ef3
+User
+file: 'parse_utilcmd.c',
+2025-08-04 21:24:29.53
+808f3ef3
+User
+line: '207',
+2025-08-04 21:24:29.53
+808f3ef3
+User
+routine: 'transformCreateStmt'
+2025-08-04 21:24:29.53
+808f3ef3
+User
+}
+2025-08-04 21:24:29.53
+808f3ef3
+User
+✅ Database tables initialized successfully
+2025-08-04 21:24:29.63
+808f3ef3
+User
+7:24:29 PM [express] serving on port 5000
+2025-08-04 21:24:44.97
+808f3ef3
+User
+7:24:44 PM [express] GET /api/user 304 in 76ms :: {"id":"7b375be7-2e77-4e7d-b7e9-2b21135789f2","emai…
+2025-08-04 21:24:50.78
+808f3ef3
+User
+7:24:50 PM [express] GET /api/all-plans 200 in 1ms :: {"creditPackages":[{"id":"credits_50","name":"…
+2025-08-04 21:24:58.24
+808f3ef3
+User
+7:24:58 PM [express] GET /api/projects 304 in 13225ms :: [{"id":"444f1787-5865-40ec-a4b6-b7835f07f30…
+2025-08-04 21:24:59.80
+808f3ef3
+User
+7:24:59 PM [express] POST /api/subscribe 200 in 589ms :: {"authorization_url":"https://checkout.pays…
+2025-08-04 21:25:38.29
+c71e696e
+System
+system: received signal terminated
