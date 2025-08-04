@@ -185,6 +185,45 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     onSelectPlan?.(planName);
   };
 
+  const handleCreditPurchase = async (packageId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required", 
+        description: "Please log in to purchase credits.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingPlan(packageId);
+
+    try {
+      console.log("🛒 Starting credit purchase for package:", packageId);
+      
+      const response = await apiRequest("POST", "/api/purchase", {
+        packageId: packageId,
+      });
+
+      console.log("🔗 Purchase response:", response);
+
+      if (response?.authorization_url) {
+        console.log("🔗 Redirecting to Paystack:", response.authorization_url);
+        window.location.href = response.authorization_url;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (error: any) {
+      console.error("❌ Purchase error:", error);
+      toast({
+        title: "Purchase Failed",
+        description: error.message || "Unable to start purchase. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPlan(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation user={currentUser ? {
@@ -265,6 +304,74 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
           })}
         </div>
 
+        {/* Credit Top-ups */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-center mb-2">Credit Top-ups</h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto text-center mb-8">
+            Need extra credits? Purchase one-time credit packages
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {allPlans?.creditPackages.map((pkg) => (
+              <Card key={pkg.id} className="relative flex flex-col">
+                {pkg.credits === 250 && (
+                  <Badge className="absolute -top-2 -right-2 bg-primary">
+                    Most Popular
+                  </Badge>
+                )}
+                {pkg.credits === 500 && (
+                  <Badge className="absolute -top-2 -right-2 bg-green-500">
+                    Best Value
+                  </Badge>
+                )}
+                
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="flex items-center justify-center gap-2">
+                    <Zap className="h-5 w-5 text-purple-600" />
+                    {pkg.name}
+                  </CardTitle>
+                  <CardDescription>{pkg.description}</CardDescription>
+                </CardHeader>
+
+                <CardContent className="flex-1 text-center">
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold text-purple-600 mb-1">
+                      ${pkg.usdPrice}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      {pkg.credits} Credits
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      {Math.floor(pkg.credits / 2)} AI Generations
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      {pkg.credits} Upscaling Operations
+                    </div>
+                  </div>
+                </CardContent>
+
+                <CardFooter>
+                  <Button
+                    className="w-full"
+                    onClick={() => handleCreditPurchase(pkg.id)}
+                    disabled={processingPlan === pkg.id}
+                    variant="outline"
+                    data-testid={`button-buy-${pkg.id}`}
+                  >
+                    {processingPlan === pkg.id ? "Processing..." : `Buy ${pkg.credits} Credits`}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </div>
+
         {/* Credit System Explanation */}
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
@@ -278,10 +385,10 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Credit Usage</h3>
                 <ul className="space-y-2 text-gray-700">
-                  <li>• <strong>1 credit</strong> = 1 image processed</li>
-                  <li>• Includes upscaling + print formats + mockups</li>
+                  <li>• <strong>AI Art Generation:</strong> 2 credits per image</li>
+                  <li>• <strong>Image Upscaling:</strong> 1 credit per operation</li>
+                  <li>• Includes print formats + mockups</li>
                   <li>• AI listing generation included</li>
-                  <li>• Unlimited downloads of your assets</li>
                 </ul>
               </div>
               <div className="space-y-4">
