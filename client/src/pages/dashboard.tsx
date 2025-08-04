@@ -51,9 +51,25 @@ export default function Dashboard() {
   const { data: projectStatus } = useQuery<Project>({
     queryKey: ["/api/projects", currentProject?.id],
     enabled: !!currentProject?.id,
-    refetchInterval: 1000, // Always poll every second for active projects
+    refetchInterval: 2000, // Poll every 2 seconds for active projects
     staleTime: 0, // Always consider data stale
+    retry: false, // Don't retry failed requests to avoid spam
   });
+
+  // Debug project status updates
+  useEffect(() => {
+    if (projectStatus) {
+      console.log("📊 Project status updated:", {
+        id: projectStatus.id,
+        status: projectStatus.status,
+        hasEtsyListing: !!projectStatus.etsyListing,
+        hasZipUrl: !!projectStatus.zipUrl,
+        hasUpscaled: !!projectStatus.upscaledImageUrl,
+        hasResized: projectStatus.resizedImages?.length || 0,
+        hasMockup: !!projectStatus.mockupImageUrl
+      });
+    }
+  }, [projectStatus]);
 
   // Create project mutation
   const createProjectMutation = useMutation({
