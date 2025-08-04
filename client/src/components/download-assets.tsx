@@ -15,6 +15,8 @@ interface DownloadAssetsProps {
 }
 
 export default function DownloadAssets({ items, onDownload, downloadReady, isPackaging }: DownloadAssetsProps) {
+  console.log("🎁 DownloadAssets render:", { downloadReady, isPackaging });
+  
   const getIcon = (status: DownloadItem["status"]) => {
     switch (status) {
       case "completed":

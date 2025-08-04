@@ -301,6 +301,7 @@ export default function Dashboard() {
     if (!currentProject) return;
 
     console.log("🎁 Starting download for project:", currentProject.id);
+    console.log("🎁 Setting packaging state to true");
     setIsPackaging(true);
     
     try {
@@ -340,8 +341,11 @@ export default function Dashboard() {
       });
     } finally {
       console.log("🎁 Resetting packaging state");
-      // Force immediate state update
-      setIsPackaging(false);
+      // Force immediate state update with timeout to ensure React re-renders
+      setTimeout(() => {
+        setIsPackaging(false);
+        console.log("🎁 Packaging state reset completed");
+      }, 100);
     }
   };
 
