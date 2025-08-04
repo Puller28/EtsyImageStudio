@@ -26,11 +26,13 @@ export const useAuth = create<AuthState>()(
       isAuthenticated: false,
       
       login: (user: User, token: string) => {
+        console.log('🔐 Auth login called with:', { userId: user.id, token: token.substring(0, 20) + '...' });
         set({ 
           user, 
           token, 
           isAuthenticated: true 
         });
+        console.log('✅ Auth state updated successfully');
       },
       
       logout: () => {
