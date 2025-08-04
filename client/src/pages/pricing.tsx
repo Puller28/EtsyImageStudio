@@ -105,10 +105,15 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     subscriptionPlans: SubscriptionPlan[];
   }>({
     queryKey: ["/api/all-plans", "v2"],
+    queryFn: () => fetch("/api/all-plans").then(res => res.json()),
   });
 
   // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser;
+
+  // Debug logging
+  console.log("🔍 All Plans Data:", allPlans);
+  console.log("🔍 Credit Packages:", allPlans?.creditPackages);
 
   const handleSelectPlan = async (planName: string) => {
     if (!currentUser) {
@@ -312,8 +317,10 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
             Need extra credits? Purchase one-time credit packages
           </p>
           
+
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {allPlans?.creditPackages.map((pkg) => (
+            {allPlans?.creditPackages?.length > 0 ? allPlans.creditPackages.map((pkg: any) => (
               <Card key={pkg.id} className="relative flex flex-col">
                 {pkg.credits === 250 && (
                   <Badge className="absolute -top-2 -right-2 bg-primary">
@@ -369,7 +376,11 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
                   </Button>
                 </CardFooter>
               </Card>
-            ))}
+            )) : (
+              <div className="col-span-full text-center text-gray-500">
+                {allPlans ? "No credit packages available" : "Loading credit packages..."}
+              </div>
+            )}
           </div>
         </div>
 
