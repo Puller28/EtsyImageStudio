@@ -43,8 +43,9 @@ export default function Dashboard() {
   const currentUser = user || authUser;
 
   // Fetch recent projects
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
+    staleTime: 30000, // Cache for 30 seconds to reduce database load
   });
 
   // Debug projects data
@@ -559,16 +560,30 @@ export default function Dashboard() {
 
         {/* Recent Projects */}
         <div className="mt-8">
-          <RecentProjects
-            projects={projects.map(p => ({
-              id: p.id,
-              title: p.title,
-              createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
-              status: p.status,
-              thumbnailUrl: p.originalImageUrl
-            }))}
-            onViewProject={(id) => console.log("View project:", id)}
-          />
+          {projectsLoading ? (
+            <div className="bg-white rounded-lg shadow-sm">
+              <div className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Recent Projects
+                </h3>
+                <div className="text-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading your projects...</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <RecentProjects
+              projects={projects.map(p => ({
+                id: p.id,
+                title: p.title,
+                createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+                status: p.status,
+                thumbnailUrl: p.originalImageUrl
+              }))}
+              onViewProject={(id) => console.log("View project:", id)}
+            />
+          )}
         </div>
       </div>
     </div>
