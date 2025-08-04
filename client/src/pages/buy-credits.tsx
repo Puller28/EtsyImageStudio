@@ -41,7 +41,7 @@ export default function BuyCredits() {
     creditPackages: CreditPackage[];
     subscriptionPlans: SubscriptionPlan[];
   }>({
-    queryKey: ["/api/all-plans"],
+    queryKey: ["/api/all-plans", "v2"], // Cache bust
     staleTime: 0,
     gcTime: 0,
   });
