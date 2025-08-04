@@ -30,9 +30,9 @@ The server follows an Express.js-based REST API architecture with TypeScript:
 ### Data Storage Solutions
 The application uses a hybrid storage approach:
 
-- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
+- **Database**: Supabase PostgreSQL with Drizzle ORM for type-safe database operations
 - **Schema Design**: User and project entities with JSONB fields for flexible metadata storage
-- **Connection**: Neon Database serverless PostgreSQL for production scalability
+- **Connection**: Supabase serverless PostgreSQL for production scalability
 - **Development**: In-memory storage implementation for rapid development and testing
 
 ### Authentication and Authorization
@@ -55,7 +55,7 @@ The application integrates with multiple third-party services for core functiona
 ### Core Services
 - **Segmind API**: AI-powered image upscaling service using Real-ESRGAN models
 - **OpenAI API**: GPT-4o integration for SEO-optimized Etsy listing content generation
-- **Neon Database**: Serverless PostgreSQL hosting for production data storage
+- **Supabase**: Serverless PostgreSQL hosting with real-time capabilities for production data storage
 
 ### Development Tools
 - **Vite**: Modern build tool with hot module replacement and optimized bundling
