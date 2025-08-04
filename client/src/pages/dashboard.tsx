@@ -39,6 +39,9 @@ export default function Dashboard() {
     queryKey: ["/api/user"],
   });
 
+  // Use auth user data as fallback if API user data is not available
+  const currentUser = user || authUser;
+
   // Fetch recent projects
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -351,10 +354,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation user={user ? {
-        name: user.name,
-        avatar: user.avatar || undefined,
-        credits: user.credits
+      <Navigation user={currentUser ? {
+        name: currentUser.name,
+        avatar: currentUser.avatar || undefined,
+        credits: currentUser.credits
       } : undefined} />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">

@@ -4,6 +4,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Star, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Navigation from "@/components/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import type { User } from "@shared/schema";
 
 interface PricingTier {
   name: string;
@@ -73,6 +77,15 @@ interface PricingProps {
 export default function Pricing({ onSelectPlan }: PricingProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
+
+  // Fetch user data
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
+  // Use auth user data as fallback if API user data is not available
+  const currentUser = user || authUser;
 
   const handleSelectPlan = (planName: string) => {
     setSelectedPlan(planName);
@@ -93,8 +106,15 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation user={currentUser ? {
+        name: currentUser.name,
+        avatar: currentUser.avatar || undefined,
+        credits: currentUser.credits
+      } : undefined} />
+      
+      <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -196,6 +216,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
