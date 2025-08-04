@@ -28,12 +28,13 @@ The server follows an Express.js-based REST API architecture with TypeScript:
 - **Processing Pipeline**: Modular service architecture for image processing, AI integration, and file generation
 
 ### Data Storage Solutions
-The application uses a hybrid storage approach:
+The application uses a robust hybrid storage approach with automatic failover:
 
-- **Database**: Supabase PostgreSQL with Drizzle ORM for type-safe database operations
+- **Primary Storage**: Supabase PostgreSQL with Drizzle ORM for type-safe database operations
+- **Fallback System**: Automatic switching to in-memory storage when database connections fail
 - **Schema Design**: User and project entities with JSONB fields for flexible metadata storage
-- **Connection**: Supabase serverless PostgreSQL for production scalability
-- **Development**: In-memory storage implementation for rapid development and testing
+- **Connection**: Supabase Transaction pooler with robust error handling and retry logic
+- **Reliability**: RobustStorage class ensures application remains functional during database issues
 
 ### Authentication and Authorization
 Currently implements a demo user system with plans for full authentication:
