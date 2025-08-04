@@ -72,6 +72,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.patch("/api/user/profile", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      const { name, email } = req.body;
+      const updatedUser = await storage.updateUser(req.userId, { name, email });
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // Get user projects
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {

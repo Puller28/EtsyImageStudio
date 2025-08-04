@@ -69,6 +69,17 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const updatedUser = { ...user, ...updates };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
   async createProject(insertProject: InsertProject): Promise<Project> {
     const id = randomUUID();
     const project: Project = {
