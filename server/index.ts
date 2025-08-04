@@ -4,9 +4,32 @@ import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 
+// Global state for application readiness
+let isDbReady = false;
+let isAppReady = false;
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Health check endpoint for Autoscale readiness
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    database: isDbReady ? "ready" : "initializing",
+    application: isAppReady ? "ready" : "starting",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple readiness endpoint for load balancers
+app.get("/ready", (req, res) => {
+  if (isAppReady) {
+    res.status(200).json({ status: "ready" });
+  } else {
+    res.status(503).json({ status: "not ready" });
+  }
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -38,48 +61,70 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // Initialize database tables
+// Async function for database initialization (non-blocking)
+async function initializeDatabase() {
   try {
     console.log('🔄 Initializing database tables...');
     
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        email TEXT NOT NULL UNIQUE,
-        name TEXT NOT NULL,
-        avatar TEXT,
-        credits INTEGER NOT NULL DEFAULT 100,
-        created_at TIMESTAMP DEFAULT now()
-      )
-    `);
+    // Set timeout for database operations to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database initialization timeout')), 30000);
+    });
     
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS projects (
-        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id VARCHAR NOT NULL REFERENCES users(id),
-        title TEXT NOT NULL,
-        original_image_url TEXT NOT NULL,
-        upscaled_image_url TEXT,
-        mockup_image_url TEXT,
-        mockup_images JSONB,
-        resized_images JSONB DEFAULT '[]'::jsonb,
-        etsy_listing JSONB,
-        mockup_template TEXT,
-        upscale_option TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'uploading',
-        zip_url TEXT,
-        created_at TIMESTAMP DEFAULT now()
-      )
-    `);
+    const initPromise = (async () => {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS users (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          email TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL,
+          avatar TEXT,
+          credits INTEGER NOT NULL DEFAULT 100,
+          created_at TIMESTAMP DEFAULT now()
+        )
+      `);
+      
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS projects (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR NOT NULL REFERENCES users(id),
+          title TEXT NOT NULL,
+          original_image_url TEXT NOT NULL,
+          upscaled_image_url TEXT,
+          mockup_image_url TEXT,
+          mockup_images JSONB,
+          resized_images JSONB DEFAULT '[]'::jsonb,
+          etsy_listing JSONB,
+          mockup_template TEXT,
+          upscale_option TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'uploading',
+          zip_url TEXT,
+          created_at TIMESTAMP DEFAULT now()
+        )
+      `);
+    })();
     
+    await Promise.race([initPromise, timeoutPromise]);
+    
+    isDbReady = true;
     console.log('✅ Database tables initialized successfully');
   } catch (error: any) {
     console.error('❌ Database initialization failed:', error.message);
+    console.log('⚠️  Application will continue with limited functionality');
+    // Don't set isDbReady to true, but don't crash the app
   }
+}
 
+(async () => {
+
+  // Start database initialization in the background (non-blocking)
+  initializeDatabase().catch(err => {
+    console.error('Database initialization failed:', err);
+  });
+
+  // Register routes immediately (don't wait for database)
   const server = await registerRoutes(app);
 
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -88,19 +133,17 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Setup Vite or static file serving
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Mark application as ready for health checks
+  isAppReady = true;
+
+  // Start server immediately (don't wait for database)
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
@@ -108,5 +151,7 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    console.log(`🚀 Application ready on port ${port}`);
+    console.log(`📋 Health check available at http://localhost:${port}/health`);
   });
 })();

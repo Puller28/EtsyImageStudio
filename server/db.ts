@@ -6,14 +6,14 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-// Use postgres-js for Supabase connection with specific configuration
+// Use postgres-js for Supabase connection with optimized configuration for fast startup
 console.log('🔗 Connecting to database with URL:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':***@'));
 
 const sql = postgres(process.env.DATABASE_URL, { 
   ssl: 'require',
-  max: 5,
-  idle_timeout: 20,
-  connect_timeout: 30,
+  max: 3, // Reduce connection pool for faster startup
+  idle_timeout: 10, // Shorter idle timeout
+  connect_timeout: 10, // Shorter connect timeout for faster deployment
   debug: false,
 });
 

@@ -13,6 +13,7 @@ EtsyArt Pro is a comprehensive web application designed specifically for Etsy AI
 ✅ **Backend API Complete** - All endpoints tested and operational including user management, project handling, and AI services
 ✅ **Paystack Payment Integration** - Complete ZAR payment processing with USD display prices, credit package system, and automatic credit allocation
 ✅ **Settings Page Functional** - User profile management, credit tracking, and account management interface working correctly
+✅ **Deployment Optimization Complete** - Server startup optimized for Autoscale with health check endpoints, non-blocking database initialization, and faster startup times
 
 ## User Preferences
 
@@ -30,12 +31,14 @@ The application uses a modern React-based architecture with TypeScript, built on
 - **Form Handling**: React Hook Form with Zod validation for type-safe form management
 
 ### Backend Architecture
-The server follows an Express.js-based REST API architecture with TypeScript:
+The server follows an Express.js-based REST API architecture with TypeScript, optimized for Replit Autoscale deployments:
 
 - **API Layer**: Express.js with structured route handlers and middleware
 - **File Handling**: Multer for multipart file uploads with memory storage
 - **Storage Abstraction**: Interface-based storage system with in-memory implementation for development
 - **Processing Pipeline**: Modular service architecture for image processing, AI integration, and file generation
+- **Deployment Optimization**: Non-blocking startup with health check endpoints (`/health`, `/ready`) for container orchestration
+- **Database Initialization**: Background initialization with timeout protection prevents deployment delays
 
 ### Data Storage Solutions
 The application uses a robust hybrid storage approach with automatic failover:
