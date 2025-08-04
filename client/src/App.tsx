@@ -4,12 +4,22 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
+import Auth from "@/pages/auth";
+import Pricing from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
+import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
+  const { isAuthenticated, login } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Auth onLogin={(result) => login(result.user, result.token)} />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { User, Project } from "@shared/schema";
 
 import Navigation from "@/components/navigation";
@@ -29,6 +30,8 @@ export default function Dashboard() {
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
+
+  const { user: authUser } = useAuth();
 
   // Fetch user data
   const { data: user } = useQuery<User>({
@@ -381,6 +384,13 @@ export default function Dashboard() {
                       onClick={() => {
                         console.log("Upload Your Art button clicked, setting showAIGenerator to false");
                         setShowAIGenerator(false);
+                        // Force re-render by triggering a small delay
+                        setTimeout(() => {
+                          const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                          if (fileInput) {
+                            fileInput.click();
+                          }
+                        }, 100);
                       }}
                       className="p-6 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200 group"
                     >

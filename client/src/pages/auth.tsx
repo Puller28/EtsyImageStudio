@@ -27,7 +27,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 
 interface AuthProps {
-  onLogin: (user: any) => void;
+  onLogin: (result: { user: any; token: string }) => void;
 }
 
 export default function Auth({ onLogin }: AuthProps) {
@@ -55,18 +55,22 @@ export default function Auth({ onLogin }: AuthProps) {
   const handleLogin = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      // For now, use demo user - will be replaced with real auth
-      toast({
-        title: "Welcome back!",
-        description: "You've been logged in successfully.",
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      
-      onLogin({
-        id: "demo-user-1",
-        email: data.email,
-        name: "Demo User",
-        credits: 100,
-      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Welcome back!",
+          description: "You've been logged in successfully.",
+        });
+        onLogin(result);
+      } else {
+        throw new Error('Login failed');
+      }
     } catch (error) {
       toast({
         title: "Login Failed",
@@ -81,22 +85,27 @@ export default function Auth({ onLogin }: AuthProps) {
   const handleRegister = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
-      // For now, use demo registration - will be replaced with real auth
-      toast({
-        title: "Account Created!",
-        description: "Welcome to EtsyArt Pro! You've received 100 free credits.",
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      
-      onLogin({
-        id: "demo-user-1",
-        email: data.email,
-        name: data.name,
-        credits: 100,
-      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Account Created!",
+          description: "Welcome to EtsyArt Pro! You've received 100 free credits.",
+        });
+        onLogin(result);
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Registration failed');
+      }
     } catch (error) {
       toast({
         title: "Registration Failed",
-        description: "Please try again or contact support.",
+        description: error instanceof Error ? error.message : "Please try again or contact support.",
         variant: "destructive",
       });
     } finally {

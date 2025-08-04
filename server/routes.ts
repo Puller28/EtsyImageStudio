@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertProjectSchema } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -11,6 +11,7 @@ import { fallbackUpscale, base64ToBuffer, bufferToBase64 } from "./services/imag
 import { resizeImageToFormats } from "./services/image-processor";
 import { generateMockupsForCategory } from "./services/mockup-templates";
 import { generateProjectZip } from "./services/zip-generator";
+import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -18,14 +19,53 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get current user (demo user)
-  app.get("/api/user", async (req, res) => {
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
     try {
-      const user = await storage.getUser("demo-user-1");
-      if (!user) {
+      const { email, password } = req.body;
+      const result = await AuthService.login({ email, password });
+      
+      if (!result) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      const { password } = req.body;
+      
+      const result = await AuthService.register({
+        ...userData,
+        password
+      });
+      
+      res.status(201).json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid user data", details: error.errors });
+      }
+      if (error instanceof Error && error.message === "User already exists with this email") {
+        return res.status(409).json({ error: error.message });
+      }
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Registration failed" });
+    }
+  });
+
+  // Get current user (with optional auth)
+  app.get("/api/user", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user) {
         return res.status(404).json({ error: "User not found" });
       }
-      res.json(user);
+      res.json(req.user);
     } catch (error) {
       console.error("Error getting user:", error);
       res.status(500).json({ error: "Failed to get user" });
@@ -33,9 +73,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user projects
-  app.get("/api/projects", async (req, res) => {
+  app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const projects = await storage.getUserProjects("demo-user-1");
+      if (!req.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const projects = await storage.getUserProjects(req.userId);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to get projects" });
@@ -56,16 +99,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new project with image upload
-  app.post("/api/projects", upload.single("image"), async (req, res) => {
+  app.post("/api/projects", optionalAuth, upload.single("image"), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No image file provided" });
       }
 
+      if (!req.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const { artworkTitle, styleKeywords, upscaleOption, mockupTemplate } = req.body;
       
       const projectData = insertProjectSchema.parse({
-        userId: "demo-user-1",
+        userId: req.userId,
         title: artworkTitle || "Untitled Artwork",
         originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
         upscaleOption: upscaleOption || "2x",

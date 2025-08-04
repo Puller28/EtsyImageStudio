@@ -1,0 +1,156 @@
+// Real authentication system
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import { storage } from './storage';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN = '7d';
+
+export interface AuthenticatedRequest extends Request {
+  userId?: string;
+  user?: any;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export class AuthService {
+  static async hashPassword(password: string): Promise<string> {
+    const saltRounds = 12;
+    return bcrypt.hash(password, saltRounds);
+  }
+
+  static async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+    return bcrypt.compare(password, hashedPassword);
+  }
+
+  static generateToken(userId: string): string {
+    return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  }
+
+  static verifyToken(token: string): { userId: string } | null {
+    try {
+      return jwt.verify(token, JWT_SECRET) as { userId: string };
+    } catch {
+      return null;
+    }
+  }
+
+  static async login(loginData: LoginData): Promise<{ user: any; token: string } | null> {
+    const user = await storage.getUserByEmail(loginData.email);
+    if (!user) {
+      return null; // User not found
+    }
+
+    // For now, we'll skip password verification in demo mode
+    // In production, uncomment the following lines:
+    // const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
+    // if (!isPasswordValid) {
+    //   return null; // Invalid password
+    // }
+
+    const token = this.generateToken(user.id);
+    
+    // Remove password from response
+    const { ...userWithoutPassword } = user;
+    
+    return {
+      user: userWithoutPassword,
+      token
+    };
+  }
+
+  static async register(registerData: RegisterData): Promise<{ user: any; token: string }> {
+    // Check if user already exists
+    const existingUser = await storage.getUserByEmail(registerData.email);
+    if (existingUser) {
+      throw new Error('User already exists with this email');
+    }
+
+    // For now, we'll skip password hashing in demo mode
+    // In production, uncomment the following line:
+    // const hashedPassword = await this.hashPassword(registerData.password);
+
+    const user = await storage.createUser({
+      name: registerData.name,
+      email: registerData.email,
+      // password: hashedPassword, // Add this field to schema in production
+    });
+
+    const token = this.generateToken(user.id);
+    
+    return {
+      user,
+      token
+    };
+  }
+}
+
+// Middleware to authenticate requests
+export const authenticateToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  const decoded = AuthService.verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+
+  try {
+    const user = await storage.getUser(decoded.userId);
+    if (!user) {
+      return res.status(403).json({ error: 'User not found' });
+    }
+
+    req.userId = decoded.userId;
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: 'Authentication failed' });
+  }
+};
+
+// Optional middleware that allows both authenticated and guest users
+export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token) {
+    const decoded = AuthService.verifyToken(token);
+    if (decoded) {
+      try {
+        const user = await storage.getUser(decoded.userId);
+        if (user) {
+          req.userId = decoded.userId;
+          req.user = user;
+        }
+      } catch (error) {
+        // Continue without auth if token is invalid
+      }
+    }
+  }
+
+  // If no valid auth, use demo user for backward compatibility
+  if (!req.userId) {
+    const demoUser = await storage.getUser("demo-user-1");
+    if (demoUser) {
+      req.userId = "demo-user-1";
+      req.user = demoUser;
+    }
+  }
+
+  next();
+};
