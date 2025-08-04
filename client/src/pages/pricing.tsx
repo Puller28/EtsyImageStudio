@@ -130,15 +130,25 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
       return;
     }
 
-    // Find matching subscription plan
-    const subscriptionPlan = allPlans?.subscriptionPlans.find(plan => 
+    // Find matching subscription plan - handle exact matching
+    let subscriptionPlan = allPlans?.subscriptionPlans.find(plan => 
       plan.name.toLowerCase().includes(planName.toLowerCase())
     );
 
+    // If not found, try alternative matching
     if (!subscriptionPlan) {
+      if (planName === "Pro") {
+        subscriptionPlan = allPlans?.subscriptionPlans.find(plan => plan.id === "pro_monthly");
+      } else if (planName === "Business") {
+        subscriptionPlan = allPlans?.subscriptionPlans.find(plan => plan.id === "business_monthly");
+      }
+    }
+
+    if (!subscriptionPlan) {
+      console.error("❌ Plan not found. Available plans:", allPlans?.subscriptionPlans?.map(p => ({name: p.name, id: p.id})));
       toast({
         title: "Plan Not Found",
-        description: "Unable to find subscription plan details.",
+        description: `Unable to find subscription plan for "${planName}". Please try again.`,
         variant: "destructive",
       });
       return;
@@ -147,7 +157,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     setProcessingPlan(planName);
 
     try {
-      console.log("🛒 Starting subscription for plan:", subscriptionPlan.name);
+      console.log("🛒 Starting subscription for plan:", subscriptionPlan.name, "ID:", subscriptionPlan.id);
       
       const response = await apiRequest("POST", "/api/subscribe", {
         planId: subscriptionPlan.id,
@@ -155,7 +165,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
       console.log("🔗 Subscription response:", response);
 
-      if (response.authorization_url) {
+      if (response?.authorization_url) {
         console.log("🔗 Redirecting to Paystack:", response.authorization_url);
         window.location.href = response.authorization_url;
       } else {
