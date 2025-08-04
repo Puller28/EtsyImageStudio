@@ -7,6 +7,8 @@ import Dashboard from "@/pages/dashboard";
 import Auth from "@/pages/auth";
 import Pricing from "@/pages/pricing";
 import Settings from "@/pages/settings";
+import BuyCredits from "@/pages/buy-credits";
+import PaymentCallback from "@/pages/payment-callback";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -25,6 +27,8 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
       <Route path="/settings" component={Settings} />
+      <Route path="/buy-credits" component={BuyCredits} />
+      <Route path="/payment-callback/:reference" component={PaymentCallback} />
       <Route component={NotFound} />
     </Switch>
   );

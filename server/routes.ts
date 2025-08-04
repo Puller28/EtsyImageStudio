@@ -88,6 +88,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Credit packages endpoint
+  app.get("/api/credit-packages", async (req, res) => {
+    try {
+      const { PaystackService } = await import("./paystack");
+      const packages = PaystackService.getAllCreditPackages();
+      res.json(packages);
+    } catch (error) {
+      console.error("Error getting credit packages:", error);
+      res.status(500).json({ error: "Failed to get credit packages" });
+    }
+  });
+
+  // Purchase credits endpoint
+  app.post("/api/purchase-credits", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId || !req.user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { packageId } = req.body;
+      const { PaystackService } = await import("./paystack");
+      
+      const creditPackage = PaystackService.getCreditPackage(packageId);
+      if (!creditPackage) {
+        return res.status(400).json({ error: "Invalid credit package" });
+      }
+
+      const paymentData = {
+        email: req.user.email,
+        amount: creditPackage.zarPrice, // Amount in kobo (ZAR cents)
+        currency: 'ZAR' as const,
+        metadata: {
+          creditPackageId: packageId,
+          credits: creditPackage.credits,
+          userId: req.userId,
+        },
+        callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
+      };
+
+      const result = await PaystackService.initializePayment(paymentData);
+      
+      if (result.success) {
+        res.json(result.data);
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error purchasing credits:", error);
+      res.status(500).json({ error: "Failed to initiate payment" });
+    }
+  });
+
+  // Verify payment endpoint
+  app.get("/api/verify-payment/:reference", async (req, res) => {
+    try {
+      const { reference } = req.params;
+      const { PaystackService } = await import("./paystack");
+      
+      const verification = await PaystackService.verifyPayment(reference);
+      
+      if (verification.success && verification.data) {
+        const { metadata } = verification.data;
+        
+        if (metadata && metadata.userId && metadata.credits) {
+          // Get current user credits
+          const user = await storage.getUser(metadata.userId);
+          if (user) {
+            // Add credits to user account
+            const newCredits = user.credits + metadata.credits;
+            await storage.updateUserCredits(metadata.userId, newCredits);
+            
+            res.json({
+              success: true,
+              credits: metadata.credits,
+              message: `${metadata.credits} credits added successfully`
+            });
+          } else {
+            res.status(404).json({ success: false, error: "User not found" });
+          }
+        } else {
+          res.status(400).json({ success: false, error: "Invalid payment metadata" });
+        }
+      } else {
+        res.json({
+          success: false,
+          error: verification.error || "Payment verification failed"
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ success: false, error: "Payment verification failed" });
+    }
+  });
+
   // Get user projects
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {

@@ -85,8 +85,8 @@ export default function Navigation({ user }: NavigationProps) {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/pricing" className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link href="/buy-credits" className="flex items-center w-full">
                       <Coins className="mr-2 h-4 w-4" />
                       <span>Buy Credits</span>
                     </Link>
