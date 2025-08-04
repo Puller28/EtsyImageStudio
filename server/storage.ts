@@ -71,6 +71,7 @@ export class MemStorage implements IStorage {
     const project: Project = {
       ...insertProject,
       mockupTemplate: insertProject.mockupTemplate || null,
+      mockupImages: null, // Fix type issue
       id,
       status: "uploading",
       resizedImages: null,
