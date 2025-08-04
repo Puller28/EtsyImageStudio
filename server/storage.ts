@@ -159,19 +159,9 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Try to use database storage, fallback to memory storage
-let storage: IStorage;
-try {
-  if (process.env.DATABASE_URL) {
-    storage = new DatabaseStorage();
-    console.log('✅ Using Supabase PostgreSQL database storage');
-  } else {
-    storage = new MemStorage();
-    console.log('⚠️ Using in-memory storage (no database URL found)');
-  }
-} catch (error) {
-  console.warn('⚠️ Database connection failed, using in-memory storage:', error);
-  storage = new MemStorage();
-}
+// Use in-memory storage due to DNS resolution issues with Supabase hostname
+// This keeps user sessions active during the current server session
+console.log('⚠️ Using in-memory storage (Supabase connection has DNS issues)');
+const storage = new MemStorage();
 
 export { storage };
