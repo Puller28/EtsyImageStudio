@@ -296,8 +296,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Art Generation endpoint
-  app.post("/api/generate-art", async (req, res) => {
+  app.post("/api/generate-art", authMiddleware, async (req: any, res) => {
     try {
+      // Check user credits first (AI generation costs 2 credits)
+      const user = await storage.getUser(req.userId);
+      if (!user || user.credits < 2) {
+        return res.status(400).json({ 
+          error: user && user.credits === 1 
+            ? "Insufficient credits. AI art generation requires 2 credits." 
+            : "Insufficient credits. AI art generation requires 2 credits. Please purchase more credits."
+        });
+      }
+
       const { prompt, negativePrompt, aspectRatio, category } = req.body;
       
       if (!prompt) {
@@ -317,6 +327,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       console.log('AI art generation completed successfully');
+      
+      // Deduct 2 credits for AI art generation
+      const newCredits = Math.max(0, user.credits - 2);
+      await storage.updateUserCredits(req.userId, newCredits);
+      console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId} new balance: ${newCredits}`);
       
       res.json({ 
         image: base64Image,

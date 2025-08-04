@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,8 +48,10 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
         onArtworkGenerated(result.image, prompt);
         toast({
           title: "Artwork Generated!",
-          description: "Your AI artwork has been created successfully.",
+          description: "Your AI artwork has been created successfully. 2 credits were used.",
         });
+        // Refresh user data to show updated credits
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       }
     },
     onError: (error) => {
@@ -118,6 +120,14 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
         <p className="text-gray-600 dark:text-gray-400">
           Generate high-quality artwork using Google's Imagen 3 AI model
         </p>
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+          <p className="text-sm text-purple-700 font-medium">
+            💎 AI Art Generation: 2 Credits per Image
+          </p>
+          <p className="text-xs text-purple-600 mt-1">
+            Each generated artwork costs 2 credits
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Art Category */}
