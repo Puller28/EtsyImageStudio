@@ -101,6 +101,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
   // Fetch subscription plans from API
   const { data: allPlans } = useQuery<{
+    creditPackages: any[];
     subscriptionPlans: SubscriptionPlan[];
   }>({
     queryKey: ["/api/all-plans", "v2"],
@@ -165,9 +166,9 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
       console.log("🔗 Subscription response:", response);
 
-      if (response?.authorization_url) {
-        console.log("🔗 Redirecting to Paystack:", response.authorization_url);
-        window.location.href = response.authorization_url;
+      if ((response as any)?.authorization_url) {
+        console.log("🔗 Redirecting to Paystack:", (response as any).authorization_url);
+        window.location.href = (response as any).authorization_url;
       } else {
         throw new Error("No payment URL received");
       }
@@ -206,9 +207,9 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
       console.log("🔗 Purchase response:", response);
 
-      if (response?.authorization_url) {
-        console.log("🔗 Redirecting to Paystack:", response.authorization_url);
-        window.location.href = response.authorization_url;
+      if ((response as any)?.authorization_url) {
+        console.log("🔗 Redirecting to Paystack:", (response as any).authorization_url);
+        window.location.href = (response as any).authorization_url;
       } else {
         throw new Error("No payment URL received");
       }
