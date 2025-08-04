@@ -295,8 +295,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Art Generation endpoint
-  app.post("/api/generate-art", authMiddleware, async (req: any, res) => {
+  // AI Art Generation endpoint  
+  app.post("/api/generate-art", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       // Check user credits first (AI generation costs 2 credits)
       const user = await storage.getUser(req.userId);

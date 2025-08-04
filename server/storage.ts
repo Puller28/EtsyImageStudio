@@ -1,5 +1,8 @@
 import { type User, type InsertUser, type Project, type InsertProject } from "@shared/schema";
+import { users, projects } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -104,5 +107,72 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use memory storage for now due to database connection issues
-export const storage = new MemStorage();
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      credits: 100
+    }).returning();
+    return user;
+  }
+
+  async updateUserCredits(userId: string, credits: number): Promise<void> {
+    await db.update(users)
+      .set({ credits })
+      .where(eq(users.id, userId));
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db.insert(projects).values({
+      ...insertProject,
+      status: "uploading",
+      resizedImages: [],
+    }).returning();
+    return project;
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async getUserProjects(userId: string): Promise<Project[]> {
+    return await db.select().from(projects).where(eq(projects.userId, userId));
+  }
+
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+    const [project] = await db.update(projects)
+      .set(updates)
+      .where(eq(projects.id, id))
+      .returning();
+    return project;
+  }
+}
+
+// Try to use database storage, fallback to memory storage
+let storage: IStorage;
+try {
+  if (process.env.DATABASE_URL) {
+    storage = new DatabaseStorage();
+    console.log('✅ Using PostgreSQL database storage');
+  } else {
+    storage = new MemStorage();
+    console.log('⚠️ Using in-memory storage (no database URL found)');
+  }
+} catch (error) {
+  console.warn('⚠️ Database connection failed, using in-memory storage:', error);
+  storage = new MemStorage();
+}
+
+export { storage };
