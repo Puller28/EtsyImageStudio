@@ -100,6 +100,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // All plans endpoint (credit packages + subscriptions)
+  app.get("/api/all-plans", async (req, res) => {
+    try {
+      const { PaystackService } = await import("./paystack");
+      const plans = PaystackService.getAllPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error getting all plans:", error);
+      res.status(500).json({ error: "Failed to get plans" });
+    }
+  });
+
   // Purchase credits endpoint
   app.post("/api/purchase-credits", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
@@ -179,6 +191,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error verifying payment:", error);
       res.status(500).json({ success: false, error: "Payment verification failed" });
+    }
+  });
+
+  // Subscribe to plan endpoint
+  app.post("/api/subscribe", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId || !req.user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { planId } = req.body;
+      const { PaystackService } = await import("./paystack");
+      
+      const subscriptionPlan = PaystackService.getSubscriptionPlan(planId);
+      if (!subscriptionPlan) {
+        return res.status(400).json({ error: "Invalid subscription plan" });
+      }
+
+      // For now, we'll create a plan code based on the plan ID
+      // In production, you should create these plans in Paystack dashboard and store the plan codes
+      const planCode = `${planId}_plan`;
+
+      const subscriptionData = {
+        email: req.user.email,
+        planCode,
+        metadata: {
+          planId: planId,
+          credits: subscriptionPlan.credits,
+          userId: req.userId,
+        },
+        callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
+      };
+
+      const result = await PaystackService.initializeSubscription(subscriptionData);
+      
+      if (result.success) {
+        res.json(result.data);
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error subscribing to plan:", error);
+      res.status(500).json({ error: "Failed to initiate subscription" });
     }
   });
 
