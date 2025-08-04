@@ -289,6 +289,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test payment verification endpoint (for development)
+  app.post("/api/test-payment-verification", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId || !req.user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { reference } = req.body;
+      
+      if (!reference) {
+        return res.status(400).json({ error: "Payment reference required" });
+      }
+
+      const { PaystackService } = await import("./paystack");
+      const verification = await PaystackService.verifyPayment(reference);
+      
+      if (verification.success && verification.data) {
+        const { metadata } = verification.data;
+        
+        if (metadata && metadata.userId && metadata.credits) {
+          // Get current user credits
+          const user = await storage.getUser(metadata.userId);
+          if (user) {
+            // Add credits to user account
+            const newCredits = user.credits + parseInt(metadata.credits);
+            await storage.updateUserCredits(metadata.userId, newCredits);
+            
+            return res.json({
+              success: true,
+              credits: parseInt(metadata.credits),
+              message: `Added ${metadata.credits} credits to your account`
+            });
+          }
+        }
+      }
+      
+      res.json({
+        success: false,
+        error: "Payment verification failed or invalid payment data"
+      });
+    } catch (error) {
+      console.error("Test verification error:", error);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
   // Get user projects
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
