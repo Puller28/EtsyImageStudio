@@ -69,6 +69,7 @@ export default function Dashboard() {
       setCurrentProject(project);
       setCurrentStep(1);
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] }); // Refresh user data to show updated credits
       toast({
         title: "Project Created",
         description: "Your artwork has been uploaded successfully. Starting processing...",
@@ -261,7 +262,10 @@ export default function Dashboard() {
     try {
       // Use the new ZIP generation endpoint that creates real ZIP files
       const response = await fetch(`/api/projects/${currentProject.id}/download-zip`);
-      if (!response.ok) throw new Error("Download failed");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Download failed: ${response.status} - ${errorText}`);
+      }
       
       // Create blob from response and download it directly
       const blob = await response.blob();
@@ -275,14 +279,14 @@ export default function Dashboard() {
       window.URL.revokeObjectURL(url);
       
       toast({
-        title: "Download Started",
-        description: "Your project assets are being downloaded.",
+        title: "Download Complete",
+        description: "Your project assets have been downloaded successfully.",
       });
     } catch (error) {
       console.error("Download error:", error);
       toast({
         title: "Download Failed",
-        description: "Failed to download project assets.",
+        description: error instanceof Error ? error.message : "Failed to download project assets.",
         variant: "destructive",
       });
     } finally {

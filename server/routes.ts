@@ -122,6 +122,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const project = await storage.createProject(projectData);
+      
+      // Deduct 1 credit from user
+      const user = await storage.getUser(req.userId);
+      if (user && user.credits > 0) {
+        const newCredits = Math.max(0, user.credits - 1);
+        await storage.updateUserCredits(req.userId, newCredits);
+        console.log(`💳 Deducted 1 credit from user ${req.userId}. New balance: ${newCredits}`);
+      }
+      
       res.json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {

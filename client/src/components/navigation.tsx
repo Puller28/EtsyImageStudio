@@ -41,19 +41,15 @@ export default function Navigation({ user }: NavigationProps) {
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="/">
-              <a className={`text-sm font-medium transition-colors ${
-                location === '/' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
-              }`}>
-                Dashboard
-              </a>
+            <Link href="/" className={`text-sm font-medium transition-colors ${
+              location === '/' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
+            }`}>
+              Dashboard
             </Link>
-            <Link href="/pricing">
-              <a className={`text-sm font-medium transition-colors ${
-                location === '/pricing' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
-              }`}>
-                Pricing
-              </a>
+            <Link href="/pricing" className={`text-sm font-medium transition-colors ${
+              location === '/pricing' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
+            }`}>
+              Pricing
             </Link>
           </div>
 
@@ -89,8 +85,8 @@ export default function Navigation({ user }: NavigationProps) {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/pricing">
+                  <DropdownMenuItem>
+                    <Link href="/pricing" className="flex items-center w-full">
                       <Coins className="mr-2 h-4 w-4" />
                       <span>Buy Credits</span>
                     </Link>
