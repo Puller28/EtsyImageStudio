@@ -156,37 +156,73 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Initialize storage with connection fallback
-let storage: IStorage;
+// Robust storage with automatic fallback to in-memory when database fails
+class RobustStorage implements IStorage {
+  private primaryStorage: IStorage;
+  private fallbackStorage: IStorage;
+  private useFallback = false;
 
-async function initializeStorageWithFallback() {
-  if (!process.env.DATABASE_URL) {
-    console.log('⚠️ Using in-memory storage (no DATABASE_URL found)');
-    return new MemStorage();
+  constructor() {
+    this.fallbackStorage = new MemStorage();
+    this.primaryStorage = process.env.DATABASE_URL ? new DatabaseStorage() : this.fallbackStorage;
+    
+    if (process.env.DATABASE_URL) {
+      console.log('🔄 Attempting to use Supabase PostgreSQL database');
+    } else {
+      console.log('⚠️ No DATABASE_URL found, using in-memory storage');
+      this.useFallback = true;
+    }
   }
 
-  try {
-    const dbStorage = new DatabaseStorage();
-    
-    // Test the connection with a simple query
-    console.log('🔄 Testing database connection...');
-    await dbStorage.getUser('connection-test');
-    console.log('✅ Using Supabase PostgreSQL database storage');
-    return dbStorage;
-  } catch (error: any) {
-    console.warn('⚠️ Database connection failed, falling back to in-memory storage:', error.message);
-    console.log('📝 Note: User data will be lost when server restarts');
-    return new MemStorage();
+  private async executeWithFallback<T>(operation: (storage: IStorage) => Promise<T>): Promise<T> {
+    if (this.useFallback) {
+      return operation(this.fallbackStorage);
+    }
+
+    try {
+      return await operation(this.primaryStorage);
+    } catch (error: any) {
+      if (!this.useFallback) {
+        console.warn(`⚠️ Database operation failed, switching to in-memory storage: ${error.message}`);
+        this.useFallback = true;
+      }
+      return operation(this.fallbackStorage);
+    }
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    return this.executeWithFallback(storage => storage.getUser(id));
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return this.executeWithFallback(storage => storage.getUserByEmail(email));
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    return this.executeWithFallback(storage => storage.createUser(user));
+  }
+
+  async updateUserCredits(userId: string, credits: number): Promise<void> {
+    return this.executeWithFallback(storage => storage.updateUserCredits(userId, credits));
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    return this.executeWithFallback(storage => storage.createProject(insertProject));
+  }
+
+  async getProjectsByUserId(userId: string): Promise<Project[]> {
+    return this.executeWithFallback(storage => storage.getProjectsByUserId(userId));
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    return this.executeWithFallback(storage => storage.getProject(id));
+  }
+
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
+    return this.executeWithFallback(storage => storage.updateProject(id, updates));
   }
 }
 
-// Initialize with fallback logic
-storage = new MemStorage(); // Temporary fallback
-initializeStorageWithFallback().then(newStorage => {
-  Object.setPrototypeOf(storage, Object.getPrototypeOf(newStorage));
-  Object.assign(storage, newStorage);
-}).catch(err => {
-  console.error('Storage initialization failed:', err);
-});
+const storage: IStorage = new RobustStorage();
 
 export { storage };
