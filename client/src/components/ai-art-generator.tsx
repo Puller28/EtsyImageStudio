@@ -29,18 +29,7 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
       aspectRatio?: string;
       category?: string;
     }) => {
-      const response = await fetch("/api/generate-art", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to generate artwork");
-      }
-      
+      const response = await apiRequest("POST", "/api/generate-art", data);
       return response.json();
     },
     onSuccess: (result) => {
