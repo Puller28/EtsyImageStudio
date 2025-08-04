@@ -215,11 +215,36 @@ export class PaystackService {
 
   static async verifyPayment(reference: string) {
     try {
-      const response = await paystack.transaction.verify(reference);
+      console.log('🔍 Verifying payment with reference:', reference);
+      
+      if (!reference || typeof reference !== 'string') {
+        throw new Error('Invalid reference parameter');
+      }
+      
+      // Make direct API call to avoid library bug
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Paystack API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      console.log('🔍 Paystack API response:', { 
+        success: data?.data?.status === 'success',
+        status: data?.data?.status,
+        hasMetadata: !!data?.data?.metadata 
+      });
       
       return {
-        success: response.data.status === 'success',
-        data: response.data
+        success: data.data.status === 'success',
+        data: data.data
       };
     } catch (error: any) {
       console.error('Paystack verification error:', error);
