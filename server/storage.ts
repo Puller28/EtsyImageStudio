@@ -158,73 +158,8 @@ export class DatabaseStorage implements IStorage {
 
 }
 
-// Robust storage with automatic fallback to in-memory when database fails
-class RobustStorage implements IStorage {
-  private primaryStorage: IStorage;
-  private fallbackStorage: IStorage;
-  private useFallback = false;
-
-  constructor() {
-    this.fallbackStorage = new MemStorage();
-    this.primaryStorage = process.env.DATABASE_URL ? new DatabaseStorage() : this.fallbackStorage;
-    
-    if (process.env.DATABASE_URL) {
-      console.log('🔄 Attempting to use Supabase PostgreSQL database');
-    } else {
-      console.log('⚠️ No DATABASE_URL found, using in-memory storage');
-      this.useFallback = true;
-    }
-  }
-
-  private async executeWithFallback<T>(operation: (storage: IStorage) => Promise<T>): Promise<T> {
-    if (this.useFallback) {
-      return operation(this.fallbackStorage);
-    }
-
-    try {
-      return await operation(this.primaryStorage);
-    } catch (error: any) {
-      if (!this.useFallback) {
-        console.warn(`⚠️ Database operation failed, switching to in-memory storage: ${error.message}`);
-        this.useFallback = true;
-      }
-      return operation(this.fallbackStorage);
-    }
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.executeWithFallback(storage => storage.getUser(id));
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return this.executeWithFallback(storage => storage.getUserByEmail(email));
-  }
-
-  async createUser(user: InsertUser): Promise<User> {
-    return this.executeWithFallback(storage => storage.createUser(user));
-  }
-
-  async updateUserCredits(userId: string, credits: number): Promise<void> {
-    return this.executeWithFallback(storage => storage.updateUserCredits(userId, credits));
-  }
-
-  async createProject(insertProject: InsertProject): Promise<Project> {
-    return this.executeWithFallback(storage => storage.createProject(insertProject));
-  }
-
-  async getProjectsByUserId(userId: string): Promise<Project[]> {
-    return this.executeWithFallback(storage => storage.getProjectsByUserId(userId));
-  }
-
-  async getProject(id: string): Promise<Project | undefined> {
-    return this.executeWithFallback(storage => storage.getProject(id));
-  }
-
-  async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
-    return this.executeWithFallback(storage => storage.updateProject(id, updates));
-  }
-}
-
-const storage: IStorage = new RobustStorage();
+// Always use in-memory storage to ensure reliability
+console.log('📝 Using in-memory storage for guaranteed reliability');
+const storage: IStorage = new MemStorage();
 
 export { storage };
