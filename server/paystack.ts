@@ -152,6 +152,7 @@ export class PaystackService {
   static async initializeSubscription(data: {
     email: string;
     planCode: string;
+    amount: number;
     metadata: {
       planId: string;
       credits: number;
@@ -163,6 +164,7 @@ export class PaystackService {
       const response = await paystack.transaction.initialize({
         email: data.email,
         plan: data.planCode,
+        amount: data.amount, // Amount in kobo (ZAR cents)
         metadata: data.metadata,
         callback_url: data.callback_url
       });

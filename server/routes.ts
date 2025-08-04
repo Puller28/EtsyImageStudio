@@ -222,6 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscriptionData = {
         email: req.user.email,
         planCode,
+        amount: subscriptionPlan.zarPrice, // Amount in kobo (ZAR cents)
         metadata: {
           planId: planId,
           credits: subscriptionPlan.credits,
