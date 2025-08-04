@@ -14,8 +14,8 @@ export interface IStorage {
   // Project methods
   createProject(project: InsertProject): Promise<Project>;
   getProject(id: string): Promise<Project | undefined>;
-  getUserProjects(userId: string): Promise<Project[]>;
-  updateProject(id: string, updates: Partial<Project>): Promise<Project>;
+  getProjectsByUserId(userId: string): Promise<Project[]>;
+  updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
 }
 
 
@@ -92,14 +92,14 @@ export class MemStorage implements IStorage {
     return this.projects.get(id);
   }
 
-  async getUserProjects(userId: string): Promise<Project[]> {
+  async getProjectsByUserId(userId: string): Promise<Project[]> {
     return Array.from(this.projects.values()).filter(project => project.userId === userId);
   }
 
-  async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
     const project = this.projects.get(id);
     if (!project) {
-      throw new Error("Project not found");
+      return undefined;
     }
     const updatedProject = { ...project, ...updates };
     this.projects.set(id, updatedProject);
@@ -134,7 +134,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
-    const [project] = await db.insert(projects).values([insertProject]).returning();
+    const [project] = await db.insert(projects).values(insertProject).returning();
     return project;
   }
 
@@ -143,17 +143,19 @@ export class DatabaseStorage implements IStorage {
     return project;
   }
 
-  async getUserProjects(userId: string): Promise<Project[]> {
+  async getProjectsByUserId(userId: string): Promise<Project[]> {
     return await db.select().from(projects).where(eq(projects.userId, userId));
   }
 
-  async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
     const [project] = await db.update(projects)
       .set(updates)
       .where(eq(projects.id, id))
       .returning();
     return project;
   }
+
+
 }
 
 // Robust storage with automatic fallback to in-memory when database fails

@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-      const projects = await storage.getUserProjects(req.userId);
+      const projects = await storage.getProjectsByUserId(req.userId);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to get projects" });
