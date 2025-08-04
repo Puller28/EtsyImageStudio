@@ -15,6 +15,8 @@ interface RecentProjectsProps {
 }
 
 export default function RecentProjects({ projects, onViewProject }: RecentProjectsProps) {
+  console.log("📋 RecentProjects render:", projects.length, projects);
+  
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());

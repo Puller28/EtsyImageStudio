@@ -47,6 +47,11 @@ export default function Dashboard() {
     queryKey: ["/api/projects"],
   });
 
+  // Debug projects data
+  useEffect(() => {
+    console.log("📋 Projects data:", projects.length, projects);
+  }, [projects]);
+
   // Poll current project status
   const { data: projectStatus } = useQuery<Project>({
     queryKey: ["/api/projects", currentProject?.id],
