@@ -27,6 +27,13 @@ export default function PaymentCallback() {
         credits?: number;
         error?: string;
       });
+      
+      // Redirect to dashboard after 3 seconds on successful payment
+      if ((data as any).success) {
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+      }
     }
   }, [data]);
 

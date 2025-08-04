@@ -136,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           credits: creditPackage.credits,
           userId: req.userId,
         },
-        callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
+        callback_url: `${req.protocol}://${req.get('host')}/payment-callback/{{reference}}`,
       };
 
       const result = await PaystackService.initializePayment(paymentData);
@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           credits: subscriptionPlan.credits,
           userId: req.userId,
         },
-        callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
+        callback_url: `${req.protocol}://${req.get('host')}/payment-callback/{{reference}}`,
       };
 
       const result = await PaystackService.initializeSubscription(subscriptionData);
