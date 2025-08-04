@@ -50,11 +50,28 @@ export const creditPackages = [
 // Subscription plans
 export const subscriptionPlans = [
   {
+    id: 'free',
+    name: 'Free Plan',
+    credits: 100,
+    usdPrice: 0,
+    zarPrice: 0,
+    interval: 'monthly',
+    description: 'Free monthly credits to get started',
+    type: 'free',
+    features: [
+      '100 credits per month',
+      '50 AI generations',
+      '100 upscaling operations',
+      'Community support',
+      'Basic features'
+    ]
+  },
+  {
     id: 'pro_monthly',
     name: 'Pro Plan',
     credits: 300,
     usdPrice: 19.95,
-    zarPrice: 37905, // R379.05 monthly
+    zarPrice: 37905,
     interval: 'monthly',
     description: 'Monthly subscription with 300 credits',
     type: 'subscription',
@@ -64,14 +81,15 @@ export const subscriptionPlans = [
       '300 upscaling operations',
       'Priority processing',
       'Email support'
-    ]
+    ],
+    paystackPlanCode: '' // To be set when you create the plan in Paystack dashboard
   },
   {
     id: 'business_monthly',
     name: 'Business Plan',
     credits: 1000,
     usdPrice: 59,
-    zarPrice: 112100, // R1,121.00 monthly
+    zarPrice: 112100,
     interval: 'monthly',
     description: 'Monthly subscription with 1000 credits',
     type: 'subscription',
@@ -82,7 +100,8 @@ export const subscriptionPlans = [
       'Priority processing',
       'Premium support',
       'Commercial license'
-    ]
+    ],
+    paystackPlanCode: '' // To be set when you create the plan in Paystack dashboard
   }
 ];
 

@@ -27,8 +27,9 @@ interface SubscriptionPlan {
   zarPrice: number;
   interval: string;
   description: string;
-  type: 'subscription';
+  type: 'subscription' | 'free';
   features: string[];
+  paystackPlanCode?: string;
 }
 
 export default function BuyCredits() {
@@ -135,12 +136,21 @@ export default function BuyCredits() {
           Get credits automatically every month with our subscription plans
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-8">
           {subscriptions.map((plan) => (
-            <Card key={plan.id} className="relative flex flex-col border-2 border-primary/20">
-              <Badge className="absolute -top-2 -right-2 bg-primary">
-                {plan.name === 'Pro Plan' ? 'Most Popular' : 'Best Value'}
-              </Badge>
+            <Card key={plan.id} className={`relative flex flex-col ${
+              plan.type === 'free' ? 'border-2 border-gray-200' : 'border-2 border-primary/20'
+            }`}>
+              {plan.name === 'Pro Plan' && (
+                <Badge className="absolute -top-2 -right-2 bg-primary">
+                  Most Popular
+                </Badge>
+              )}
+              {plan.name === 'Business Plan' && (
+                <Badge className="absolute -top-2 -right-2 bg-green-500">
+                  Best Value
+                </Badge>
+              )}
               
               <CardHeader className="text-center pb-4">
                 <CardTitle className="flex items-center justify-center gap-2">
@@ -153,12 +163,11 @@ export default function BuyCredits() {
               <CardContent className="flex-1 text-center">
                 <div className="mb-6">
                   <div className="text-4xl font-bold text-primary mb-1">
-                    ${plan.usdPrice}
+                    {plan.usdPrice === 0 ? 'Free' : `$${plan.usdPrice}`}
                   </div>
-                  <div className="text-sm text-muted-foreground mb-1">
-                    (R{(plan.zarPrice / 100).toFixed(2)} ZAR)
+                  <div className="text-xs text-muted-foreground">
+                    {plan.usdPrice === 0 ? 'Always free' : 'per month'}
                   </div>
-                  <div className="text-xs text-muted-foreground">per month</div>
                 </div>
                 
                 <div className="space-y-3 text-sm">
@@ -174,11 +183,14 @@ export default function BuyCredits() {
               <CardFooter>
                 <Button
                   className="w-full"
-                  onClick={() => handlePurchase(plan.id, 'subscription')}
-                  disabled={processingPackage === plan.id}
+                  onClick={() => handlePurchase(plan.id, plan.type as 'subscription' | 'free')}
+                  disabled={processingPackage === plan.id || plan.type === 'free'}
+                  variant={plan.type === 'free' ? 'outline' : 'default'}
                   data-testid={`button-subscribe-${plan.id}`}
                 >
-                  {processingPackage === plan.id ? (
+                  {plan.type === 'free' ? (
+                    'Current Plan'
+                  ) : processingPackage === plan.id ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Processing...
@@ -218,9 +230,6 @@ export default function BuyCredits() {
                 <div className="mb-4">
                   <div className="text-3xl font-bold text-primary mb-1">
                     ${pkg.usdPrice}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    (R{(pkg.zarPrice / 100).toFixed(2)} ZAR)
                   </div>
                 </div>
                 

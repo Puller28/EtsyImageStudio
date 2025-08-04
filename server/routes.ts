@@ -209,9 +209,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid subscription plan" });
       }
 
-      // For now, we'll create a plan code based on the plan ID
-      // In production, you should create these plans in Paystack dashboard and store the plan codes
-      const planCode = `${planId}_plan`;
+      // Use the Paystack plan code from the subscription plan
+      // You need to create these plans in your Paystack dashboard first
+      const planCode = subscriptionPlan.paystackPlanCode;
+      
+      if (!planCode) {
+        return res.status(400).json({ 
+          error: "Subscription plan not configured. Please create the plan in Paystack dashboard first." 
+        });
+      }
 
       const subscriptionData = {
         email: req.user.email,
