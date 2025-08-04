@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
 
-  const { user: authUser } = useAuth();
+  const { user: authUser, token } = useAuth();
 
   // Fetch user data
   const { data: user } = useQuery<User>({
@@ -58,7 +58,7 @@ export default function Dashboard() {
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const token = authUser?.token;
+      console.log("🔑 Token available:", !!token, token?.substring(0, 20) + '...');
       const headers: HeadersInit = {};
       
       if (token) {
@@ -90,7 +90,6 @@ export default function Dashboard() {
       // Automatically start processing after project creation
       console.log("🟠 Auto-starting processing for project:", project.id);
       try {
-        const token = authUser?.token;
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         
         if (token) {
@@ -235,7 +234,6 @@ export default function Dashboard() {
   const handleProcessProject = async (projectId: string) => {
     console.log("Direct processing for project:", projectId);
     try {
-      const token = authUser?.token;
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       
       if (token) {
