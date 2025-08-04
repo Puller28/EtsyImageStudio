@@ -11,10 +11,13 @@ console.log('🔗 Connecting to database with URL:', process.env.DATABASE_URL?.r
 
 const sql = postgres(process.env.DATABASE_URL, { 
   ssl: 'require',
-  max: 3, // Reduce connection pool for faster startup
-  idle_timeout: 10, // Shorter idle timeout
-  connect_timeout: 10, // Shorter connect timeout for faster deployment
+  max: 2, // Smaller connection pool for Autoscale reliability
+  idle_timeout: 20, // Reasonable idle timeout
+  connect_timeout: 15, // Balanced connect timeout
   debug: false,
+  transform: {
+    undefined: null, // Transform undefined to null for database compatibility
+  },
 });
 
 export const db = drizzle(sql, { schema });

@@ -157,7 +157,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
-    const projectData = {
+    // Ensure proper typing for database insertion
+    const projectData: any = {
       ...insertProject,
       resizedImages: insertProject.resizedImages || [],
     };
