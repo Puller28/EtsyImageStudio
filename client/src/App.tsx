@@ -19,7 +19,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/pricing" component={Pricing} />
+      <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
       <Route component={NotFound} />
     </Switch>
   );

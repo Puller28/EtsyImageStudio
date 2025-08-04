@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showUploadMode, setShowUploadMode] = useState(false);
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
 
@@ -166,7 +167,8 @@ export default function Dashboard() {
     
     const preview = URL.createObjectURL(blob);
     setUploadedImage({ file, preview });
-    setShowAIGenerator(false); // Hide AI generator to show preview
+    setShowAIGenerator(false);
+    setShowUploadMode(false); // Hide AI generator to show preview
     
     toast({
       title: "AI Artwork Ready",
@@ -181,7 +183,8 @@ export default function Dashboard() {
     }
     setCurrentProject(null);
     setCurrentStep(0);
-    setShowAIGenerator(false); // Reset to show options again
+    setShowAIGenerator(false);
+    setShowUploadMode(false); // Reset to show options again
   };
 
   const handleStartProcessing = async (options: { upscaleOption: "2x" | "4x" }) => {
@@ -356,7 +359,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {!uploadedImage && !showAIGenerator && (
+            {!uploadedImage && !showAIGenerator && !showUploadMode && (
               <div className="bg-white rounded-lg shadow-sm p-8">
                 <div className="text-center space-y-6">
                   <h2 className="text-2xl font-bold text-gray-900">Start Your Etsy Art Project</h2>
@@ -382,15 +385,9 @@ export default function Dashboard() {
                     
                     <button
                       onClick={() => {
-                        console.log("Upload Your Art button clicked, setting showAIGenerator to false");
+                        console.log("Upload Your Art button clicked");
                         setShowAIGenerator(false);
-                        // Force re-render by triggering a small delay
-                        setTimeout(() => {
-                          const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                          if (fileInput) {
-                            fileInput.click();
-                          }
-                        }, 100);
+                        setShowUploadMode(true);
                       }}
                       className="p-6 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200 group"
                     >
@@ -415,7 +412,7 @@ export default function Dashboard() {
               <AIArtGenerator onArtworkGenerated={handleArtworkGenerated} />
             )}
 
-            {!showAIGenerator && (
+            {showUploadMode && !uploadedImage && (
               <ImageUpload
                 onImageUpload={handleImageUpload}
                 uploadedImage={uploadedImage}
@@ -424,6 +421,24 @@ export default function Dashboard() {
                   setShowAIGenerator(true);
                   setUploadedImage(undefined);
                   setCurrentStep(0);
+                  setShowUploadMode(false);
+                }}
+              />
+            )}
+
+            {uploadedImage && (
+              <ImageUpload
+                onImageUpload={handleImageUpload}
+                uploadedImage={uploadedImage}
+                onRemoveImage={() => {
+                  handleRemoveImage();
+                  setShowUploadMode(false);
+                }}
+                onGenerateNew={() => {
+                  setShowAIGenerator(true);
+                  setUploadedImage(undefined);
+                  setCurrentStep(0);
+                  setShowUploadMode(false);
                 }}
               />
             )}
