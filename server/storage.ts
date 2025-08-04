@@ -156,41 +156,15 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Try to use database storage with improved connection handling
-let storage: IStorage;
-
-async function initializeStorage() {
-  if (!process.env.DATABASE_URL) {
-    console.log('⚠️ Using in-memory storage (no DATABASE_URL found)');
-    return new MemStorage();
-  }
-
-  try {
-    const dbStorage = new DatabaseStorage();
-    
-    // Test connection with a simple query
-    console.log('🔄 Testing Supabase connection...');
-    await dbStorage.getUser('connection-test');
-    console.log('✅ Using Supabase PostgreSQL database storage');
-    return dbStorage;
-  } catch (error: any) {
-    console.warn('⚠️ Database connection failed, using in-memory storage:', error.message);
-    return new MemStorage();
-  }
-}
-
-// Initialize storage synchronously for now
-try {
-  if (process.env.DATABASE_URL) {
-    storage = new DatabaseStorage();
-    console.log('✅ Attempting Supabase PostgreSQL database storage');
-  } else {
-    storage = new MemStorage();
-    console.log('⚠️ Using in-memory storage (no DATABASE_URL found)');
-  }
-} catch (error: any) {
-  console.warn('⚠️ Database connection failed, using in-memory storage:', error.message);
-  storage = new MemStorage();
-}
+// Initialize storage with database connection
+const storage: IStorage = process.env.DATABASE_URL 
+  ? (() => {
+      console.log('✅ Using Supabase PostgreSQL database storage');
+      return new DatabaseStorage();
+    })()
+  : (() => {
+      console.log('⚠️ Using in-memory storage (no DATABASE_URL found)');
+      return new MemStorage();
+    })();
 
 export { storage };
