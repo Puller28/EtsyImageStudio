@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Zap, CheckCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
@@ -42,10 +42,17 @@ export default function BuyCredits() {
     subscriptionPlans: SubscriptionPlan[];
   }>({
     queryKey: ["/api/all-plans"],
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const packages = allPlans?.creditPackages || [];
   const subscriptions = allPlans?.subscriptionPlans || [];
+  
+  // Force refresh on component mount to avoid cache issues
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/all-plans"] });
+  }, []);
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ id, type }: { id: string; type: 'one-time' | 'subscription' | 'free' }) => {
