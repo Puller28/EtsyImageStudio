@@ -9,6 +9,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(userId: string, updates: Partial<InsertUser>): Promise<User>;
   updateUserCredits(userId: string, credits: number): Promise<void>;
 
   // Project methods
@@ -138,6 +139,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User> {
+    const [user] = await db.update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user;
+  }
+
   async updateUserCredits(userId: string, credits: number): Promise<void> {
     await db.update(users)
       .set({ credits })
@@ -145,7 +157,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
-    const [project] = await db.insert(projects).values([insertProject]).returning();
+    const [project] = await db.insert(projects).values(insertProject).returning();
     return project;
   }
 
@@ -213,6 +225,10 @@ class RobustStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     return this.executeWithFallback(storage => storage.createUser(user));
+  }
+
+  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User> {
+    return this.executeWithFallback(storage => storage.updateUser(userId, updates));
   }
 
   async updateUserCredits(userId: string, credits: number): Promise<void> {
