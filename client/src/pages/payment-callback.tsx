@@ -14,9 +14,20 @@ export default function PaymentCallback() {
     error?: string;
   } | null>(null);
 
+  // Try to get reference from URL params or query string
+  const getReference = () => {
+    if (params?.reference) return params.reference;
+    
+    // Try to get from URL query parameters  
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('reference');
+  };
+
+  const reference = getReference();
+
   const { data, isLoading } = useQuery({
-    queryKey: ["/api/verify-payment", params?.reference],
-    enabled: !!params?.reference,
+    queryKey: ["/api/verify-payment", reference],
+    enabled: !!reference,
     retry: false,
   });
 

@@ -136,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           credits: creditPackage.credits,
           userId: req.userId,
         },
-        callback_url: `${req.protocol}://${req.get('host')}/payment-callback/{{reference}}`,
+        callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
       };
 
       const result = await PaystackService.initializePayment(paymentData);
@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           credits: subscriptionPlan.credits,
           userId: req.userId,
         },
-        callback_url: `${req.protocol}://${req.get('host')}/payment-callback/{{reference}}`,
+        callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
       };
 
       const result = await PaystackService.initializeSubscription(subscriptionData);
@@ -241,6 +241,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error subscribing to plan:", error);
       res.status(500).json({ error: "Failed to initiate subscription" });
+    }
+  });
+
+  // Paystack webhook endpoint
+  app.post("/api/paystack-webhook", async (req, res) => {
+    try {
+      const { PaystackService } = await import("./paystack");
+      const secret = process.env.PAYSTACK_SECRET_KEY;
+      
+      if (!secret) {
+        return res.status(500).json({ error: "Paystack secret key not configured" });
+      }
+
+      // Verify webhook signature
+      const hash = require('crypto')
+        .createHmac('sha512', secret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+      if (hash !== req.headers['x-paystack-signature']) {
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+
+      const event = req.body;
+      
+      if (event.event === 'charge.success') {
+        const { reference, metadata } = event.data;
+        
+        if (metadata && metadata.userId && metadata.credits) {
+          // Get current user
+          const user = await storage.getUser(metadata.userId);
+          if (user) {
+            // Add credits to user account
+            const newCredits = user.credits + parseInt(metadata.credits);
+            await storage.updateUserCredits(metadata.userId, newCredits);
+            
+            console.log(`✅ Webhook: Added ${metadata.credits} credits to user ${metadata.userId} via ${reference}`);
+          }
+        }
+      }
+      
+      res.status(200).json({ status: 'success' });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
     }
   });
 

@@ -29,6 +29,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/buy-credits" component={BuyCredits} />
       <Route path="/payment-callback/:reference" component={PaymentCallback} />
+      <Route path="/payment-callback" component={PaymentCallback} />
       <Route component={NotFound} />
     </Switch>
   );
