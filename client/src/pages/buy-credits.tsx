@@ -48,7 +48,10 @@ export default function BuyCredits() {
   const subscriptions = allPlans?.subscriptionPlans || [];
 
   const purchaseMutation = useMutation({
-    mutationFn: async ({ id, type }: { id: string; type: 'one-time' | 'subscription' }) => {
+    mutationFn: async ({ id, type }: { id: string; type: 'one-time' | 'subscription' | 'free' }) => {
+      if (type === 'free') {
+        throw new Error('Free plan is already active');
+      }
       const endpoint = type === 'subscription' ? '/api/subscribe' : '/api/purchase-credits';
       const payload = type === 'subscription' ? { planId: id } : { packageId: id };
       const response = await apiRequest("POST", endpoint, payload);
@@ -70,12 +73,21 @@ export default function BuyCredits() {
     },
   });
 
-  const handlePurchase = (id: string, type: 'one-time' | 'subscription') => {
+  const handlePurchase = (id: string, type: 'one-time' | 'subscription' | 'free') => {
     if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to purchase credits",
         variant: "destructive",
+      });
+      return;
+    }
+
+    if (type === 'free') {
+      toast({
+        title: "Free Plan Active",
+        description: "You're already on the free plan with 100 monthly credits",
+        variant: "default",
       });
       return;
     }
@@ -184,7 +196,7 @@ export default function BuyCredits() {
                 <Button
                   className="w-full"
                   onClick={() => handlePurchase(plan.id, plan.type as 'subscription' | 'free')}
-                  disabled={processingPackage === plan.id || plan.type === 'free'}
+                  disabled={processingPackage === plan.id}
                   variant={plan.type === 'free' ? 'outline' : 'default'}
                   data-testid={`button-subscribe-${plan.id}`}
                 >
