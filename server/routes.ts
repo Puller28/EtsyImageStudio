@@ -197,8 +197,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscribe to plan endpoint
   app.post("/api/subscribe", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
+      // Debug authentication status
+      console.log('🔍 Subscribe Debug:', {
+        hasUserId: !!req.userId,
+        hasUser: !!req.user,
+        userId: req.userId,
+        userEmail: req.user?.email
+      });
+
+      // If user is not authenticated, provide a helpful error message
       if (!req.userId || !req.user) {
-        return res.status(401).json({ error: "Authentication required" });
+        console.warn('🔍 Subscription attempted without valid authentication');
+        return res.status(401).json({ 
+          error: "Authentication required", 
+          message: "Please ensure you are logged in to subscribe to a plan"
+        });
       }
 
       const { planId } = req.body;
