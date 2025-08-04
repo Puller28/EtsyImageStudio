@@ -65,9 +65,19 @@ export default function BuyCredits() {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('🔗 Payment response:', data);
       if (data.authorization_url) {
+        console.log('🔗 Redirecting to Paystack:', data.authorization_url);
         // Redirect to Paystack payment page
         window.location.href = data.authorization_url;
+      } else {
+        console.error('❌ No authorization_url in response:', data);
+        toast({
+          title: "Payment Error",
+          description: "Invalid payment response from server",
+          variant: "destructive",
+        });
+        setProcessingPackage(null);
       }
     },
     onError: (error: any) => {
@@ -99,6 +109,7 @@ export default function BuyCredits() {
       return;
     }
 
+    console.log('🛒 Starting purchase:', { id, type });
     setProcessingPackage(id);
     purchaseMutation.mutate({ id, type });
   };

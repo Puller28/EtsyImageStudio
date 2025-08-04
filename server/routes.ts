@@ -255,8 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify webhook signature
-      const hash = require('crypto')
-        .createHmac('sha512', secret)
+      const crypto = await import('crypto');
+      const hash = crypto.createHmac('sha512', secret)
         .update(JSON.stringify(req.body))
         .digest('hex');
 
