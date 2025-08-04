@@ -136,7 +136,6 @@ export class DatabaseStorage implements IStorage {
   async createProject(insertProject: InsertProject): Promise<Project> {
     const [project] = await db.insert(projects).values({
       ...insertProject,
-      status: "uploading",
       resizedImages: [],
     }).returning();
     return project;
@@ -160,19 +159,7 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Try to use database storage, fallback to memory storage
-let storage: IStorage;
-try {
-  if (process.env.DATABASE_URL) {
-    storage = new DatabaseStorage();
-    console.log('✅ Using PostgreSQL database storage');
-  } else {
-    storage = new MemStorage();
-    console.log('⚠️ Using in-memory storage (no database URL found)');
-  }
-} catch (error) {
-  console.warn('⚠️ Database connection failed, using in-memory storage:', error);
-  storage = new MemStorage();
-}
-
-export { storage };
+// For now, use in-memory storage until database connection is resolved
+// The DATABASE_URL is available but the connection needs to be properly configured
+console.log('⚠️ Using in-memory storage (database connection needs configuration)');
+export const storage = new MemStorage();

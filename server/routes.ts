@@ -299,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-art", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       // Check user credits first (AI generation costs 2 credits)
-      const user = await storage.getUser(req.userId);
+      const user = await storage.getUser(req.userId!);
       if (!user || user.credits < 2) {
         return res.status(400).json({ 
           error: user && user.credits === 1 
@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Deduct 2 credits for AI art generation
       const newCredits = Math.max(0, user.credits - 2);
-      await storage.updateUserCredits(req.userId, newCredits);
+      await storage.updateUserCredits(req.userId!, newCredits);
       console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId} new balance: ${newCredits}`);
       
       res.json({ 
