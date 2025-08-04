@@ -58,9 +58,18 @@ export default function Dashboard() {
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      const token = authUser?.token;
+      const headers: HeadersInit = {};
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch("/api/projects", {
         method: "POST",
+        headers,
         body: data,
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error("Failed to create project");
@@ -81,9 +90,17 @@ export default function Dashboard() {
       // Automatically start processing after project creation
       console.log("🟠 Auto-starting processing for project:", project.id);
       try {
+        const token = authUser?.token;
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
         const response = await fetch(`/api/projects/${project.id}/process`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers,
+          credentials: "include",
         });
         
         if (response.ok) {
@@ -218,9 +235,17 @@ export default function Dashboard() {
   const handleProcessProject = async (projectId: string) => {
     console.log("Direct processing for project:", projectId);
     try {
+      const token = authUser?.token;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/projects/${projectId}/process`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers,
+        credentials: "include",
       });
       
       if (response.ok) {
