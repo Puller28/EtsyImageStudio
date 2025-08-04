@@ -82,7 +82,7 @@ export const subscriptionPlans = [
       'Priority processing',
       'Email support'
     ],
-    paystackPlanCode: '' // To be set when you create the plan in Paystack dashboard
+    paystackPlanCode: 'PLN_7uytu5e4nqtjykj'
   },
   {
     id: 'business_monthly',
@@ -101,7 +101,7 @@ export const subscriptionPlans = [
       'Premium support',
       'Commercial license'
     ],
-    paystackPlanCode: '' // To be set when you create the plan in Paystack dashboard
+    paystackPlanCode: 'PLN_rlfsy9bnb8vqwsf'
   }
 ];
 
