@@ -1,0 +1,176 @@
+2025-08-05 20:41:38.51
+1fd06e65
+User
+endpoint: 'GET /api/projects'
+2025-08-05 20:41:38.51
+1fd06e65
+User
+}
+2025-08-05 20:41:38.51
+1fd06e65
+User
+🔍 Token verification successful: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151' }
+2025-08-05 20:41:38.57
+1fd06e65
+User
+🔍 User lookup result: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151', found: true }
+2025-08-05 20:41:38.57
+1fd06e65
+User
+🔍 Token auth successful: 6d5d731b-5f52-428c-a229-b92df5d7c151
+2025-08-05 20:41:38.57
+1fd06e65
+User
+🔍 Final auth state: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151', hasUser: true }
+2025-08-05 20:41:38.57
+1fd06e65
+User
+6:41:38 PM [express] GET /api/user 200 in 64ms :: {"id":"6d5d731b-5f52-428c-a229-b92df5d7c151","emai…
+2025-08-05 20:41:38.92
+1fd06e65
+User
+🔍 User lookup result: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151', found: true }
+2025-08-05 20:41:38.92
+1fd06e65
+User
+🔍 Token auth successful: 6d5d731b-5f52-428c-a229-b92df5d7c151
+2025-08-05 20:41:38.92
+1fd06e65
+User
+🔍 Final auth state: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151', hasUser: true }
+2025-08-05 20:41:38.98
+1fd06e65
+User
+6:41:38 PM [express] GET /api/projects 304 in 468ms :: []
+2025-08-05 20:41:45.49
+1fd06e65
+User
+🔍 Token verification successful: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151' }
+2025-08-05 20:41:45.50
+1fd06e65
+User
+6:41:45 PM [express] GET /api/all-plans 304 in 1ms :: {"creditPackages":[{"id":"credits_50","name":"…
+2025-08-05 20:41:45.98
+1fd06e65
+User
+6:41:45 PM [express] GET /api/subscription-status 200 in 492ms :: {"subscriptionStatus":"active","su…
+2025-08-05 20:42:29.10
+1fd06e65
+User
+🔍 Token verification successful: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151' }
+2025-08-05 20:42:29.60
+1fd06e65
+User
+🔍 Cancellation Debug: {
+2025-08-05 20:42:29.60
+1fd06e65
+User
+userId: '6d5d731b-5f52-428c-a229-b92df5d7c151',
+2025-08-05 20:42:29.60
+1fd06e65
+User
+subscriptionId: 'rklynfpv5l',
+2025-08-05 20:42:29.60
+1fd06e65
+User
+subscriptionIdType: 'payment_reference',
+2025-08-05 20:42:29.60
+1fd06e65
+User
+user: {
+2025-08-05 20:42:29.60
+1fd06e65
+User
+subscriptionStatus: 'active',
+2025-08-05 20:42:29.60
+1fd06e65
+User
+subscriptionPlan: 'pro_monthly',
+2025-08-05 20:42:29.60
+1fd06e65
+User
+subscriptionEndDate: 2025-09-05T18:41:24.000Z
+2025-08-05 20:42:29.60
+1fd06e65
+User
+}
+2025-08-05 20:42:29.60
+1fd06e65
+User
+}
+2025-08-05 20:42:29.60
+1fd06e65
+User
+🔍 Processing cancellation for subscription: rklynfpv5l
+2025-08-05 20:42:29.60
+1fd06e65
+User
+🔍 Searching for active Paystack subscriptions for: f@f.com
+2025-08-05 20:42:30.08
+1fd06e65
+User
+🔍 Total subscriptions found: 50
+2025-08-05 20:42:30.08
+1fd06e65
+User
+🔍 Active subscriptions for user: 1
+2025-08-05 20:42:30.08
+1fd06e65
+User
+✅ Found active subscription: SUB_be1dsa82b4787bv
+2025-08-05 20:42:30.08
+1fd06e65
+User
+🔍 Found active Paystack subscription, attempting to cancel: SUB_be1dsa82b4787bv
+2025-08-05 20:42:30.26
+1fd06e65
+User
+🔍 Paystack disable response: {
+2025-08-05 20:42:30.26
+1fd06e65
+User
+status: false,
+2025-08-05 20:42:30.26
+1fd06e65
+User
+message: '"token" is required',
+2025-08-05 20:42:30.26
+1fd06e65
+User
+meta: { nextStep: 'Provide all required params ' },
+2025-08-05 20:42:30.26
+1fd06e65
+User
+type: 'validation_error',
+2025-08-05 20:42:30.26
+1fd06e65
+User
+code: 'missing_params'
+2025-08-05 20:42:30.26
+1fd06e65
+User
+}
+2025-08-05 20:42:30.26
+1fd06e65
+User
+⚠️ WARNING: Could not cancel with Paystack, proceeding with local cancellation only
+2025-08-05 20:42:30.32
+1fd06e65
+User
+6:42:30 PM [express] POST /api/cancel-subscription 200 in 1227ms :: {"message":"Subscription cancell…
+2025-08-05 20:42:30.60
+1fd06e65
+User
+🔍 Token verification successful: { userId: '6d5d731b-5f52-428c-a229-b92df5d7c151' }
+2025-08-05 20:42:30.73
+1fd06e65
+User
+6:42:30 PM [express] GET /api/subscription-status 200 in 124ms :: {"subscriptionStatus":"cancelled",…
+2025-08-05 20:43:44.83
+3d8610f3
+System
+system: received signal terminated
+
+Wrap
+
+Colors

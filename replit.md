@@ -27,6 +27,8 @@ EtsyArt Pro is a comprehensive web application designed specifically for Etsy AI
 ✅ **Real Paystack Integration** - Built subscription system using authentic Paystack transaction data, automatic subscription detection from payment history, proper billing period calculations, and webhook integration for subscription activation without any mock or simulated data
 ✅ **Authentication Security Fixed** - Eliminated dangerous demo user fallback that was causing data leakage between accounts, implemented proper user isolation with no fallback mechanisms
 ✅ **Subscription Credit Allocation Corrected** - Fixed Pro plan (now 500 credits) and Business plan (now 1500 credits) to match pricing page specifications, ensuring accurate credit distribution
+✅ **Credit Duplication Prevention System** - Implemented comprehensive idempotency system with `processedPayments` table tracking to prevent double credit allocation from both payment verification endpoint and webhook processing
+✅ **Paystack Subscription Cancellation Fixed** - Resolved API integration by implementing correct Paystack disable subscription endpoint with both subscription code and email token parameters as required by Paystack API specifications
 
 ## User Preferences
 

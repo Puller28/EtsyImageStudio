@@ -139,6 +139,13 @@ export class SubscriptionService {
         console.log('🔍 Found active Paystack subscription, attempting to cancel:', paystackSubscription.subscriptionCode);
         
         try {
+          // Get full subscription details to retrieve email token
+          const subscriptionDetails = await this.getSubscriptionDetails(paystackSubscription.subscriptionCode);
+          
+          if (!subscriptionDetails.success || !subscriptionDetails.emailToken) {
+            throw new Error('Could not retrieve subscription email token');
+          }
+          
           const response = await fetch(`https://api.paystack.co/subscription/disable`, {
             method: 'POST',
             headers: {
@@ -146,7 +153,8 @@ export class SubscriptionService {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              code: paystackSubscription.subscriptionCode
+              code: paystackSubscription.subscriptionCode,
+              token: subscriptionDetails.emailToken
             })
           });
 
@@ -346,6 +354,48 @@ export class SubscriptionService {
       return { success: false };
     } catch (error) {
       console.error('❌ Error searching for subscriptions:', error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Get full subscription details from Paystack including email token
+   */
+  private static async getSubscriptionDetails(subscriptionCode: string): Promise<{
+    success: boolean;
+    emailToken?: string;
+    status?: string;
+  }> {
+    try {
+      console.log('🔍 Fetching subscription details for:', subscriptionCode);
+      
+      const response = await fetch(`https://api.paystack.co/subscription/${subscriptionCode}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Failed to fetch subscription details from Paystack');
+        return { success: false };
+      }
+
+      const data = await response.json();
+      
+      if (data.status && data.data) {
+        console.log('✅ Retrieved subscription details successfully');
+        return {
+          success: true,
+          emailToken: data.data.email_token,
+          status: data.data.status
+        };
+      } else {
+        return { success: false };
+      }
+    } catch (error) {
+      console.error('❌ Error fetching subscription details:', error);
       return { success: false };
     }
   }
