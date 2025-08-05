@@ -36,6 +36,8 @@ export const useAuth = create<AuthState>()(
       },
       
       logout: () => {
+        console.log('🔐 Logging out user');
+        localStorage.removeItem('auth-storage');
         set({ 
           user: null, 
           token: null, 

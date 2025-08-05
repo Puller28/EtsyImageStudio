@@ -61,6 +61,9 @@ export default function BuyCredits() {
       }
       const endpoint = type === 'subscription' ? '/api/subscribe' : '/api/purchase-credits';
       const payload = type === 'subscription' ? { planId: id } : { packageId: id };
+      
+      console.log('🔍 About to make API request:', { endpoint, payload, type });
+      
       const response = await apiRequest("POST", endpoint, payload);
       return response.json();
     },
@@ -109,7 +112,7 @@ export default function BuyCredits() {
       return;
     }
 
-    console.log('🛒 Starting purchase:', { id, type });
+    console.log('🛒 Starting subscription for plan:', id, 'ID:', id);
     setProcessingPackage(id);
     purchaseMutation.mutate({ id, type });
   };

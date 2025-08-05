@@ -18,15 +18,41 @@ function getAuthToken(): string | null {
     
     if (authStorage) {
       const parsed = JSON.parse(authStorage);
+      const token = parsed.token || parsed.state?.token;
       console.log('🔍 Parsed Auth Data:', { 
         hasState: !!parsed.state,
-        hasToken: !!(parsed.token || parsed.state?.token),
+        hasToken: !!token,
         hasUser: !!(parsed.user || parsed.state?.user),
-        tokenPreview: (parsed.token || parsed.state?.token) ? (parsed.token || parsed.state?.token).substring(0, 20) + '...' : 'null'
+        tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+        tokenExpiry: token ? 'checking...' : 'no token'
       });
       
+      // Check if token is expired
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const isExpired = payload.exp * 1000 < Date.now();
+          console.log('🔍 Token Status:', {
+            expired: isExpired,
+            expiresAt: new Date(payload.exp * 1000).toISOString(),
+            userId: payload.userId
+          });
+          
+          if (isExpired) {
+            console.warn('🔍 Token is expired, triggering logout');
+            localStorage.removeItem('auth-storage');
+            // Trigger a page reload to clear the auth state
+            window.location.reload();
+            return null;
+          }
+        } catch (error) {
+          console.error('🔍 Token decode error:', error);
+          return null;
+        }
+      }
+      
       // Handle both direct storage and nested state structure
-      return parsed.token || parsed.state?.token || null;
+      return token;
     }
   } catch (error) {
     console.error('🔍 Auth Storage Parse Error:', error);
