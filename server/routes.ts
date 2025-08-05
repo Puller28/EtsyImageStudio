@@ -226,16 +226,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subscribe to plan endpoint
-  app.post("/api/subscribe", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  // Subscribe to plan endpoint - Use optionalAuth with strict validation for better production compatibility
+  app.post("/api/subscribe", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
       // Debug authentication status
       console.log('🔍 Subscribe Debug:', {
         hasUserId: !!req.userId,
         hasUser: !!req.user,
         userId: req.userId,
-        userEmail: req.user?.email
+        userEmail: req.user?.email,
+        isDemoUser: req.userId === 'demo-user-1'
       });
+
+      // Strict validation: reject demo user for subscription to prevent payment issues
+      if (!req.userId || !req.user || req.userId === 'demo-user-1') {
+        console.warn('🔍 Subscription attempted without proper authentication or with demo user');
+        return res.status(401).json({ 
+          error: "Authentication required", 
+          message: "Please ensure you are properly logged in to subscribe to a plan. Demo users cannot purchase subscriptions."
+        });
+      }
 
       const { planId } = req.body;
       const { PaystackService } = await import("./paystack");
