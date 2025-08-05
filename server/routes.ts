@@ -110,6 +110,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Paystack connectivity test endpoint
+  app.get("/api/debug/paystack-status", async (req, res) => {
+    try {
+      const hasSecretKey = !!process.env.PAYSTACK_SECRET_KEY;
+      const keyType = hasSecretKey 
+        ? (process.env.PAYSTACK_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'live')
+        : 'missing';
+      
+      let apiTest = null;
+      if (hasSecretKey) {
+        try {
+          const response = await fetch('https://api.paystack.co/transaction', {
+            headers: {
+              'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          apiTest = {
+            status: response.status,
+            ok: response.ok,
+            accessible: response.status !== 401 && response.status !== 403
+          };
+        } catch (error: any) {
+          apiTest = { error: error.message };
+        }
+      }
+      
+      res.json({
+        environment: process.env.NODE_ENV || 'development',
+        paystack: {
+          hasSecretKey,
+          keyType,
+          apiTest
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Debug endpoint for token validation (development only)
   app.post("/api/debug/validate-token", async (req, res) => {
     if (process.env.NODE_ENV === 'production') {

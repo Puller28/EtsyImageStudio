@@ -5,6 +5,22 @@ if (!process.env.PAYSTACK_SECRET_KEY) {
   throw new Error('PAYSTACK_SECRET_KEY environment variable is required');
 }
 
+// Environment detection
+const isTestMode = process.env.PAYSTACK_SECRET_KEY.startsWith('sk_test_');
+const isLiveMode = process.env.PAYSTACK_SECRET_KEY.startsWith('sk_live_');
+
+if (!isTestMode && !isLiveMode) {
+  console.warn('⚠️ Paystack key format not recognized. Expected sk_test_ or sk_live_ prefix.');
+}
+
+console.log(`🔑 Paystack initialized in ${isTestMode ? 'TEST' : 'LIVE'} mode`);
+
+// Production safety check
+if (process.env.NODE_ENV === 'production' && isTestMode) {
+  console.warn('⚠️ WARNING: Using TEST keys in PRODUCTION environment!');
+  console.warn('⚠️ Switch to LIVE keys for real payments');
+}
+
 const paystack = Paystack(process.env.PAYSTACK_SECRET_KEY);
 
 // One-time credit packages (top-ups)
@@ -188,6 +204,13 @@ export class PaystackService {
   
   static async initializePayment(data: PaymentInitializationData) {
     try {
+      console.log('🔍 Initializing payment:', {
+        email: data.email,
+        amount: data.amount,
+        currency: data.currency,
+        environment: isTestMode ? 'TEST' : 'LIVE'
+      });
+
       const response = await paystack.transaction.initialize({
         email: data.email,
         amount: data.amount,
@@ -196,6 +219,7 @@ export class PaystackService {
         callback_url: data.callback_url
       });
 
+      console.log('✅ Payment initialization successful');
       return {
         success: true,
         data: {
@@ -205,7 +229,16 @@ export class PaystackService {
         }
       };
     } catch (error: any) {
-      console.error('Paystack initialization error:', error);
+      console.error('❌ Paystack initialization error:', error);
+      
+      // Enhanced error reporting for production debugging
+      if (error.response) {
+        console.error('❌ Paystack API response:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+      }
+      
       return {
         success: false,
         error: error.message || 'Payment initialization failed'
