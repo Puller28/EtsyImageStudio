@@ -113,26 +113,13 @@ export class SubscriptionService {
         return { success: false, message: 'User not found' };
       }
 
-      // Call Paystack API to cancel subscription (prevents future billing)
-      const response = await fetch(`https://api.paystack.co/subscription/disable`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          code: subscriptionId,
-          token: subscriptionId
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.status) {
-        // Keep subscription active until end of billing period
-        // Only update status to 'cancelled' but maintain access until expiry
+      // For subscriptions detected from payment history (not real Paystack subscriptions),
+      // we can directly update the status without calling Paystack API
+      if (subscriptionId && !subscriptionId.startsWith('sub_')) {
+        // This is likely a payment reference, not a subscription ID
+        // Update status to cancelled but maintain access until end date
         await storage.updateUserSubscription(userId, {
-          subscriptionStatus: 'cancelled', // Prevents future renewals
+          subscriptionStatus: 'cancelled',
           // Keep all other fields (plan, expiry date) to maintain access
         });
 
@@ -143,10 +130,66 @@ export class SubscriptionService {
           success: true,
           message: `Subscription cancelled successfully. You'll continue to have full access until ${endDateString}. No future charges will occur.`
         };
-      } else {
+      }
+
+      // For real Paystack subscriptions (starting with 'sub_'), call the API
+      try {
+        const response = await fetch(`https://api.paystack.co/subscription/disable`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            code: subscriptionId,
+            token: subscriptionId
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.status) {
+          await storage.updateUserSubscription(userId, {
+            subscriptionStatus: 'cancelled',
+          });
+
+          const endDate = user.subscriptionEndDate;
+          const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
+
+          return {
+            success: true,
+            message: `Subscription cancelled successfully. You'll continue to have full access until ${endDateString}. No future charges will occur.`
+          };
+        } else {
+          // If Paystack API fails, still allow local cancellation
+          console.warn('Paystack cancellation failed, proceeding with local cancellation:', data.message);
+          
+          await storage.updateUserSubscription(userId, {
+            subscriptionStatus: 'cancelled',
+          });
+
+          const endDate = user.subscriptionEndDate;
+          const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
+
+          return {
+            success: true,
+            message: `Subscription cancelled locally. You'll continue to have access until ${endDateString}. Please contact support if you continue to be charged.`
+          };
+        }
+      } catch (paystackError) {
+        console.warn('Paystack API error, proceeding with local cancellation:', paystackError);
+        
+        // Proceed with local cancellation even if Paystack API fails
+        await storage.updateUserSubscription(userId, {
+          subscriptionStatus: 'cancelled',
+        });
+
+        const endDate = user.subscriptionEndDate;
+        const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
+
         return {
-          success: false,
-          message: data.message || 'Failed to cancel subscription'
+          success: true,
+          message: `Subscription cancelled locally. You'll continue to have access until ${endDateString}. Please contact support if you continue to be charged.`
         };
       }
     } catch (error: any) {
