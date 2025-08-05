@@ -113,9 +113,22 @@ export class SubscriptionService {
         return { success: false, message: 'User not found' };
       }
 
+      console.log('🔍 Cancellation Debug:', {
+        userId,
+        subscriptionId,
+        subscriptionIdType: subscriptionId?.startsWith('sub_') ? 'real_paystack' : 'payment_reference',
+        user: {
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionEndDate: user.subscriptionEndDate
+        }
+      });
+
       // For subscriptions detected from payment history (not real Paystack subscriptions),
       // we can directly update the status without calling Paystack API
       if (subscriptionId && !subscriptionId.startsWith('sub_')) {
+        console.log('🔍 Processing local cancellation for payment reference:', subscriptionId);
+        
         // This is likely a payment reference, not a subscription ID
         // Update status to cancelled but maintain access until end date
         await storage.updateUserSubscription(userId, {
@@ -126,6 +139,7 @@ export class SubscriptionService {
         const endDate = user.subscriptionEndDate;
         const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
 
+        console.log('✅ Local cancellation successful');
         return {
           success: true,
           message: `Subscription cancelled successfully. You'll continue to have full access until ${endDateString}. No future charges will occur.`
