@@ -165,19 +165,10 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     try {
       console.log("🛒 Starting subscription for plan:", subscriptionPlan.name, "ID:", subscriptionPlan.id);
       
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          planId: subscriptionPlan.id,
-        }),
+      // Use apiRequest instead of direct fetch to ensure Authorization header is included
+      const response = await apiRequest("POST", "/api/subscribe", {
+        planId: subscriptionPlan.id,
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const data = await response.json();
       console.log("🔗 Subscription response:", data);
@@ -342,7 +333,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {allPlans?.creditPackages?.length > 0 ? allPlans.creditPackages.map((pkg: any) => (
+            {allPlans?.creditPackages && allPlans.creditPackages.length > 0 ? allPlans.creditPackages.map((pkg: any) => (
               <Card key={pkg.id} className="relative flex flex-col">
                 {pkg.credits === 250 && (
                   <Badge className="absolute -top-2 -right-2 bg-primary">
