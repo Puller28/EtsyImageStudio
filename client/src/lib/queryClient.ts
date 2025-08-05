@@ -70,17 +70,18 @@ export async function apiRequest(
   const token = getAuthToken();
   const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
   
+  // Add Authorization header if token exists
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  
   console.log('🔍 API Request Debug:', {
     method,
     url,
     hasToken: !!token,
-    tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
-    willSendAuthHeader: !!token
+    tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+    hasAuthHeader: !!headers.Authorization
   });
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
 
   const res = await fetch(url, {
     method,
