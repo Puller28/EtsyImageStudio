@@ -7,17 +7,28 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Get auth token from localStorage
+// Get auth token from localStorage with enhanced production debugging
 function getAuthToken(): string | null {
   try {
+    // Check all possible storage locations for production compatibility
     const authStorage = localStorage.getItem('auth-storage');
-    console.log('🔍 Auth Storage Debug:', { 
+    const authStorageBackup = localStorage.getItem('auth-storage-backup');
+    const sessionAuth = sessionStorage.getItem('auth-storage');
+    
+    console.log('🔍 Enhanced Auth Storage Debug:', { 
       hasStorage: !!authStorage,
-      storagePreview: authStorage ? authStorage.substring(0, 100) + '...' : 'null'
+      hasBackupStorage: !!authStorageBackup,
+      hasSessionStorage: !!sessionAuth,
+      storagePreview: authStorage ? authStorage.substring(0, 100) + '...' : 'null',
+      allStorageKeys: Object.keys(localStorage).filter(key => key.includes('auth')),
+      environment: window.location.hostname
     });
     
-    if (authStorage) {
-      const parsed = JSON.parse(authStorage);
+    // Try multiple storage sources for production compatibility
+    const storageToTry = authStorage || authStorageBackup || sessionAuth;
+    
+    if (storageToTry) {
+      const parsed = JSON.parse(storageToTry);
       const token = parsed.token || parsed.state?.token;
       console.log('🔍 Parsed Auth Data:', { 
         hasState: !!parsed.state,
@@ -41,10 +52,13 @@ function getAuthToken(): string | null {
           if (isExpired) {
             console.warn('🔍 Token is expired, clearing authentication');
             localStorage.removeItem('auth-storage');
-            // Clear all auth-related storage to force fresh authentication
+            localStorage.removeItem('auth-storage-backup');
             sessionStorage.clear();
-            // Trigger a page reload to clear the auth state
-            setTimeout(() => window.location.reload(), 100);
+            // Force re-authentication for production
+            if (window.location.hostname.includes('replit.dev')) {
+              console.log('🔄 Production environment detected, forcing re-authentication');
+              window.location.reload();
+            }
             return null;
           }
         } catch (error) {

@@ -27,11 +27,21 @@ export const useAuth = create<AuthState>()(
       
       login: (user: User, token: string) => {
         console.log('🔐 Auth login called with:', { userId: user.id, token: token.substring(0, 20) + '...' });
-        set({ 
-          user, 
-          token, 
-          isAuthenticated: true 
-        });
+        
+        // Store authentication data with backup for production compatibility
+        const authData = { user, token, isAuthenticated: true };
+        set(authData);
+        
+        // Create backup storage for production environment
+        try {
+          localStorage.setItem('auth-storage-backup', JSON.stringify({
+            state: authData
+          }));
+          console.log('✅ Auth state updated with backup storage');
+        } catch (error) {
+          console.warn('Failed to create backup storage:', error);
+        }
+        
         console.log('✅ Auth state updated successfully');
       },
       
