@@ -35,15 +35,21 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
             <div className="grid grid-cols-2 gap-3">
               <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                 <RadioGroupItem value="2x" className="text-primary" />
-                <div className="ml-3">
-                  <span className="block font-medium text-gray-900">2x Upscale</span>
+                <div className="ml-3 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="block font-medium text-gray-900">2x Upscale</span>
+                    <span className="text-sm font-medium text-primary">1 credit</span>
+                  </div>
                   <span className="block text-sm text-gray-500">Recommended</span>
                 </div>
               </Label>
               <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                 <RadioGroupItem value="4x" className="text-primary" />
-                <div className="ml-3">
-                  <span className="block font-medium text-gray-900">4x Upscale</span>
+                <div className="ml-3 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="block font-medium text-gray-900">4x Upscale</span>
+                    <span className="text-sm font-medium text-primary">2 credits</span>
+                  </div>
                   <span className="block text-sm text-gray-500">Higher quality</span>
                 </div>
               </Label>

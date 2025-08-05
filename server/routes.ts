@@ -621,6 +621,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { artworkTitle, styleKeywords, upscaleOption, mockupTemplate } = req.body;
       
+      // Check user credits before project creation
+      const user = await storage.getUser(req.userId);
+      const creditsRequired = (upscaleOption === '4x') ? 2 : 1;
+      
+      if (!user || user.credits < creditsRequired) {
+        return res.status(400).json({ 
+          error: `Insufficient credits. ${upscaleOption} upscaling requires ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''}. Please purchase more credits.`
+        });
+      }
+      
       const projectData = insertProjectSchema.parse({
         userId: req.userId,
         title: artworkTitle || "Untitled Artwork",
@@ -633,13 +643,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const project = await storage.createProject(projectData);
       
-      // Deduct 1 credit from user
-      const user = await storage.getUser(req.userId);
-      if (user && user.credits > 0) {
-        const newCredits = Math.max(0, user.credits - 1);
-        await storage.updateUserCredits(req.userId, newCredits);
-        console.log(`💳 Deducted 1 credit from user ${req.userId}. New balance: ${newCredits}`);
-      }
+      // Deduct credits based on upscale option (2x = 1 credit, 4x = 2 credits)
+      const newCredits = Math.max(0, user.credits - creditsRequired);
+      await storage.updateUserCredits(req.userId, newCredits);
+      console.log(`💳 Deducted ${creditsRequired} credits for ${upscaleOption} upscaling from user ${req.userId}. New balance: ${newCredits}`);
       
       res.json(project);
     } catch (error) {

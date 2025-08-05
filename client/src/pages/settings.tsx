@@ -221,7 +221,8 @@ export default function Settings() {
                 
                 <div className="text-sm text-gray-600 space-y-2">
                   <p>• AI image generation: 2 credits per image</p>
-                  <p>• Image upscaling: 1 credit per operation</p>
+                  <p>• Image upscaling (2x): 1 credit per operation</p>
+                  <p>• Image upscaling (4x): 2 credits per operation</p>
                   <p>• Etsy listing generation: Free with processing</p>
                 </div>
 
