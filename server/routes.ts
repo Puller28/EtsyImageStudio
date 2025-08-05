@@ -297,19 +297,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: "Sarah M.",
               avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
               credits: 47,
+              subscriptionStatus: "free",
+              subscriptionPlan: null,
+              subscriptionId: null,
+              subscriptionStartDate: null,
+              subscriptionEndDate: null,
               createdAt: new Date(),
             };
           }
           if (user) {
-            // Add credits to user account
+            // Add credits to user account (with idempotency check)
             const creditsToAdd = parseInt(metadata.credits) || 0;
-            const newCredits = user.credits + creditsToAdd;
             
-            try {
-              await storage.updateUserCredits(user.id, newCredits);
-              console.log(`✅ Added ${creditsToAdd} credits to user ${user.id}`);
-            } catch (error) {
-              console.warn('Failed to update user credits, payment processed but credits not added:', error);
+            // Check if payment has already been processed to prevent double crediting
+            const isProcessed = await storage.isPaymentProcessed(reference);
+            if (isProcessed) {
+              console.log(`⚠️ Payment ${reference} already processed, skipping credit allocation`);
+            } else {
+              const newCredits = user.credits + creditsToAdd;
+              
+              try {
+                await storage.updateUserCredits(user.id, newCredits);
+                await storage.markPaymentProcessed(reference, user.id, creditsToAdd);
+                console.log(`✅ Added ${creditsToAdd} credits to user ${user.id} (first time processing ${reference})`);
+              } catch (error) {
+                console.warn('Failed to update user credits, payment processed but credits not added:', error);
+              }
             }
             
             res.json({
@@ -445,11 +458,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`✅ Webhook: Activated subscription ${metadata.planId} for user ${metadata.userId}`);
             }
             
-            // Add credits to user account
+            // Add credits to user account (with idempotency check)
             if (metadata.credits) {
-              const newCredits = user.credits + parseInt(metadata.credits);
-              await storage.updateUserCredits(metadata.userId, newCredits);
-              console.log(`✅ Webhook: Added ${metadata.credits} credits to user ${metadata.userId} via ${reference}`);
+              // Check if payment has already been processed to prevent double crediting
+              const isProcessed = await storage.isPaymentProcessed(reference);
+              if (isProcessed) {
+                console.log(`⚠️ Webhook: Payment ${reference} already processed, skipping credit allocation`);
+              } else {
+                const creditsToAdd = parseInt(metadata.credits);
+                const newCredits = user.credits + creditsToAdd;
+                
+                await storage.updateUserCredits(metadata.userId, newCredits);
+                await storage.markPaymentProcessed(reference, metadata.userId, creditsToAdd);
+                console.log(`✅ Webhook: Added ${creditsToAdd} credits to user ${metadata.userId} via ${reference} (first time processing)`);
+              }
             }
           }
         }

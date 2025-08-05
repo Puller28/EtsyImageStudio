@@ -1,5 +1,5 @@
 import { type User, type InsertUser, type Project, type InsertProject } from "@shared/schema";
-import { users, projects } from "@shared/schema";
+import { users, projects, processedPayments } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -24,6 +24,10 @@ export interface IStorage {
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByUserId(userId: string): Promise<Project[]>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
+
+  // Payment tracking methods
+  isPaymentProcessed(paymentReference: string): Promise<boolean>;
+  markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void>;
 }
 
 
@@ -31,10 +35,12 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private projects: Map<string, Project>;
+  private processedPayments: Set<string>;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
+    this.processedPayments = new Set();
     
     // Add a demo user
     const demoUser: User = {
@@ -43,6 +49,11 @@ export class MemStorage implements IStorage {
       name: "Sarah M.", 
       avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
       credits: 47,
+      subscriptionStatus: "free",
+      subscriptionPlan: null,
+      subscriptionId: null,
+      subscriptionStartDate: null,
+      subscriptionEndDate: null,
       subscriptionStatus: "free",
       subscriptionPlan: null,
       subscriptionId: null,
@@ -155,6 +166,14 @@ export class MemStorage implements IStorage {
     this.projects.set(id, updatedProject);
     return updatedProject;
   }
+
+  async isPaymentProcessed(paymentReference: string): Promise<boolean> {
+    return this.processedPayments.has(paymentReference);
+  }
+
+  async markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void> {
+    this.processedPayments.add(paymentReference);
+  }
 }
 
 // Database storage implementation
@@ -239,7 +258,19 @@ export class DatabaseStorage implements IStorage {
     return project;
   }
 
+  async isPaymentProcessed(paymentReference: string): Promise<boolean> {
+    const [payment] = await db.select().from(processedPayments)
+      .where(eq(processedPayments.paymentReference, paymentReference));
+    return !!payment;
+  }
 
+  async markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void> {
+    await db.insert(processedPayments).values({
+      paymentReference,
+      userId,
+      creditsAllocated,
+    });
+  }
 }
 
 // Robust storage with automatic fallback to in-memory when database fails
@@ -320,6 +351,14 @@ class RobustStorage implements IStorage {
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
     return this.executeWithFallback(storage => storage.updateProject(id, updates));
+  }
+
+  async isPaymentProcessed(paymentReference: string): Promise<boolean> {
+    return this.executeWithFallback(storage => storage.isPaymentProcessed(paymentReference));
+  }
+
+  async markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void> {
+    return this.executeWithFallback(storage => storage.markPaymentProcessed(paymentReference, userId, creditsAllocated));
   }
 }
 

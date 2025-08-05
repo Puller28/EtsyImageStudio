@@ -38,6 +38,14 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
+export const processedPayments = pgTable("processed_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  paymentReference: text("payment_reference").notNull().unique(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  creditsAllocated: integer("credits_allocated").notNull(),
+  processedAt: timestamp("processed_at").default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
