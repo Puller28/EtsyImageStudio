@@ -339,31 +339,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
           </div>
         )}
 
-        {/* Debug subscription status */}
-        {subscriptionStatus && (
-          <div className="mb-8">
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <strong>Debug - Subscription Status:</strong> {subscriptionStatus.subscriptionStatus} | 
-                    <strong> Active:</strong> {subscriptionStatus.isActive ? 'Yes' : 'No'} |
-                    <strong> Plan:</strong> {subscriptionStatus.subscriptionPlan || 'None'}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => refetchSubscription()}
-                    className="ml-4"
-                  >
-                    Refresh Status
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
+
 
         {subscriptionStatus && subscriptionStatus.subscriptionStatus === 'cancelled' && (
           <div className="mb-8">
