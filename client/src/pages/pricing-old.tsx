@@ -100,15 +100,17 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   // Cancel subscription mutation
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/cancel-subscription");
+      const response = await apiRequest("POST", "/api/cancel-subscription", {});
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled. You'll maintain access until the end of your billing period.",
+        description: data.message,
+        variant: "default",
       });
-      refetchSubscription();
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error: any) => {
       toast({
@@ -119,6 +121,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     },
   });
 
+  // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser;
 
   // Debug logging
@@ -306,6 +309,8 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
           </div>
         )}
 
+
+
         {subscriptionStatus && subscriptionStatus.subscriptionStatus === 'cancelled' && subscriptionStatus.isActive && (
           <div className="mb-8">
             <Alert className="border-orange-200 bg-orange-50">
@@ -407,6 +412,8 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
             Need extra credits? Purchase one-time credit packages
           </p>
           
+
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {allPlans?.creditPackages && allPlans.creditPackages.length > 0 ? allPlans.creditPackages.map((pkg: any) => (
               <Card key={pkg.id} className="relative flex flex-col">
@@ -466,11 +473,44 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
               </Card>
             )) : (
               <div className="col-span-full text-center text-gray-500">
-                Loading credit packages...
+                {allPlans ? "No credit packages available" : "Loading credit packages..."}
               </div>
             )}
           </div>
         </div>
+
+        {/* Credit System Explanation */}
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-center">How Credits Work</CardTitle>
+            <CardDescription className="text-center">
+              Understanding our simple, transparent pricing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Credit Usage</h3>
+                <ul className="space-y-2 text-gray-700">
+                  <li>• <strong>AI Art Generation:</strong> 2 credits per image</li>
+                  <li>• <strong>Image Upscaling:</strong> 1 credit per operation</li>
+                  <li>• Includes print formats + mockups</li>
+                  <li>• AI listing generation included</li>
+                </ul>
+              </div>
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">What You Get</h3>
+                <ul className="space-y-2 text-gray-700">
+                  <li>• High-resolution upscaled image</li>
+                  <li>• 5 print-ready formats</li>
+                  <li>• Professional mockups</li>
+                  <li>• SEO-optimized Etsy listing</li>
+                  <li>• Complete ZIP package</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         </div>
       </div>
     </div>
