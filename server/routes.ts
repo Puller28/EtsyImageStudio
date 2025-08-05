@@ -113,11 +113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Purchase credits endpoint
-  app.post("/api/purchase-credits", optionalAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/purchase-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      if (!req.userId || !req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
 
       const { packageId } = req.body;
       const { PaystackService } = await import("./paystack");
@@ -134,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           creditPackageId: packageId,
           credits: creditPackage.credits,
-          userId: req.userId,
+          userId: req.userId!, // Non-null assertion since authenticateToken ensures this exists
         },
         callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
       };
@@ -230,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Subscribe to plan endpoint
-  app.post("/api/subscribe", optionalAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/subscribe", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       // Debug authentication status
       console.log('🔍 Subscribe Debug:', {
@@ -239,15 +236,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.userId,
         userEmail: req.user?.email
       });
-
-      // If user is not authenticated, provide a helpful error message
-      if (!req.userId || !req.user) {
-        console.warn('🔍 Subscription attempted without valid authentication');
-        return res.status(401).json({ 
-          error: "Authentication required", 
-          message: "Please ensure you are logged in to subscribe to a plan"
-        });
-      }
 
       const { planId } = req.body;
       const { PaystackService } = await import("./paystack");
@@ -274,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           planId: planId,
           credits: subscriptionPlan.credits,
-          userId: req.userId,
+          userId: req.userId!, // Non-null assertion since authenticateToken ensures this exists
         },
         callback_url: `${req.protocol}://${req.get('host')}/payment-callback`,
       };

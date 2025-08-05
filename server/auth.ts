@@ -128,7 +128,12 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔍 OptionalAuth Debug:', { hasToken: !!token, hasAuthHeader: !!authHeader });
+  console.log('🔍 OptionalAuth Debug:', { 
+    hasToken: !!token, 
+    hasAuthHeader: !!authHeader,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+    endpoint: `${req.method} ${req.path}`
+  });
 
   if (token) {
     const decoded = AuthService.verifyToken(token);
@@ -139,14 +144,18 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
           req.userId = decoded.userId;
           req.user = user;
           console.log('🔍 Token auth successful:', req.userId);
+          console.log('🔍 Final auth state: { userId:', req.userId, ', hasUser:', !!req.user, '}');
+          return next();
         }
       } catch (error) {
         console.warn('Token auth failed:', error);
       }
+    } else {
+      console.warn('🔍 Token verification failed - invalid or expired token');
     }
   }
 
-  // If no valid auth, use demo user for backward compatibility
+  // If no valid auth, use demo user for backward compatibility (only for non-payment endpoints)
   if (!req.userId) {
     console.log('🔍 No auth found, trying demo user fallback');
     try {
