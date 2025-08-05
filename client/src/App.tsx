@@ -25,6 +25,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
       <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
       <Route path="/settings" component={Settings} />
       <Route path="/buy-credits" component={BuyCredits} />

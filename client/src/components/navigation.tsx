@@ -21,8 +21,8 @@ export default function Navigation({ user }: NavigationProps) {
 
   const handleLogout = () => {
     logout();
-    // Redirect to auth page to allow user to login with different account
-    window.location.href = '/auth';
+    // Force a page reload to clear any cached state and redirect to auth
+    window.location.reload();
   };
 
   return (
