@@ -84,9 +84,9 @@ export async function apiRequest(
   const token = getAuthToken();
   const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
   
-  // Add Authorization header if token exists
+  // Add Authorization header if token exists - FORCE INCLUSION FOR PRODUCTION
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    (headers as any).Authorization = `Bearer ${token}`;
   }
   
   console.log('🔍 API Request Debug:', {
@@ -94,12 +94,22 @@ export async function apiRequest(
     url,
     hasToken: !!token,
     tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-    hasAuthHeader: !!headers.Authorization
+    hasAuthHeader: !!((headers as any).Authorization),
+    fullAuthHeader: token ? `Bearer ${token.substring(0, 20)}...` : 'none',
+    environment: window.location.hostname,
+    allHeaders: Object.keys(headers)
   });
+
+  // Final verification before sending request
+  const finalHeaders = { ...headers };
+  if (token && !finalHeaders.Authorization) {
+    (finalHeaders as any).Authorization = `Bearer ${token}`;
+    console.warn('🔍 EMERGENCY: Re-added missing Authorization header');
+  }
 
   const res = await fetch(url, {
     method,
-    headers,
+    headers: finalHeaders,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

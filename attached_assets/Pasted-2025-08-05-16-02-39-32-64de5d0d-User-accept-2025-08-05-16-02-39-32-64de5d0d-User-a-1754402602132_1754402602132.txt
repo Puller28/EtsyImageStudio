@@ -1,0 +1,156 @@
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"accept": "*/*",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"accept-encoding": "gzip, deflate, br, zstd",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"content-type": "application/json",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"origin": "https://etsy-image-studio-lml.replit.app",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"priority": "u=1, i",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"referer": "https://etsy-image-studio-lml.replit.app/pricing",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Microsoft Edge\";v=\"138\"",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"sec-ch-ua-mobile": "?0",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"sec-ch-ua-platform": "\"Windows\"",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"sec-fetch-dest": "empty",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"sec-fetch-mode": "cors",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"sec-fetch-site": "same-origin",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"server-timing": "depproxy;dur=1754402559255, pid1req;dur=1754402559264",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"traceparent": "00-d361cc7919c7e9293ad7f12d3ded7dbc-a881db4b5ce081a1-00",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"via": "1.1 google",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-cloud-trace-context": "d361cc7919c7e9293ad7f12d3ded7dbc/12142227187094815137",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-forwarded-for": "197.89.22.61, 34.117.33.233, 35.191.87.189,34.29.134.82",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-forwarded-host": "etsy-image-studio-lml.replit.app",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-forwarded-proto": "https",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-bio": "",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-id": "",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-name": "",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-profile-image": "",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-roles": "",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-teams": "",
+2025-08-05 16:02:39.32
+64de5d0d
+User
+"x-replit-user-url": ""
+2025-08-05 16:02:39.32
+64de5d0d
+User
+}
+2025-08-05 16:02:39.32
+64de5d0d
+User
+🔍 Created fallback demo user
+2025-08-05 16:02:39.32
+64de5d0d
+User
+🔍 Final auth state: { userId: 'demo-user-1', hasUser: true }
+2025-08-05 16:02:39.32
+64de5d0d
+User
+🔍 Subscribe Debug: {
+2025-08-05 16:02:39.32
+64de5d0d
+User
+hasUserId: true,
+2025-08-05 16:02:39.32
+64de5d0d
+User
+hasUser: true,
+2025-08-05 16:02:39.32
+64de5d0d
+User
+userId: 'demo-user-1',
+2025-08-05 16:02:39.32
+64de5d0d
+User
+userEmail: 'sarah@example.com',
+2025-08-05 16:02:39.32
+64de5d0d
+User
+isDemoUser: true
+2025-08-05 16:02:39.32
+64de5d0d
+User
+}
+2025-08-05 16:02:39.32
+64de5d0d
+User
+2:02:39 PM [express] POST /api/subscribe 401 in 63ms :: {"error":"Authentication required","message"…
+2025-08-05 16:02:46.85
+64de5d0d
+User
+2:02:46 PM [express] GET /api/projects 304 in 10990ms :: [{"id":"444f1787-5865-40ec-a4b6-b7835f07f30…
