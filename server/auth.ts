@@ -39,8 +39,11 @@ export class AuthService {
 
   static verifyToken(token: string): { userId: string } | null {
     try {
-      return jwt.verify(token, JWT_SECRET) as { userId: string };
-    } catch {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      console.log('🔍 Token verification successful:', { userId: decoded.userId });
+      return decoded;
+    } catch (error) {
+      console.error('🔍 Token verification failed:', error instanceof Error ? error.message : 'Unknown error');
       return null;
     }
   }

@@ -1,0 +1,124 @@
+2025-08-05 13:32:57.94
+8a1aa76f
+System
+starting up user application
+2025-08-05 13:32:58.29
+8a1aa76f
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2025-08-05 13:32:59.98
+8a1aa76f
+User
+> rest-express@1.0.0 start
+2025-08-05 13:32:59.98
+8a1aa76f
+User
+> NODE_ENV=production node dist/index.js
+2025-08-05 13:33:02.68
+8a1aa76f
+User
+🔗 Connecting to database with URL: postgresql://postgres.kkdzbtopouozsniuzghf:***@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+2025-08-05 13:33:02.68
+8a1aa76f
+User
+🔄 Attempting to use PostgreSQL database with fallback capability
+2025-08-05 13:33:02.68
+8a1aa76f
+User
+🔄 Attempting to use PostgreSQL database
+2025-08-05 13:33:02.69
+8a1aa76f
+User
+🔄 Initializing database tables...
+2025-08-05 13:33:02.84
+8a1aa76f
+User
+11:33:02 AM [express] serving on port 5000
+2025-08-05 13:33:02.84
+8a1aa76f
+User
+🚀 Application ready on port 5000
+2025-08-05 13:33:02.84
+8a1aa76f
+User
+📋 Health check available at http://localhost:5000/health
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+{
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+severity_local: 'NOTICE',
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+severity: 'NOTICE',
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+code: '42P07',
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+message: 'relation "users" already exists, skipping',
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+file: 'parse_utilcmd.c',
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+line: '207',
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+routine: 'transformCreateStmt'
+2025-08-05 13:33:03.25
+8a1aa76f
+User
+}
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+{
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+severity_local: 'NOTICE',
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+severity: 'NOTICE',
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+code: '42P07',
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+message: 'relation "projects" already exists, skipping',
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+file: 'parse_utilcmd.c',
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+line: '207',
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+routine: 'transformCreateStmt'
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+}
+2025-08-05 13:33:03.28
+8a1aa76f
+User
+✅ Database tables initialized successfully
+2025-08-05 13:36:37.70
+69f31ce1
+System
+system: received signal terminated
