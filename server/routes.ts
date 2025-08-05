@@ -408,6 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/paystack-webhook", async (req, res) => {
     try {
       const { PaystackService } = await import("./paystack");
+      const { SubscriptionService } = await import("./subscription");
       const secret = process.env.PAYSTACK_SECRET_KEY;
       
       if (!secret) {
@@ -427,25 +428,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const event = req.body;
       
       if (event.event === 'charge.success') {
-        const { reference, metadata } = event.data;
+        const { reference, metadata, subscription } = event.data;
         
-        if (metadata && metadata.userId && metadata.credits) {
+        if (metadata && metadata.userId) {
           // Get current user
           const user = await storage.getUser(metadata.userId);
           if (user) {
-            // Add credits to user account
-            const newCredits = user.credits + parseInt(metadata.credits);
-            await storage.updateUserCredits(metadata.userId, newCredits);
+            // Handle subscription activation
+            if (subscription && subscription.subscription_code && metadata.planId) {
+              await SubscriptionService.activateSubscription(metadata.userId, {
+                planId: metadata.planId,
+                subscriptionId: subscription.subscription_code,
+                startDate: new Date(),
+                endDate: subscription.next_payment_date ? new Date(subscription.next_payment_date) : undefined,
+              });
+              console.log(`✅ Webhook: Activated subscription ${metadata.planId} for user ${metadata.userId}`);
+            }
             
-            console.log(`✅ Webhook: Added ${metadata.credits} credits to user ${metadata.userId} via ${reference}`);
+            // Add credits to user account
+            if (metadata.credits) {
+              const newCredits = user.credits + parseInt(metadata.credits);
+              await storage.updateUserCredits(metadata.userId, newCredits);
+              console.log(`✅ Webhook: Added ${metadata.credits} credits to user ${metadata.userId} via ${reference}`);
+            }
           }
         }
+      }
+      
+      // Handle subscription cancellation
+      if (event.event === 'subscription.disable') {
+        const { subscription_code, customer } = event.data;
+        
+        // Find user by subscription ID and update status
+        // Note: This is a simplified approach - in production you'd want to store subscription mappings
+        console.log(`📋 Webhook: Subscription ${subscription_code} disabled for customer ${customer.email}`);
       }
       
       res.status(200).json({ status: 'success' });
     } catch (error) {
       console.error("Webhook error:", error);
       res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // Get subscription status endpoint
+  app.get("/api/subscription-status", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { SubscriptionService } = await import("./subscription");
+      const status = await SubscriptionService.getSubscriptionStatus(req.userId);
+      
+      res.json(status);
+    } catch (error) {
+      console.error("Error getting subscription status:", error);
+      res.status(500).json({ error: "Failed to get subscription status" });
+    }
+  });
+
+  // Cancel subscription endpoint
+  app.post("/api/cancel-subscription", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId || !req.user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const user = await storage.getUser(req.userId);
+      if (!user || !user.subscriptionId) {
+        return res.status(400).json({ error: "No active subscription found" });
+      }
+
+      const { SubscriptionService } = await import("./subscription");
+      const result = await SubscriptionService.cancelSubscription(req.userId, user.subscriptionId);
+      
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(400).json({ error: result.message });
+      }
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      res.status(500).json({ error: "Failed to cancel subscription" });
     }
   });
 

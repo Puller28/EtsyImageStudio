@@ -9,6 +9,11 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   avatar: text("avatar"),
   credits: integer("credits").notNull().default(100),
+  subscriptionStatus: text("subscription_status").default("free"), // free, active, cancelled, expired
+  subscriptionPlan: text("subscription_plan"), // pro_monthly, business_monthly
+  subscriptionId: text("subscription_id"), // Paystack subscription ID
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 

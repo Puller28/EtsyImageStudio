@@ -11,6 +11,13 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(userId: string, updates: Partial<InsertUser>): Promise<User>;
   updateUserCredits(userId: string, credits: number): Promise<void>;
+  updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
+  }): Promise<void>;
 
   // Project methods
   createProject(project: InsertProject): Promise<Project>;
@@ -36,6 +43,11 @@ export class MemStorage implements IStorage {
       name: "Sarah M.", 
       avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
       credits: 47,
+      subscriptionStatus: "free",
+      subscriptionPlan: null,
+      subscriptionId: null,
+      subscriptionStartDate: null,
+      subscriptionEndDate: null,
       createdAt: new Date(),
     };
     this.users.set(demoUser.id, demoUser);
@@ -56,6 +68,11 @@ export class MemStorage implements IStorage {
       avatar: insertUser.avatar || null,
       id,
       credits: 100,
+      subscriptionStatus: "free",
+      subscriptionPlan: null,
+      subscriptionId: null,
+      subscriptionStartDate: null,
+      subscriptionEndDate: null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -79,6 +96,27 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, ...updates };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
+  }): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      const updatedUser = { 
+        ...user, 
+        subscriptionStatus: subscriptionData.subscriptionStatus,
+        subscriptionPlan: subscriptionData.subscriptionPlan || null,
+        subscriptionId: subscriptionData.subscriptionId || null,
+        subscriptionStartDate: subscriptionData.subscriptionStartDate || null,
+        subscriptionEndDate: subscriptionData.subscriptionEndDate || null,
+      };
+      this.users.set(userId, updatedUser);
+    }
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
@@ -153,6 +191,24 @@ export class DatabaseStorage implements IStorage {
   async updateUserCredits(userId: string, credits: number): Promise<void> {
     await db.update(users)
       .set({ credits })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
+  }): Promise<void> {
+    await db.update(users)
+      .set({
+        subscriptionStatus: subscriptionData.subscriptionStatus,
+        subscriptionPlan: subscriptionData.subscriptionPlan,
+        subscriptionId: subscriptionData.subscriptionId,
+        subscriptionStartDate: subscriptionData.subscriptionStartDate,
+        subscriptionEndDate: subscriptionData.subscriptionEndDate,
+      })
       .where(eq(users.id, userId));
   }
 

@@ -7,6 +7,11 @@ interface User {
   email: string;
   credits: number;
   avatar?: string;
+  subscriptionStatus?: string;
+  subscriptionPlan?: string;
+  subscriptionId?: string;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
 }
 
 interface AuthState {

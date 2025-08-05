@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Zap, Star, Crown } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, Zap, Star, Crown, AlertCircle, CheckCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -93,6 +94,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: authUser } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch user data
   const { data: user } = useQuery<User>({
@@ -106,6 +108,42 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   }>({
     queryKey: ["/api/all-plans", "v2"],
     queryFn: () => fetch("/api/all-plans").then(res => res.json()),
+  });
+
+  // Fetch subscription status
+  const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useQuery<{
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    nextBillingDate?: string;
+    isActive: boolean;
+  }>({
+    queryKey: ["/api/subscription-status"],
+    enabled: !!user,
+  });
+
+  // Cancel subscription mutation
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/cancel-subscription", {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Subscription Cancelled",
+        description: data.message,
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cancellation Failed",
+        description: error.message || "Unable to cancel subscription. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Use auth user data as fallback if API user data is not available
@@ -264,6 +302,52 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
           </p>
         </div>
 
+        {/* Current Subscription Status */}
+        {subscriptionStatus && subscriptionStatus.isActive && (
+          <div className="mb-8">
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <strong>Active Subscription:</strong> {subscriptionStatus.subscriptionPlan?.replace('_', ' ').toUpperCase() || 'Premium Plan'}
+                    {subscriptionStatus.nextBillingDate && (
+                      <span className="ml-2 text-sm">
+                        (Next billing: {new Date(subscriptionStatus.nextBillingDate).toLocaleDateString()})
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => cancelSubscriptionMutation.mutate()}
+                    disabled={cancelSubscriptionMutation.isPending}
+                    className="ml-4"
+                  >
+                    {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {subscriptionStatus && subscriptionStatus.subscriptionStatus === 'cancelled' && (
+          <div className="mb-8">
+            <Alert className="border-orange-200 bg-orange-50">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <strong>Subscription Cancelled:</strong> Your current plan will remain active until the end of your billing period.
+                {subscriptionStatus.nextBillingDate && (
+                  <span className="ml-1">
+                    Access expires: {new Date(subscriptionStatus.nextBillingDate).toLocaleDateString()}
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {pricingTiers.map((tier) => {
@@ -307,16 +391,24 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
                 </CardContent>
                 
                 <CardFooter>
-                  <Button
-                    className="w-full"
-                    variant={tier.buttonVariant || "default"}
-                    onClick={() => handleSelectPlan(tier.name)}
-                    disabled={selectedPlan === tier.name || processingPlan === tier.name}
-                    data-testid={`button-plan-${tier.name.toLowerCase()}`}
-                  >
-                    {processingPlan === tier.name ? "Processing..." : 
-                     selectedPlan === tier.name ? "Selected" : tier.buttonText}
-                  </Button>
+                  {/* Show current plan status */}
+                  {subscriptionStatus?.isActive && subscriptionStatus.subscriptionPlan?.includes(tier.name.toLowerCase()) ? (
+                    <Button className="w-full" variant="outline" disabled>
+                      <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                      Current Plan
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      variant={tier.buttonVariant || "default"}
+                      onClick={() => handleSelectPlan(tier.name)}
+                      disabled={selectedPlan === tier.name || processingPlan === tier.name}
+                      data-testid={`button-plan-${tier.name.toLowerCase()}`}
+                    >
+                      {processingPlan === tier.name ? "Processing..." : 
+                       selectedPlan === tier.name ? "Selected" : tier.buttonText}
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             );
