@@ -1,0 +1,172 @@
+2025-08-05 20:33:30.25
+a6b8a8a1
+User
+🔍 Token verification successful: { userId: '508a355c-e33a-462b-a4e3-b58279610a83' }
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+🔍 User lookup result: { userId: '508a355c-e33a-462b-a4e3-b58279610a83', found: true }
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+🔍 Token auth successful: 508a355c-e33a-462b-a4e3-b58279610a83
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+🔍 Final auth state: { userId: '508a355c-e33a-462b-a4e3-b58279610a83', hasUser: true }
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+🔍 Subscribe Debug: {
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+hasUserId: true,
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+hasUser: true,
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+userId: '508a355c-e33a-462b-a4e3-b58279610a83',
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+userEmail: 'e@e.com',
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+isDemoUser: false
+2025-08-05 20:33:30.64
+a6b8a8a1
+User
+}
+2025-08-05 20:33:31.37
+a6b8a8a1
+User
+6:33:31 PM [express] POST /api/subscribe 200 in 1120ms :: {"authorization_url":"https://checkout.pay…
+2025-08-05 20:33:47.72
+a6b8a8a1
+User
+6:33:47 PM [express] POST /api/paystack-webhook 200 in 2ms :: {"status":"success"}
+2025-08-05 20:33:47.81
+a6b8a8a1
+User
+⚠️ Database operation failed, switching to in-memory storage: relation "processed_payments" does not exist
+2025-08-05 20:33:47.81
+a6b8a8a1
+User
+✅ Webhook: Added 500 credits to user 508a355c-e33a-462b-a4e3-b58279610a83 via x47jetb1hk (first time processing)
+2025-08-05 20:33:47.81
+a6b8a8a1
+User
+6:33:47 PM [express] POST /api/paystack-webhook 200 in 104ms :: {"status":"success"}
+2025-08-05 20:33:48.98
+a6b8a8a1
+User
+🔍 Payment verification request for reference: x47jetb1hk
+2025-08-05 20:33:48.98
+a6b8a8a1
+User
+🔍 Verifying payment with reference: x47jetb1hk
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+Paystack verification error: TypeError: fetch failed
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at node:internal/deps/undici/undici:13510:13
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at async PaystackService.verifyPayment (file:///home/runner/workspace/dist/index.js:729:28)
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at async file:///home/runner/workspace/dist/index.js:2306:28 {
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+[cause]: SocketError: other side closed
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at TLSSocket. (node:internal/deps/undici/undici:6294:28)
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at TLSSocket.emit (node:events:536:35)
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at endReadableNT (node:internal/streams/readable:1698:12)
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+code: 'UND_ERR_SOCKET',
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+socket: {
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+localAddress: '169.254.8.1',
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+localPort: 46658,
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+remoteAddress: '104.18.29.7',
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+remotePort: 443,
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+remoteFamily: 'IPv4',
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+timeout: undefined,
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+bytesWritten: 307,
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+bytesRead: 0
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+}
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+}
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+}
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+🔍 Payment verification failed: fetch failed
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+🔍 Paystack verification result: { success: false, hasData: false, error: 'fetch failed' }
+2025-08-05 20:33:49.42
+a6b8a8a1
+User
+6:33:49 PM [express] GET /api/verify-payment/x47jetb1hk 200 in 444ms :: {"success":false,"error":"fe…

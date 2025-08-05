@@ -101,6 +101,34 @@ async function initializeDatabase() {
           created_at TIMESTAMP DEFAULT now()
         )
       `);
+      
+      // Add processed_payments table for payment idempotency
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS processed_payments (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          payment_reference TEXT NOT NULL UNIQUE,
+          user_id VARCHAR NOT NULL REFERENCES users(id),
+          credits_allocated INTEGER NOT NULL,
+          processed_at TIMESTAMP DEFAULT now()
+        )
+      `);
+      
+      // Add subscription columns to users table if they don't exist
+      await db.execute(sql`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'free';
+      `);
+      await db.execute(sql`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT;
+      `);
+      await db.execute(sql`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_id TEXT;
+      `);
+      await db.execute(sql`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP;
+      `);
+      await db.execute(sql`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP;
+      `);
     })();
     
     await Promise.race([initPromise, timeoutPromise]);
