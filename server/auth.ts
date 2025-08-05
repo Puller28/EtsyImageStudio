@@ -168,43 +168,8 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
     }
   }
 
-  // If no valid auth, use demo user for backward compatibility (only for non-payment endpoints)
-  if (!req.userId) {
-    console.log('🔍 No auth found, trying demo user fallback');
-    try {
-      const demoUser = await storage.getUser("demo-user-1");
-      if (demoUser) {
-        req.userId = "demo-user-1";
-        req.user = demoUser;
-        console.log('🔍 Demo user from storage successful');
-      } else {
-        console.warn('🔍 Demo user not found in storage, creating fallback');
-        // Create a temporary demo user if not found in storage
-        req.userId = "demo-user-1";
-        req.user = {
-          id: "demo-user-1",
-          email: "sarah@example.com",
-          name: "Sarah M.",
-          avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
-          credits: 47,
-          createdAt: new Date(),
-        };
-        console.log('🔍 Created fallback demo user');
-      }
-    } catch (error) {
-      console.warn('🔍 Demo user lookup failed, creating fallback:', error);
-      // Create a temporary demo user if database lookup fails
-      req.userId = "demo-user-1";
-      req.user = {
-        id: "demo-user-1",
-        email: "sarah@example.com",
-        name: "Sarah M.",
-        avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
-        credits: 47,
-        createdAt: new Date(),
-      };
-    }
-  }
+  // Don't use demo user fallback - this was causing users to see other users' data
+  // Authentication should fail properly if no valid token is provided
 
   console.log('🔍 Final auth state:', { userId: req.userId, hasUser: !!req.user });
   next();

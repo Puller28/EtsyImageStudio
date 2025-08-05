@@ -52,12 +52,25 @@ export const useAuth = create<AuthState>()(
       
       logout: () => {
         console.log('🔐 Logging out user');
+        // Clear all authentication storage
         localStorage.removeItem('auth-storage');
+        localStorage.removeItem('auth-storage-backup');
+        localStorage.removeItem('auth-storage-backup-production');
+        
+        // Clear any other potential auth keys
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('auth') || key.includes('token') || key.includes('user')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
         set({ 
           user: null, 
           token: null, 
           isAuthenticated: false 
         });
+        
+        console.log('✅ All authentication data cleared');
       },
       
       updateUser: (updatedUser: Partial<User>) => {
