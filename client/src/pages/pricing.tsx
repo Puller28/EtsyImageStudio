@@ -220,19 +220,9 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     try {
       console.log("🛒 Starting credit purchase for package:", packageId);
       
-      const response = await fetch("/api/purchase", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          packageId: packageId,
-        }),
+      const response = await apiRequest("POST", "/api/purchase-credits", {
+        packageId: packageId,
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const data = await response.json();
       console.log("🔗 Purchase response:", data);
@@ -245,11 +235,24 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
       }
     } catch (error: any) {
       console.error("❌ Purchase error:", error);
-      toast({
-        title: "Purchase Failed",
-        description: error.message || "Unable to start purchase. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Handle authentication errors specifically
+      if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+        toast({
+          title: "Session Expired",
+          description: "Please refresh the page and log in again to continue with your purchase.",
+          variant: "destructive",
+        });
+        
+        // Force page reload to clear invalid auth state
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        toast({
+          title: "Purchase Failed",
+          description: error.message || "Unable to start purchase. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setProcessingPlan(null);
     }
