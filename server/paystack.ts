@@ -76,10 +76,11 @@ export const subscriptionPlans = [
     type: 'free',
     features: [
       '100 credits per month',
-      '50 AI generations',
-      '100 upscaling operations',
-      'Community support',
-      'Basic features'
+      'AI art generation',
+      'Image upscaling (2x/4x)',
+      'Canvas mockup templates',
+      'Print format resizing',
+      'Etsy listing generation'
     ]
   },
   {
@@ -93,11 +94,10 @@ export const subscriptionPlans = [
     type: 'subscription',
     features: [
       '500 credits per month',
-      'Premium mockup templates',
-      'Advanced print formats',
-      'Priority processing',
-      'Bulk operations',
-      'Email support'
+      'All Free plan features',
+      'Higher credit allocation',
+      'Same processing speed',
+      'Same feature access'
     ],
     paystackPlanCode: 'PLN_7uytu5e4nqtjykj'
   },
@@ -112,10 +112,10 @@ export const subscriptionPlans = [
     type: 'subscription',
     features: [
       '1,500 credits per month',
-      'All Pro features',
-      'API access',
-      'White-label options',
-      'Priority support'
+      'All Pro plan features', 
+      'Highest credit allocation',
+      'Same processing speed',
+      'Same feature access'
     ],
     paystackPlanCode: 'PLN_rlfsy9bnb8vqwsf'
   }
