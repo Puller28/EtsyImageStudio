@@ -87,14 +87,18 @@ export default function BuyCredits() {
       console.error('❌ Subscription error:', error);
       
       // Handle authentication errors specifically
-      if (error.message && error.message.includes('401')) {
+      if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+        // Clear invalid tokens immediately
+        localStorage.removeItem('auth-storage');
+        sessionStorage.clear();
+        
         toast({
-          title: "Authentication Required",
-          description: "Your session has expired. Please refresh the page and log in again.",
+          title: "Session Expired",
+          description: "Please refresh the page and log in again to continue with your purchase.",
           variant: "destructive",
         });
-        // Clear invalid tokens and force re-authentication
-        localStorage.removeItem('auth-storage');
+        
+        // Force page reload to clear invalid auth state
         setTimeout(() => window.location.reload(), 2000);
       } else {
         toast({

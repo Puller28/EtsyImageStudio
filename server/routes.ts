@@ -72,6 +72,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Refresh token endpoint for production authentication issues
+  app.post("/api/refresh-auth", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID required" });
+      }
+      
+      // Get user from storage
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Generate fresh token
+      const { AuthService } = await import("./auth");
+      const token = AuthService.generateToken(user.id);
+      
+      console.log('🔄 Generated fresh token for user:', user.id);
+      
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          credits: user.credits,
+          avatar: user.avatar
+        }
+      });
+    } catch (error) {
+      console.error("Error refreshing auth:", error);
+      res.status(500).json({ error: "Failed to refresh authentication" });
+    }
+  });
+
   // Debug endpoint for token validation (development only)
   app.post("/api/debug/validate-token", async (req, res) => {
     if (process.env.NODE_ENV === 'production') {
@@ -138,8 +176,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Purchase credits endpoint
-  app.post("/api/purchase-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/purchase-credits", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
+      // Strict validation: reject demo user for credit purchases to prevent payment issues
+      if (!req.userId || !req.user || req.userId === 'demo-user-1') {
+        console.warn('🔍 Credit purchase attempted without proper authentication or with demo user');
+        console.warn('🔍 Request headers:', JSON.stringify(req.headers, null, 2));
+        return res.status(401).json({ 
+          error: "Authentication required", 
+          message: "Please ensure you are properly logged in to purchase credits. Demo users cannot purchase credits."
+        });
+      }
 
       const { packageId } = req.body;
       const { PaystackService } = await import("./paystack");

@@ -102,18 +102,80 @@ export async function apiRequest(
       console.warn('🔍 Authentication failed, clearing invalid token');
       localStorage.removeItem('auth-storage');
       sessionStorage.clear();
-      // For critical endpoints like subscribe, force page reload
-      if (url.includes('/api/subscribe') || url.includes('/api/purchase')) {
+      
+      // Show user-friendly notification
+      const message = 'Your session has expired. Please refresh the page and log in again to continue.';
+      
+      // Create temporary notification
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        background: #ef4444; color: white; padding: 12px 16px;
+        border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-family: system-ui, sans-serif; font-size: 14px; max-width: 300px;
+      `;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      // Try to refresh authentication automatically for production
+      const currentUser = getCurrentUserFromStorage();
+      if (currentUser?.id && url.includes('/api/')) {
+        // Attempt automatic token refresh for production
+        fetch('/api/refresh-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.token) {
+            console.log('🔄 Successfully refreshed authentication token');
+            // Update localStorage with fresh token
+            const authData = {
+              state: {
+                user: data.user,
+                token: data.token
+              }
+            };
+            localStorage.setItem('auth-storage', JSON.stringify(authData));
+            
+            // Remove notification and reload page
+            document.body.removeChild(notification);
+            window.location.reload();
+          } else {
+            // Fallback to manual refresh
+            setTimeout(() => window.location.reload(), 3000);
+          }
+        })
+        .catch(() => {
+          // Fallback to manual refresh
+          setTimeout(() => window.location.reload(), 3000);
+        });
+      } else {
+        // Auto-reload after showing message
         setTimeout(() => {
-          alert('Your session has expired. Please log in again to continue with your purchase.');
           window.location.reload();
-        }, 100);
+        }, 3000);
       }
     }
   }
 
   await throwIfResNotOk(res);
   return res;
+}
+
+// Helper function to get current user from storage
+function getCurrentUserFromStorage() {
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      return parsed.user || parsed.state?.user || null;
+    }
+  } catch (error) {
+    console.error('Error getting current user:', error);
+  }
+  return null;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
