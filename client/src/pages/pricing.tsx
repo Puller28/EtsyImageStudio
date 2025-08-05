@@ -122,7 +122,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     enabled: !!user,
     staleTime: 0, // Always refetch to get latest status
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/subscription-status", {});
+      const response = await apiRequest("GET", "/api/subscription-status");
       return response.json();
     },
   });

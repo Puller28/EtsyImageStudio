@@ -296,6 +296,16 @@ class RobustStorage implements IStorage {
     return this.executeWithFallback(storage => storage.updateUserCredits(userId, credits));
   }
 
+  async updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
+  }): Promise<void> {
+    return this.executeWithFallback(storage => storage.updateUserSubscription(userId, subscriptionData));
+  }
+
   async createProject(insertProject: InsertProject): Promise<Project> {
     return this.executeWithFallback(storage => storage.createProject(insertProject));
   }

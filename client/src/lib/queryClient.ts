@@ -126,12 +126,19 @@ export async function apiRequest(
     console.warn('🔍 EMERGENCY: Re-added missing Authorization header');
   }
 
-  const res = await fetch(url, {
+  // Only include body for methods that support it
+  const fetchOptions: RequestInit = {
     method,
     headers: finalHeaders,
-    body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
-  });
+  };
+
+  // Don't add body for GET/HEAD requests
+  if (method !== "GET" && method !== "HEAD" && data) {
+    fetchOptions.body = JSON.stringify(data);
+  }
+
+  const res = await fetch(url, fetchOptions);
 
   if (!res.ok) {
     console.error('🔍 API Request Failed:', {
