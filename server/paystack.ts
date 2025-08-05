@@ -85,17 +85,18 @@ export const subscriptionPlans = [
   {
     id: 'pro_monthly',
     name: 'Pro Plan',
-    credits: 300,
-    usdPrice: 19.95,
-    zarPrice: 37905,
+    credits: 500,
+    usdPrice: 29,
+    zarPrice: 55100,
     interval: 'monthly',
-    description: 'Monthly subscription with 300 credits',
+    description: 'Monthly subscription with 500 credits',
     type: 'subscription',
     features: [
-      '300 credits per month',
-      '150 AI generations',
-      '300 upscaling operations',
+      '500 credits per month',
+      'Premium mockup templates',
+      'Advanced print formats',
       'Priority processing',
+      'Bulk operations',
       'Email support'
     ],
     paystackPlanCode: 'PLN_7uytu5e4nqtjykj'
