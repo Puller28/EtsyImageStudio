@@ -7,22 +7,35 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Get auth token from localStorage with enhanced production debugging
+// Get auth token from localStorage with FORCED production debugging
 function getAuthToken(): string | null {
   try {
-    // Check all possible storage locations for production compatibility
-    const authStorage = localStorage.getItem('auth-storage');
-    const authStorageBackup = localStorage.getItem('auth-storage-backup');
-    const sessionAuth = sessionStorage.getItem('auth-storage');
+    // EMERGENCY PRODUCTION FIX: Force token retrieval with all possible methods
+    let authStorage = localStorage.getItem('auth-storage');
+    let authStorageBackup = localStorage.getItem('auth-storage-backup');
+    let sessionAuth = sessionStorage.getItem('auth-storage');
     
-    console.log('🔍 Enhanced Auth Storage Debug:', { 
+    // PRODUCTION DEBUG: Log everything for visibility
+    console.log('🚨 PRODUCTION TOKEN DEBUG:', { 
       hasStorage: !!authStorage,
       hasBackupStorage: !!authStorageBackup,
       hasSessionStorage: !!sessionAuth,
       storagePreview: authStorage ? authStorage.substring(0, 100) + '...' : 'null',
       allStorageKeys: Object.keys(localStorage).filter(key => key.includes('auth')),
-      environment: window.location.hostname
+      environment: window.location.hostname,
+      isProduction: window.location.hostname.includes('replit.app'),
+      userAgent: navigator.userAgent.substring(0, 50)
     });
+    
+    // FORCE all storage locations to be checked
+    if (!authStorage && authStorageBackup) {
+      authStorage = authStorageBackup;
+      console.warn('🚨 Using backup storage for token');
+    }
+    if (!authStorage && sessionAuth) {
+      authStorage = sessionAuth;  
+      console.warn('🚨 Using session storage for token');
+    }
     
     // Try multiple storage sources for production compatibility
     const storageToTry = authStorage || authStorageBackup || sessionAuth;
@@ -89,15 +102,21 @@ export async function apiRequest(
     (headers as any).Authorization = `Bearer ${token}`;
   }
   
-  console.log('🔍 API Request Debug:', {
+  console.log('🚨 PRODUCTION API REQUEST DEBUG:', {
     method,
     url,
     hasToken: !!token,
-    tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+    tokenPreview: token ? token.substring(0, 20) + '...' : 'MISSING TOKEN',
     hasAuthHeader: !!((headers as any).Authorization),
-    fullAuthHeader: token ? `Bearer ${token.substring(0, 20)}...` : 'none',
+    fullAuthHeader: token ? `Bearer ${token.substring(0, 20)}...` : 'NO AUTH HEADER',
     environment: window.location.hostname,
-    allHeaders: Object.keys(headers)
+    allHeaders: Object.keys(headers),
+    isProduction: window.location.hostname.includes('replit.app'),
+    localStorage: {
+      authStorage: !!localStorage.getItem('auth-storage'),
+      authBackup: !!localStorage.getItem('auth-storage-backup'),
+      allKeys: Object.keys(localStorage).filter(k => k.includes('auth'))
+    }
   });
 
   // Final verification before sending request
