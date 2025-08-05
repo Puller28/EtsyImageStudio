@@ -992,13 +992,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('🎨 Testing improved pink area placement...');
+      console.log('🎯 Testing simple improved pink area placement...');
       
-      // Import the improved placement service
-      const { ImprovedPinkPlacer } = await import('./services/improved-pink-placement.js');
-      const improvedPlacer = new ImprovedPinkPlacer();
+      // Import the simple placement service for better reliability
+      const { SimplePinkPlacer } = await import('./services/simple-pink-placement.js');
+      const simplePlacer = new SimplePinkPlacer();
       
-      const result = await improvedPlacer.generateImprovedMockup(
+      const result = await simplePlacer.generateSimpleMockup(
         files.mockup[0].buffer,
         files.artwork[0].buffer
       );

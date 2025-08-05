@@ -36,11 +36,12 @@ export class ImprovedPinkPlacer {
       const imageData = ctx.getImageData(0, 0, mockupImage.width, mockupImage.height);
       const data = imageData.data;
       
-      // Improved pink detection with multiple shades and better tolerance
+      // Optimized pink detection - sample pixels for performance
       const pinkPixels: Array<{x: number, y: number}> = [];
+      const step = 2; // Sample every 2nd pixel for initial detection
       
-      for (let y = 0; y < mockupImage.height; y++) {
-        for (let x = 0; x < mockupImage.width; x++) {
+      for (let y = 0; y < mockupImage.height; y += step) {
+        for (let x = 0; x < mockupImage.width; x += step) {
           const index = (y * mockupImage.width + x) * 4;
           const r = data[index];
           const g = data[index + 1];
@@ -50,7 +51,12 @@ export class ImprovedPinkPlacer {
           const isPink = this.isPinkPixel(r, g, b);
           
           if (isPink) {
-            pinkPixels.push({ x, y });
+            // Fill in the area around detected pink pixel
+            for (let dy = 0; dy < step && y + dy < mockupImage.height; dy++) {
+              for (let dx = 0; dx < step && x + dx < mockupImage.width; dx++) {
+                pinkPixels.push({ x: x + dx, y: y + dy });
+              }
+            }
           }
         }
       }
@@ -170,13 +176,28 @@ export class ImprovedPinkPlacer {
     const pixelSet = new Set(pixels.map(p => `${p.x},${p.y}`));
     const areas: Array<{x: number, y: number, width: number, height: number, pixels: number}> = [];
     
-    for (const pixel of pixels) {
+    // Limit processing to avoid overwhelming the system
+    const maxPixelsToProcess = 100000; // Process max 100k pixels
+    const pixelsToProcess = pixels.length > maxPixelsToProcess ? 
+      pixels.slice(0, maxPixelsToProcess) : pixels;
+    
+    console.log(`🎨 Processing ${pixelsToProcess.length} of ${pixels.length} pink pixels for area detection`);
+    
+    for (let i = 0; i < pixelsToProcess.length; i += 100) { // Sample every 100th pixel to reduce processing
+      const pixel = pixelsToProcess[i];
       const key = `${pixel.x},${pixel.y}`;
       if (visited.has(key)) continue;
       
       const area = this.floodFill(pixel.x, pixel.y, pixelSet, visited, width, height);
-      if (area.pixels > 50) { // Filter out very small areas
+      if (area.pixels > 1000) { // Only keep substantial areas
         areas.push(area);
+        console.log(`🎨 Found area: ${area.width}x${area.height} with ${area.pixels} pixels`);
+      }
+      
+      // Stop if we found a large area (likely the main frame)
+      if (area.pixels > 50000) {
+        console.log(`🎨 Found large area, stopping search early`);
+        break;
       }
     }
     
@@ -184,11 +205,12 @@ export class ImprovedPinkPlacer {
   }
   
   private floodFill(startX: number, startY: number, pixelSet: Set<string>, visited: Set<string>, width: number, height: number) {
-    const stack = [{x: startX, y: startY}];
+    const queue = [{x: startX, y: startY}];
     const areaPixels: Array<{x: number, y: number}> = [];
+    let minX = startX, maxX = startX, minY = startY, maxY = startY;
     
-    while (stack.length > 0) {
-      const current = stack.pop()!;
+    while (queue.length > 0) {
+      const current = queue.shift()!;
       const key = `${current.x},${current.y}`;
       
       if (visited.has(key) || !pixelSet.has(key)) continue;
@@ -196,29 +218,29 @@ export class ImprovedPinkPlacer {
       visited.add(key);
       areaPixels.push(current);
       
-      // Check 8-connected neighbors for better connectivity
+      // Update bounds efficiently
+      minX = Math.min(minX, current.x);
+      maxX = Math.max(maxX, current.x);
+      minY = Math.min(minY, current.y);
+      maxY = Math.max(maxY, current.y);
+      
+      // Check 4-connected neighbors (simpler and more stable)
       const neighbors = [
-        {x: current.x - 1, y: current.y - 1}, // top-left
         {x: current.x, y: current.y - 1},     // top
-        {x: current.x + 1, y: current.y - 1}, // top-right
         {x: current.x - 1, y: current.y},     // left
         {x: current.x + 1, y: current.y},     // right
-        {x: current.x - 1, y: current.y + 1}, // bottom-left
-        {x: current.x, y: current.y + 1},     // bottom
-        {x: current.x + 1, y: current.y + 1}  // bottom-right
+        {x: current.x, y: current.y + 1}      // bottom
       ];
       
       for (const neighbor of neighbors) {
         if (neighbor.x >= 0 && neighbor.x < width && neighbor.y >= 0 && neighbor.y < height) {
-          stack.push(neighbor);
+          const neighborKey = `${neighbor.x},${neighbor.y}`;
+          if (!visited.has(neighborKey) && pixelSet.has(neighborKey)) {
+            queue.push(neighbor);
+          }
         }
       }
     }
-    
-    const minX = Math.min(...areaPixels.map(p => p.x));
-    const maxX = Math.max(...areaPixels.map(p => p.x));
-    const minY = Math.min(...areaPixels.map(p => p.y));
-    const maxY = Math.max(...areaPixels.map(p => p.y));
     
     return {
       x: minX,
