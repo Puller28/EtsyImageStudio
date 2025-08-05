@@ -863,6 +863,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test pink area mockup generation endpoint
+  app.post("/api/test-pink-mockup", upload.fields([
+    { name: "mockup", maxCount: 1 }, 
+    { name: "artwork", maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files.mockup || !files.artwork) {
+        return res.status(400).json({ 
+          error: "Both mockup template and artwork images are required" 
+        });
+      }
+
+      const mockupBuffer = files.mockup[0].buffer;
+      const artworkBuffer = files.artwork[0].buffer;
+
+      console.log('🌸 Testing pink area mockup generation...');
+      
+      // Import the pink area mockup service
+      const { generatePinkAreaMockup, testPinkAreaDetection } = await import('./services/pink-area-mockup');
+      
+      // First, test pink area detection
+      const detectionResult = await testPinkAreaDetection(mockupBuffer);
+      console.log('🌸 Pink area detection result:', {
+        areasFound: detectionResult.areas.length,
+        totalPixels: detectionResult.totalPixels,
+        largestArea: detectionResult.largestArea ? {
+          x: detectionResult.largestArea.x,
+          y: detectionResult.largestArea.y,
+          width: detectionResult.largestArea.width,
+          height: detectionResult.largestArea.height
+        } : null
+      });
+
+      if (detectionResult.areas.length === 0) {
+        return res.status(400).json({
+          error: "No pink areas detected in mockup template. Please ensure the template has pink-colored areas where images should be placed.",
+          detected: {
+            areas: 0,
+            totalPixels: 0
+          }
+        });
+      }
+
+      // Generate the mockup with pink area replacement
+      const mockupResult = await generatePinkAreaMockup(mockupBuffer, artworkBuffer);
+      
+      // Convert to base64 for response
+      const base64Result = mockupResult.toString('base64');
+      
+      res.json({
+        success: true,
+        mockup: `data:image/jpeg;base64,${base64Result}`,
+        detection: {
+          areas: detectionResult.areas.length,
+          totalPixels: detectionResult.totalPixels,
+          largestArea: detectionResult.largestArea ? {
+            x: detectionResult.largestArea.x,
+            y: detectionResult.largestArea.y,
+            width: detectionResult.largestArea.width,
+            height: detectionResult.largestArea.height,
+            pixels: detectionResult.largestArea.pixels.length
+          } : null
+        }
+      });
+
+    } catch (error) {
+      console.error("Pink area mockup test error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate pink area mockup" 
+      });
+    }
+  });
+
+  // Test pink area detection only (without generating mockup)
+  app.post("/api/test-pink-detection", upload.single("mockup"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Mockup template image is required" });
+      }
+
+      console.log('🌸 Testing pink area detection only...');
+      
+      const { testPinkAreaDetection } = await import('./services/pink-area-mockup');
+      const result = await testPinkAreaDetection(req.file.buffer);
+      
+      res.json({
+        success: true,
+        areas: result.areas.map(area => ({
+          x: area.x,
+          y: area.y,
+          width: area.width,
+          height: area.height,
+          pixelCount: area.pixels.length
+        })),
+        totalAreas: result.areas.length,
+        totalPixels: result.totalPixels,
+        largestArea: result.largestArea ? {
+          x: result.largestArea.x,
+          y: result.largestArea.y,
+          width: result.largestArea.width,
+          height: result.largestArea.height,
+          pixelCount: result.largestArea.pixels.length
+        } : null
+      });
+
+    } catch (error) {
+      console.error("Pink area detection test error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to detect pink areas" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
