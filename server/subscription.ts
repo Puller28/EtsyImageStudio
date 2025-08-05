@@ -18,29 +18,8 @@ export class SubscriptionService {
         return { subscriptionStatus: 'free', isActive: false };
       }
 
-      // Check if user has made any subscription payments via Paystack
-      const subscriptionFromPayments = await this.detectSubscriptionFromPayments(user.email);
-      
-      if (subscriptionFromPayments.hasActiveSubscription) {
-        // Update local database with detected subscription
-        await storage.updateUserSubscription(userId, {
-          subscriptionStatus: 'active',
-          subscriptionPlan: subscriptionFromPayments.planId,
-          subscriptionId: subscriptionFromPayments.subscriptionId,
-          subscriptionStartDate: subscriptionFromPayments.startDate,
-          subscriptionEndDate: subscriptionFromPayments.endDate,
-        });
-
-        return {
-          subscriptionStatus: 'active',
-          subscriptionPlan: subscriptionFromPayments.planId,
-          subscriptionId: subscriptionFromPayments.subscriptionId,
-          nextBillingDate: subscriptionFromPayments.endDate?.toISOString(),
-          isActive: true
-        };
-      }
-
-      // Check if user has a cancelled subscription that's still active
+      // Check if user has a cancelled subscription that's still active FIRST
+      // (Don't override cancelled status with payment detection)
       if (user.subscriptionStatus === 'cancelled' && user.subscriptionEndDate) {
         const now = new Date();
         const endDate = new Date(user.subscriptionEndDate);
@@ -81,6 +60,31 @@ export class SubscriptionService {
             subscriptionPlan: user.subscriptionPlan || undefined,
             subscriptionId: user.subscriptionId,
             nextBillingDate: paystackStatus.nextBillingDate,
+            isActive: true
+          };
+        }
+      }
+
+      // Check if user has made any subscription payments via Paystack
+      // (Only if not already cancelled)
+      if (user.subscriptionStatus !== 'cancelled') {
+        const subscriptionFromPayments = await this.detectSubscriptionFromPayments(user.email);
+        
+        if (subscriptionFromPayments.hasActiveSubscription) {
+          // Update local database with detected subscription
+          await storage.updateUserSubscription(userId, {
+            subscriptionStatus: 'active',
+            subscriptionPlan: subscriptionFromPayments.planId,
+            subscriptionId: subscriptionFromPayments.subscriptionId,
+            subscriptionStartDate: subscriptionFromPayments.startDate,
+            subscriptionEndDate: subscriptionFromPayments.endDate,
+          });
+
+          return {
+            subscriptionStatus: 'active',
+            subscriptionPlan: subscriptionFromPayments.planId,
+            subscriptionId: subscriptionFromPayments.subscriptionId,
+            nextBillingDate: subscriptionFromPayments.endDate?.toISOString(),
             isActive: true
           };
         }
