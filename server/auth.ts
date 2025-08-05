@@ -5,6 +5,13 @@ import { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+
+// Log JWT secret info for production debugging (without exposing the actual secret)
+console.log('🔑 JWT Secret configured:', {
+  hasCustomSecret: !!process.env.JWT_SECRET,
+  secretLength: JWT_SECRET.length,
+  environment: process.env.NODE_ENV || 'development'
+});
 const JWT_EXPIRES_IN = '7d';
 
 export interface AuthenticatedRequest extends Request {
@@ -143,15 +150,18 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
     if (decoded) {
       try {
         const user = await storage.getUser(decoded.userId);
+        console.log('🔍 User lookup result:', { userId: decoded.userId, found: !!user });
         if (user) {
           req.userId = decoded.userId;
           req.user = user;
           console.log('🔍 Token auth successful:', req.userId);
-          console.log('🔍 Final auth state: { userId:', req.userId, ', hasUser:', !!req.user, '}');
+          console.log('🔍 Final auth state:', { userId: req.userId, hasUser: !!req.user });
           return next();
+        } else {
+          console.warn('🔍 User not found for token:', decoded.userId);
         }
       } catch (error) {
-        console.warn('Token auth failed:', error);
+        console.warn('🔍 Token auth failed:', error);
       }
     } else {
       console.warn('🔍 Token verification failed - invalid or expired token');
