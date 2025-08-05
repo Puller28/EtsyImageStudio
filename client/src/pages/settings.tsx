@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, User as UserIcon, CreditCard, Bell, Shield } from "lucide-react";
+import { Settings as SettingsIcon, User as UserIcon, CreditCard, Shield } from "lucide-react";
 
 export default function Settings() {
   const { user: authUser } = useAuth();
@@ -114,14 +114,7 @@ export default function Settings() {
                     <CreditCard className="w-4 h-4 mr-2" />
                     Billing & Credits
                   </a>
-                  <a
-                    href="#notifications"
-                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md"
-                    data-testid="nav-notifications"
-                  >
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </a>
+
                   <a
                     href="#security"
                     className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md"
@@ -234,44 +227,18 @@ export default function Settings() {
 
                 <Separator />
 
-                <Button variant="outline" className="w-full" data-testid="button-buy-credits">
-                  Buy More Credits (Coming Soon)
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  data-testid="button-buy-credits"
+                  onClick={() => window.location.href = '/pricing'}
+                >
+                  Buy More Credits
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Notifications */}
-            <Card id="notifications">
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
-                  Choose how you want to be notified about your projects.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Processing Complete</h4>
-                      <p className="text-sm text-gray-600">Get notified when your artwork processing is finished</p>
-                    </div>
-                    <Button variant="outline" size="sm" data-testid="toggle-processing">
-                      Coming Soon
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Low Credits Warning</h4>
-                      <p className="text-sm text-gray-600">Alert me when credits are running low</p>
-                    </div>
-                    <Button variant="outline" size="sm" data-testid="toggle-credits">
-                      Coming Soon
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+
 
             {/* Security */}
             <Card id="security">
