@@ -103,19 +103,18 @@ export const subscriptionPlans = [
   {
     id: 'business_monthly',
     name: 'Business Plan',
-    credits: 1000,
-    usdPrice: 59,
-    zarPrice: 112100,
+    credits: 1500,
+    usdPrice: 79,
+    zarPrice: 150100,
     interval: 'monthly',
-    description: 'Monthly subscription with 1000 credits',
+    description: 'Monthly subscription with 1500 credits',
     type: 'subscription',
     features: [
-      '1,000 credits per month',
-      '500 AI generations',
-      '1,000 upscaling operations',
-      'Priority processing',
-      'Premium support',
-      'Commercial license'
+      '1,500 credits per month',
+      'All Pro features',
+      'API access',
+      'White-label options',
+      'Priority support'
     ],
     paystackPlanCode: 'PLN_rlfsy9bnb8vqwsf'
   }
