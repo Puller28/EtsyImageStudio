@@ -128,88 +128,65 @@ export class SubscriptionService {
         }
       });
 
-      // For subscriptions detected from payment history (not real Paystack subscriptions),
-      // we can directly update the status without calling Paystack API
-      if (subscriptionId && !subscriptionId.startsWith('sub_')) {
-        console.log('🔍 Processing local cancellation for payment reference:', subscriptionId);
+      // CRITICAL: All subscriptions must be cancelled with Paystack regardless of ID format
+      // Even if it's a payment reference, we need to find and cancel the actual subscription
+      console.log('🔍 Processing cancellation for subscription:', subscriptionId);
+      
+      // Try to find the actual Paystack subscription by customer email
+      const paystackSubscription = await this.findActiveSubscriptionByEmail(user.email);
+      
+      if (paystackSubscription.success && paystackSubscription.subscriptionCode) {
+        console.log('🔍 Found active Paystack subscription, attempting to cancel:', paystackSubscription.subscriptionCode);
         
-        // This is likely a payment reference, not a subscription ID
-        // Update status to cancelled but maintain access until end date
-        await storage.updateUserSubscription(userId, {
-          subscriptionStatus: 'cancelled',
-          // Keep all other fields (plan, expiry date) to maintain access
-        });
-
-        const endDate = user.subscriptionEndDate;
-        const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
-
-        console.log('✅ Local cancellation successful');
-        return {
-          success: true,
-          message: `Subscription cancelled successfully. You'll continue to have full access until ${endDateString}. No future charges will occur.`
-        };
-      }
-
-      // For real Paystack subscriptions (starting with 'sub_'), call the API
-      try {
-        const response = await fetch(`https://api.paystack.co/subscription/disable`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            code: subscriptionId,
-            token: subscriptionId
-          })
-        });
-
-        const data = await response.json();
-        
-        if (data.status) {
-          await storage.updateUserSubscription(userId, {
-            subscriptionStatus: 'cancelled',
+        try {
+          const response = await fetch(`https://api.paystack.co/subscription/disable`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              code: paystackSubscription.subscriptionCode
+            })
           });
 
-          const endDate = user.subscriptionEndDate;
-          const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
-
-          return {
-            success: true,
-            message: `Subscription cancelled successfully. You'll continue to have full access until ${endDateString}. No future charges will occur.`
-          };
-        } else {
-          // If Paystack API fails, still allow local cancellation
-          console.warn('Paystack cancellation failed, proceeding with local cancellation:', data.message);
+          const data = await response.json();
+          console.log('🔍 Paystack disable response:', data);
           
-          await storage.updateUserSubscription(userId, {
-            subscriptionStatus: 'cancelled',
-          });
+          if (data.status === true) {
+            console.log('✅ Paystack subscription successfully cancelled');
+            
+            await storage.updateUserSubscription(userId, {
+              subscriptionStatus: 'cancelled',
+            });
 
-          const endDate = user.subscriptionEndDate;
-          const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
+            const endDate = user?.subscriptionEndDate;
+            const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
 
-          return {
-            success: true,
-            message: `Subscription cancelled locally. You'll continue to have access until ${endDateString}. Please contact support if you continue to be charged.`
-          };
+            return {
+              success: true,
+              message: `Subscription cancelled successfully with Paystack. You'll continue to have full access until ${endDateString}. No future charges will occur.`
+            };
+          }
+        } catch (error) {
+          console.error('❌ Error cancelling with Paystack:', error);
         }
-      } catch (paystackError) {
-        console.warn('Paystack API error, proceeding with local cancellation:', paystackError);
-        
-        // Proceed with local cancellation even if Paystack API fails
-        await storage.updateUserSubscription(userId, {
-          subscriptionStatus: 'cancelled',
-        });
-
-        const endDate = user.subscriptionEndDate;
-        const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
-
-        return {
-          success: true,
-          message: `Subscription cancelled locally. You'll continue to have access until ${endDateString}. Please contact support if you continue to be charged.`
-        };
       }
+      
+      // Fallback: Local cancellation only
+      console.log('⚠️ WARNING: Could not cancel with Paystack, proceeding with local cancellation only');
+      
+      await storage.updateUserSubscription(userId, {
+        subscriptionStatus: 'cancelled',
+      });
+
+      const endDate = user?.subscriptionEndDate;
+      const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
+
+      return {
+        success: true,
+        message: `Subscription cancelled locally. You'll continue to have access until ${endDateString}. IMPORTANT: Please verify with Paystack that no future charges will occur.`
+      };
     } catch (error: any) {
       console.error('Error cancelling subscription:', error);
       return {
@@ -318,6 +295,58 @@ export class SubscriptionService {
     } catch (error) {
       console.error('Error detecting subscription from payments:', error);
       return { hasActiveSubscription: false };
+    }
+  }
+
+  /**
+   * Find active Paystack subscription by email
+   */
+  private static async findActiveSubscriptionByEmail(email: string): Promise<{
+    success: boolean;
+    subscriptionCode?: string;
+  }> {
+    try {
+      console.log('🔍 Searching for active Paystack subscriptions for:', email);
+      
+      const response = await fetch('https://api.paystack.co/subscription', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Failed to fetch subscriptions from Paystack');
+        return { success: false };
+      }
+
+      const data = await response.json();
+      console.log('🔍 Total subscriptions found:', data.data?.length || 0);
+      
+      // Find active subscriptions for this customer
+      const activeSubscriptions = data.data?.filter((sub: any) => 
+        sub.customer?.email === email &&
+        sub.status === 'active'
+      ) || [];
+
+      console.log('🔍 Active subscriptions for user:', activeSubscriptions.length);
+      
+      if (activeSubscriptions.length > 0) {
+        const subscription = activeSubscriptions[0]; // Use the first active subscription
+        console.log('✅ Found active subscription:', subscription.subscription_code);
+        
+        return {
+          success: true,
+          subscriptionCode: subscription.subscription_code
+        };
+      }
+
+      console.log('❌ No active subscriptions found for user');
+      return { success: false };
+    } catch (error) {
+      console.error('❌ Error searching for subscriptions:', error);
+      return { success: false };
     }
   }
 
