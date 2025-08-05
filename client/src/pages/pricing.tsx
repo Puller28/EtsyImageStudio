@@ -111,7 +111,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   });
 
   // Fetch subscription status
-  const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useQuery<{
+  const { data: subscriptionStatus, isLoading: isLoadingSubscription, refetch: refetchSubscription } = useQuery<{
     subscriptionStatus: string;
     subscriptionPlan?: string;
     subscriptionId?: string;
@@ -120,6 +120,11 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   }>({
     queryKey: ["/api/subscription-status"],
     enabled: !!user,
+    staleTime: 0, // Always refetch to get latest status
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/subscription-status", {});
+      return response.json();
+    },
   });
 
   // Cancel subscription mutation
@@ -152,6 +157,8 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   // Debug logging
   console.log("🔍 All Plans Data:", allPlans);
   console.log("🔍 Credit Packages:", allPlans?.creditPackages);
+  console.log("🔍 Subscription Status:", subscriptionStatus);
+  console.log("🔍 Is Loading Subscription:", isLoadingSubscription);
 
   const handleSelectPlan = async (planName: string) => {
     if (!currentUser) {
@@ -325,6 +332,32 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
                     className="ml-4"
                   >
                     {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Debug subscription status */}
+        {subscriptionStatus && (
+          <div className="mb-8">
+            <Alert className="border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <strong>Debug - Subscription Status:</strong> {subscriptionStatus.subscriptionStatus} | 
+                    <strong> Active:</strong> {subscriptionStatus.isActive ? 'Yes' : 'No'} |
+                    <strong> Plan:</strong> {subscriptionStatus.subscriptionPlan || 'None'}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchSubscription()}
+                    className="ml-4"
+                  >
+                    Refresh Status
                   </Button>
                 </div>
               </AlertDescription>
