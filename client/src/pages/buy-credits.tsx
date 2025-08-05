@@ -84,11 +84,25 @@ export default function BuyCredits() {
       }
     },
     onError: (error: any) => {
-      toast({
-        title: "Purchase Failed",
-        description: error.message || "Failed to initiate payment",
-        variant: "destructive",
-      });
+      console.error('❌ Subscription error:', error);
+      
+      // Handle authentication errors specifically
+      if (error.message && error.message.includes('401')) {
+        toast({
+          title: "Authentication Required",
+          description: "Your session has expired. Please refresh the page and log in again.",
+          variant: "destructive",
+        });
+        // Clear invalid tokens and force re-authentication
+        localStorage.removeItem('auth-storage');
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        toast({
+          title: "Purchase Failed",
+          description: error.message || "Failed to initiate payment",
+          variant: "destructive",
+        });
+      }
       setProcessingPackage(null);
     },
   });

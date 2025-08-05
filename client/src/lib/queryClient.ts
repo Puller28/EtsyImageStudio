@@ -39,10 +39,12 @@ function getAuthToken(): string | null {
           });
           
           if (isExpired) {
-            console.warn('🔍 Token is expired, triggering logout');
+            console.warn('🔍 Token is expired, clearing authentication');
             localStorage.removeItem('auth-storage');
+            // Clear all auth-related storage to force fresh authentication
+            sessionStorage.clear();
             // Trigger a page reload to clear the auth state
-            window.location.reload();
+            setTimeout(() => window.location.reload(), 100);
             return null;
           }
         } catch (error) {
@@ -72,7 +74,8 @@ export async function apiRequest(
     method,
     url,
     hasToken: !!token,
-    tokenPreview: token ? token.substring(0, 20) + '...' : 'null'
+    tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+    willSendAuthHeader: !!token
   });
   
   if (token) {
@@ -93,6 +96,20 @@ export async function apiRequest(
       url,
       hadToken: !!token
     });
+    
+    // Handle authentication failures (invalid/expired tokens)
+    if (res.status === 401 || res.status === 403) {
+      console.warn('🔍 Authentication failed, clearing invalid token');
+      localStorage.removeItem('auth-storage');
+      sessionStorage.clear();
+      // For critical endpoints like subscribe, force page reload
+      if (url.includes('/api/subscribe') || url.includes('/api/purchase')) {
+        setTimeout(() => {
+          alert('Your session has expired. Please log in again to continue with your purchase.');
+          window.location.reload();
+        }, 100);
+      }
+    }
   }
 
   await throwIfResNotOk(res);

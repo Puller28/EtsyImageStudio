@@ -72,6 +72,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint for token validation (development only)
+  app.post("/api/debug/validate-token", async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: "Not found" });
+    }
+    
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ error: "Token required" });
+      }
+      
+      const { AuthService } = await import("./auth");
+      const decoded = AuthService.verifyToken(token);
+      
+      res.json({
+        valid: !!decoded,
+        decoded: decoded || null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Token validation failed" });
+    }
+  });
+
   // Update user profile
   app.patch("/api/user/profile", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
@@ -241,6 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Strict validation: reject demo user for subscription to prevent payment issues
       if (!req.userId || !req.user || req.userId === 'demo-user-1') {
         console.warn('🔍 Subscription attempted without proper authentication or with demo user');
+        console.warn('🔍 Request headers:', JSON.stringify(req.headers, null, 2));
         return res.status(401).json({ 
           error: "Authentication required", 
           message: "Please ensure you are properly logged in to subscribe to a plan. Demo users cannot purchase subscriptions."
