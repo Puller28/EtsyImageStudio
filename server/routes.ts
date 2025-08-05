@@ -978,6 +978,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Improved pink area placement endpoint
+  app.post("/api/improved-pink-placement", upload.fields([
+    { name: "mockup", maxCount: 1 }, 
+    { name: "artwork", maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files.mockup || !files.artwork) {
+        return res.status(400).json({ 
+          error: "Both mockup template and artwork images are required" 
+        });
+      }
+
+      console.log('🎨 Testing improved pink area placement...');
+      
+      // Import the improved placement service
+      const { ImprovedPinkPlacer } = await import('./services/improved-pink-placement.js');
+      const improvedPlacer = new ImprovedPinkPlacer();
+      
+      const result = await improvedPlacer.generateImprovedMockup(
+        files.mockup[0].buffer,
+        files.artwork[0].buffer
+      );
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error('🎨 Improved pink placement failed:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate improved pink placement',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -43,29 +43,12 @@ export default function AdvancedMockupTest() {
       description: "Basic pink area detection with flood fill"
     },
     { 
-      key: "enhanced", 
-      name: "Enhanced Pink Detection", 
-      endpoint: "/api/enhanced-pink-placement",
+      key: "improved", 
+      name: "Improved Pink Detection", 
+      endpoint: "/api/improved-pink-placement",
       description: "Better color matching and aspect ratio preservation"
     },
-    { 
-      key: "template", 
-      name: "Template Matching", 
-      endpoint: "/api/template-matching",
-      description: "Automatically detect rectangular frames"
-    },
-    { 
-      key: "edge", 
-      name: "Edge Detection", 
-      endpoint: "/api/edge-detection",
-      description: "Find frame boundaries using edge detection"
-    },
-    { 
-      key: "smart", 
-      name: "Smart Auto-Detection", 
-      endpoint: "/api/smart-auto-placement",
-      description: "Try all methods and pick the best result"
-    }
+
   ];
 
   const testMethod = useMutation({

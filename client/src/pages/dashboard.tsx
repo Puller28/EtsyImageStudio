@@ -16,6 +16,7 @@ import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
 import RecentProjects from "@/components/recent-projects";
 import PinkAreaMockupTest from "@/components/pink-area-mockup-test";
+import SimpleMockupComparison from "@/components/simple-mockup-comparison";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon } from "lucide-react";
 
@@ -485,8 +486,8 @@ export default function Dashboard() {
                           <ImageIcon className="w-6 h-6 text-pink-600" />
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900">Pink Area Test</h3>
-                          <p className="text-sm text-gray-500">Test precise mockup placement</p>
+                          <h3 className="font-medium text-gray-900">Improved Placement</h3>
+                          <p className="text-sm text-gray-500">Compare placement algorithms</p>
                         </div>
                       </div>
                     </button>
@@ -529,7 +530,7 @@ export default function Dashboard() {
                     ← Back to Main Menu
                   </Button>
                 </div>
-                <PinkAreaMockupTest />
+                <SimpleMockupComparison />
               </div>
             )}
 
