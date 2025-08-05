@@ -341,17 +341,28 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
 
 
-        {subscriptionStatus && subscriptionStatus.subscriptionStatus === 'cancelled' && (
+        {subscriptionStatus && subscriptionStatus.subscriptionStatus === 'cancelled' && subscriptionStatus.isActive && (
           <div className="mb-8">
             <Alert className="border-orange-200 bg-orange-50">
               <AlertCircle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
-                <strong>Subscription Cancelled:</strong> Your current plan will remain active until the end of your billing period.
+                <strong>Subscription Cancelled:</strong> Your plan remains active until the end of your billing period. No future charges will occur.
                 {subscriptionStatus.nextBillingDate && (
-                  <span className="ml-1">
-                    Access expires: {new Date(subscriptionStatus.nextBillingDate).toLocaleDateString()}
+                  <span className="ml-2 font-medium">
+                    Access until: {new Date(subscriptionStatus.nextBillingDate).toLocaleDateString()}
                   </span>
                 )}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {subscriptionStatus && subscriptionStatus.subscriptionStatus === 'expired' && (
+          <div className="mb-8">
+            <Alert className="border-red-200 bg-red-50">
+              <X className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <strong>Subscription Expired:</strong> Your plan has ended. Choose a new plan below to continue with premium features.
               </AlertDescription>
             </Alert>
           </div>
@@ -404,7 +415,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
                   {subscriptionStatus?.isActive && subscriptionStatus.subscriptionPlan?.includes(tier.name.toLowerCase()) ? (
                     <Button className="w-full" variant="outline" disabled>
                       <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                      Current Plan
+                      {subscriptionStatus.subscriptionStatus === 'cancelled' ? 'Current Plan (Expires Soon)' : 'Current Plan'}
                     </Button>
                   ) : (
                     <Button

@@ -40,8 +40,39 @@ export class SubscriptionService {
         };
       }
 
+      // Check if user has a cancelled subscription that's still active
+      if (user.subscriptionStatus === 'cancelled' && user.subscriptionEndDate) {
+        const now = new Date();
+        const endDate = new Date(user.subscriptionEndDate);
+        
+        // If still within billing period, maintain access
+        if (endDate > now) {
+          return {
+            subscriptionStatus: 'cancelled',
+            subscriptionPlan: user.subscriptionPlan || undefined,
+            subscriptionId: user.subscriptionId || undefined,
+            nextBillingDate: user.subscriptionEndDate.toISOString(),
+            isActive: true // Still active until end date
+          };
+        } else {
+          // Billing period has ended, subscription is truly expired
+          await storage.updateUserSubscription(userId, {
+            subscriptionStatus: 'expired',
+            subscriptionPlan: undefined,
+            subscriptionId: undefined,
+          });
+          return {
+            subscriptionStatus: 'expired',
+            subscriptionPlan: undefined,
+            subscriptionId: undefined,
+            nextBillingDate: undefined,
+            isActive: false
+          };
+        }
+      }
+
       // If user has stored subscription ID, verify with Paystack
-      if (user.subscriptionId) {
+      if (user.subscriptionId && user.subscriptionStatus === 'active') {
         const paystackStatus = await this.checkPaystackSubscription(user.subscriptionId);
         
         if (paystackStatus.success && paystackStatus.status === 'active') {
@@ -57,7 +88,7 @@ export class SubscriptionService {
 
       // Return free status if no active subscription found
       return {
-        subscriptionStatus: 'free',
+        subscriptionStatus: user.subscriptionStatus || 'free',
         subscriptionPlan: undefined,
         subscriptionId: undefined,
         nextBillingDate: undefined,
@@ -70,14 +101,19 @@ export class SubscriptionService {
   }
 
   /**
-   * Cancel a subscription via Paystack API
+   * Cancel a subscription - maintains access until end of billing period
    */
   static async cancelSubscription(userId: string, subscriptionId: string): Promise<{
     success: boolean;
     message: string;
   }> {
     try {
-      // Call Paystack API to cancel subscription
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Call Paystack API to cancel subscription (prevents future billing)
       const response = await fetch(`https://api.paystack.co/subscription/disable`, {
         method: 'POST',
         headers: {
@@ -86,21 +122,26 @@ export class SubscriptionService {
         },
         body: JSON.stringify({
           code: subscriptionId,
-          token: subscriptionId // Use subscription ID as token
+          token: subscriptionId
         })
       });
 
       const data = await response.json();
       
       if (data.status) {
-        // Update local database
+        // Keep subscription active until end of billing period
+        // Only update status to 'cancelled' but maintain access until expiry
         await storage.updateUserSubscription(userId, {
-          subscriptionStatus: 'cancelled',
+          subscriptionStatus: 'cancelled', // Prevents future renewals
+          // Keep all other fields (plan, expiry date) to maintain access
         });
+
+        const endDate = user.subscriptionEndDate;
+        const endDateString = endDate ? endDate.toLocaleDateString() : 'the end of your billing period';
 
         return {
           success: true,
-          message: 'Subscription cancelled successfully. You can continue using your current plan until the end of the billing period.'
+          message: `Subscription cancelled successfully. You'll continue to have full access until ${endDateString}. No future charges will occur.`
         };
       } else {
         return {
