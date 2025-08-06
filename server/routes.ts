@@ -1014,6 +1014,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Coordinate-based artwork placement endpoint
+  app.post("/api/coordinate-placement", upload.fields([
+    { name: "mockup", maxCount: 1 }, 
+    { name: "artwork", maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files.mockup || !files.artwork) {
+        return res.status(400).json({ 
+          error: "Both mockup template and artwork images are required" 
+        });
+      }
+
+      console.log('📍 Testing coordinate-based placement...');
+      
+      // Define the exact coordinates you provided
+      const coordinates = {
+        topLeft: { x: 1404, y: 1219 },
+        topRight: { x: 2708, y: 1223 },
+        bottomLeft: { x: 1402, y: 2777 },
+        bottomRight: { x: 2710, y: 2779 }
+      };
+      
+      const { CoordinateBasedPlacer } = await import('./services/coordinate-based-placement');
+      const placer = new CoordinateBasedPlacer();
+      
+      const result = await placer.generateCoordinateMockup(
+        files.mockup[0].buffer,
+        files.artwork[0].buffer,
+        coordinates
+      );
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error('📍 Coordinate placement failed:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate coordinate-based placement',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
