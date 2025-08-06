@@ -31,24 +31,23 @@ export default function AdvancedMockupTest() {
   const [mockupPreview, setMockupPreview] = useState<string>("");
   const [artworkPreview, setArtworkPreview] = useState<string>("");
   const [results, setResults] = useState<{[key: string]: PlacementResult}>({});
-  const [activeTab, setActiveTab] = useState("original");
+  const [activeTab, setActiveTab] = useState("improved");
   const { toast } = useToast();
 
   // Different placement methods
   const methods = [
     { 
+      key: "improved", 
+      name: "Coordinate-Based Placement", 
+      endpoint: "/api/improved-pink-placement",
+      description: "Precise pixel-perfect placement using exact coordinates"
+    },
+    { 
       key: "original", 
       name: "Original Pink Detection", 
       endpoint: "/api/test-pink-mockup",
-      description: "Basic pink area detection with flood fill"
-    },
-    { 
-      key: "improved", 
-      name: "Improved Pink Detection", 
-      endpoint: "/api/improved-pink-placement",
-      description: "Better color matching and aspect ratio preservation"
-    },
-
+      description: "Legacy color detection method (slower, less reliable)"
+    }
   ];
 
   const testMethod = useMutation({
@@ -88,6 +87,21 @@ export default function AdvancedMockupTest() {
       });
     },
   });
+
+  const testCoordinateMethod = async () => {
+    const coordinateMethod = methods.find(m => m.key === "improved");
+    if (coordinateMethod) {
+      try {
+        await testMethod.mutateAsync({ 
+          method: coordinateMethod.key, 
+          endpoint: coordinateMethod.endpoint 
+        });
+        setActiveTab("improved"); // Switch to coordinate result
+      } catch (error) {
+        console.log(`${coordinateMethod.name} failed:`, error);
+      }
+    }
+  };
 
   const testAllMethods = async () => {
     for (const method of methods) {
@@ -141,10 +155,10 @@ export default function AdvancedMockupTest() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-blue-500" />
-            Advanced Mockup Placement Test
+            Coordinate-Based Mockup Generator
           </CardTitle>
           <CardDescription>
-            Test multiple placement algorithms to find the best approach for your mockups
+            Generate mockups using precise coordinate-based placement for perfect positioning
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -224,14 +238,25 @@ export default function AdvancedMockupTest() {
           {/* Test Controls */}
           <div className="flex justify-center gap-4">
             <Button
+              onClick={testCoordinateMethod}
+              disabled={!mockupFile || !artworkFile || testMethod.isPending}
+              size="lg"
+              className="px-8 bg-blue-600 hover:bg-blue-700"
+              data-testid="button-test-coordinate"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              {testMethod.isPending ? "Testing..." : "Test Coordinate Placement"}
+            </Button>
+            <Button
               onClick={testAllMethods}
               disabled={!mockupFile || !artworkFile || testMethod.isPending}
               size="lg"
+              variant="outline"
               className="px-8"
               data-testid="button-test-all"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              {testMethod.isPending ? "Testing..." : "Test All Methods"}
+              Compare All Methods
             </Button>
           </div>
 
