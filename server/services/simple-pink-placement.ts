@@ -96,25 +96,33 @@ export class SimplePinkPlacer {
       // Fill pink area with intelligent background color
       this.fillPinkAreaIntelligently(ctx, pinkArea, data, mockupImage.width, mockupImage.height);
       
-      // Calculate optimal artwork placement
+      // Calculate optimal artwork placement (matching original method's approach)
       const artworkAspect = artworkImage.width / artworkImage.height;
-      const areaAspect = pinkArea.width / pinkArea.height;
+      console.log(`🎯 Artwork dimensions: ${artworkImage.width}x${artworkImage.height}, aspect ratio: ${artworkAspect.toFixed(3)}`);
       
-      // Add 8% padding inside the area
-      const padding = 0.08;
+      // Use minimal padding for maximum frame utilization
+      const padding = 0.02; // Reduced from 8% to 2%
       const availableWidth = pinkArea.width * (1 - padding * 2);
       const availableHeight = pinkArea.height * (1 - padding * 2);
       
       let newWidth, newHeight, offsetX, offsetY;
       
-      if (artworkAspect > areaAspect) {
-        // Artwork is wider - fit to available width
+      // For square artworks, prioritize fitting to the smaller dimension for better centering
+      if (Math.abs(artworkAspect - 1.0) < 0.1) {
+        // Square artwork - use smaller dimension to ensure it fits completely
+        const targetSize = Math.min(availableWidth, availableHeight);
+        newWidth = targetSize;
+        newHeight = targetSize;
+        offsetX = pinkArea.x + (pinkArea.width - newWidth) / 2;
+        offsetY = pinkArea.y + (pinkArea.height - newHeight) / 2;
+      } else if (artworkAspect > 1.2) {
+        // Wide artwork - fit to width
         newWidth = availableWidth;
         newHeight = availableWidth / artworkAspect;
         offsetX = pinkArea.x + pinkArea.width * padding;
         offsetY = pinkArea.y + (pinkArea.height - newHeight) / 2;
       } else {
-        // Artwork is taller - fit to available height  
+        // Tall or nearly square artwork - fit to height
         newHeight = availableHeight;
         newWidth = availableHeight * artworkAspect;
         offsetX = pinkArea.x + (pinkArea.width - newWidth) / 2;
