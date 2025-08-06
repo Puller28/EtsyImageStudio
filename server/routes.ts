@@ -1057,21 +1057,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('📍 Testing coordinate-based placement...');
       
-      // Define the exact coordinates you provided
-      const coordinates = {
-        topLeft: { x: 1404, y: 1219 },
-        topRight: { x: 2708, y: 1223 },
-        bottomLeft: { x: 1402, y: 2777 },
-        bottomRight: { x: 2710, y: 2779 }
-      };
-      
+      // Use default coordinates from CoordinateBasedPlacer class
       const { CoordinateBasedPlacer } = await import('./services/coordinate-based-placement');
       const placer = new CoordinateBasedPlacer();
       
       const result = await placer.generateCoordinateMockup(
         files.mockup[0].buffer,
-        files.artwork[0].buffer,
-        coordinates
+        files.artwork[0].buffer
+        // No coordinates passed - will use updated defaults
       );
       
       res.json(result);

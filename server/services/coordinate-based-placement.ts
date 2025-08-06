@@ -24,12 +24,12 @@ export interface CoordinatePlacementResult {
 
 export class CoordinateBasedPlacer {
   
-  // Default coordinates for the frame mockup template (full black frame opening)
+  // Default coordinates for the frame mockup template (adjusted for better centering)
   private static DEFAULT_FRAME_COORDINATES = {
-    topLeft: { x: 1320, y: 1135 }, 
-    topRight: { x: 2792, y: 1139 },
-    bottomLeft: { x: 1318, y: 2861 },
-    bottomRight: { x: 2794, y: 2865 }
+    topLeft: { x: 1320, y: 1180 }, 
+    topRight: { x: 2792, y: 1184 },
+    bottomLeft: { x: 1318, y: 2820 },
+    bottomRight: { x: 2794, y: 2824 }
   };
   
   async generateCoordinateMockup(
