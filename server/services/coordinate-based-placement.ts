@@ -24,12 +24,12 @@ export interface CoordinatePlacementResult {
 
 export class CoordinateBasedPlacer {
   
-  // Default coordinates for the frame mockup template (adjusted for better centering)
+  // Default coordinates for the frame mockup template (optimized for various artwork types)
   private static DEFAULT_FRAME_COORDINATES = {
-    topLeft: { x: 1320, y: 1180 }, 
-    topRight: { x: 2792, y: 1184 },
-    bottomLeft: { x: 1318, y: 2820 },
-    bottomRight: { x: 2794, y: 2824 }
+    topLeft: { x: 1320, y: 1160 }, 
+    topRight: { x: 2792, y: 1164 },
+    bottomLeft: { x: 1318, y: 2780 },
+    bottomRight: { x: 2794, y: 2784 }
   };
   
   async generateCoordinateMockup(
@@ -75,19 +75,14 @@ export class CoordinateBasedPlacer {
       if (fillMode === 'crop-to-fill') {
         // CROP TO FILL - scale artwork to completely fill frame (may crop edges)
         // This ensures no gaps/white space in the frame
-        if (artworkAspect > frameAspect) {
-          // Artwork is wider - scale to fill frame height, center horizontally
-          newHeight = frameHeight;
-          newWidth = frameHeight * artworkAspect;
-          offsetX = frameX - (newWidth - frameWidth) / 2; // Center by allowing crop on sides
-          offsetY = frameY;
-        } else {
-          // Artwork is taller/square - scale to fill frame width, center vertically
-          newWidth = frameWidth;
-          newHeight = frameWidth / artworkAspect;
-          offsetX = frameX;
-          offsetY = frameY - (newHeight - frameHeight) / 2; // Center by allowing crop on top/bottom
-        }
+        const cropRatio = Math.max(frameWidth / artworkImage.width, frameHeight / artworkImage.height);
+        
+        newWidth = artworkImage.width * cropRatio;
+        newHeight = artworkImage.height * cropRatio;
+        
+        // Center the scaled artwork in the frame
+        offsetX = frameX - (newWidth - frameWidth) / 2;
+        offsetY = frameY - (newHeight - frameHeight) / 2;
       } else {
         // FIT WITHIN - scale artwork to fit entirely within frame (may leave gaps)
         if (artworkAspect > frameAspect) {
