@@ -40,7 +40,8 @@ export class CoordinateBasedPlacer {
       topRight: { x: number; y: number };
       bottomLeft: { x: number; y: number };
       bottomRight: { x: number; y: number };
-    }
+    },
+    fillMode: 'crop-to-fill' | 'fit-within' = 'crop-to-fill'
   ): Promise<CoordinatePlacementResult> {
     try {
       console.log('📍 Starting coordinate-based placement...');
@@ -71,23 +72,37 @@ export class CoordinateBasedPlacer {
       
       let newWidth, newHeight, offsetX, offsetY;
       
-      // No padding - fill the entire frame opening
-      const padding = 0; // No padding for maximum fill
-      const availableWidth = frameWidth;
-      const availableHeight = frameHeight;
-      
-      if (artworkAspect > frameAspect) {
-        // Artwork is wider than frame - fit to available width
-        newWidth = availableWidth;
-        newHeight = availableWidth / artworkAspect;
-        offsetX = frameX;
-        offsetY = frameY + (frameHeight - newHeight) / 2;
+      if (fillMode === 'crop-to-fill') {
+        // CROP TO FILL - scale artwork to completely fill frame (may crop edges)
+        // This ensures no gaps/white space in the frame
+        if (artworkAspect > frameAspect) {
+          // Artwork is wider - scale to fill frame height, center horizontally
+          newHeight = frameHeight;
+          newWidth = frameHeight * artworkAspect;
+          offsetX = frameX - (newWidth - frameWidth) / 2; // Center by allowing crop on sides
+          offsetY = frameY;
+        } else {
+          // Artwork is taller/square - scale to fill frame width, center vertically
+          newWidth = frameWidth;
+          newHeight = frameWidth / artworkAspect;
+          offsetX = frameX;
+          offsetY = frameY - (newHeight - frameHeight) / 2; // Center by allowing crop on top/bottom
+        }
       } else {
-        // Artwork is taller than frame - fit to available height  
-        newHeight = availableHeight;
-        newWidth = availableHeight * artworkAspect;
-        offsetX = frameX + (frameWidth - newWidth) / 2;
-        offsetY = frameY;
+        // FIT WITHIN - scale artwork to fit entirely within frame (may leave gaps)
+        if (artworkAspect > frameAspect) {
+          // Artwork is wider than frame - fit to frame width
+          newWidth = frameWidth;
+          newHeight = frameWidth / artworkAspect;
+          offsetX = frameX;
+          offsetY = frameY + (frameHeight - newHeight) / 2;
+        } else {
+          // Artwork is taller than frame - fit to frame height  
+          newHeight = frameHeight;
+          newWidth = frameHeight * artworkAspect;
+          offsetX = frameX + (frameWidth - newWidth) / 2;
+          offsetY = frameY;
+        }
       }
       
       console.log(`📍 Placing artwork at (${offsetX.toFixed(1)}, ${offsetY.toFixed(1)}) with size ${newWidth.toFixed(1)}x${newHeight.toFixed(1)}`);

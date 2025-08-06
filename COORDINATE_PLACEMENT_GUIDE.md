@@ -12,10 +12,10 @@ The system comes pre-configured with coordinates for the standard frame mockup:
 
 ```json
 {
-  "topLeft": { "x": 1404, "y": 1219 },
-  "topRight": { "x": 2708, "y": 1223 },
-  "bottomLeft": { "x": 1402, "y": 2777 },
-  "bottomRight": { "x": 2710, "y": 2779 }
+  "topLeft": { "x": 1320, "y": 1180 },
+  "topRight": { "x": 2792, "y": 1184 },
+  "bottomLeft": { "x": 1318, "y": 2820 },
+  "bottomRight": { "x": 2794, "y": 2824 }
 }
 ```
 
@@ -77,12 +77,28 @@ The system returns the same format as the original method:
 }
 ```
 
+## Fill Strategies
+
+The system now supports two fill strategies:
+
+### Crop-to-Fill (Default)
+- Scales artwork to completely fill the frame opening
+- May crop artwork edges to eliminate gaps
+- Ensures no white space in the frame
+- Recommended for most use cases
+
+### Fit-Within (Alternative)
+- Scales artwork to fit entirely within frame
+- Preserves entire artwork content
+- May leave gaps if aspect ratios don't match
+- Useful when artwork content must remain complete
+
 ## Testing Different Artwork
 
 The system automatically handles different aspect ratios and sizes:
-- Square artwork: Centers perfectly in frame
-- Wide artwork: Fits to frame width
-- Tall artwork: Fits to frame height
-- Maintains aspect ratio: No distortion
+- Square artwork: Completely fills rectangular frame (crop-to-fill)
+- Wide artwork: Scales appropriately to fill frame
+- Tall artwork: Scales appropriately to fill frame
+- Maintains aspect ratio: No distortion, smart cropping
 
-This coordinate-based system provides reliable, fast, and accurate mockup generation for any artwork.
+This coordinate-based system provides reliable, fast, and accurate mockup generation for any artwork with no white space gaps.
