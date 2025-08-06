@@ -24,12 +24,12 @@ export interface CoordinatePlacementResult {
 
 export class CoordinateBasedPlacer {
   
-  // Default coordinates for the frame mockup template (optimized for various artwork types)
+  // Default coordinates for the frame mockup template (optimized for landscape artwork)
   private static DEFAULT_FRAME_COORDINATES = {
-    topLeft: { x: 1320, y: 1160 }, 
-    topRight: { x: 2792, y: 1164 },
-    bottomLeft: { x: 1318, y: 2780 },
-    bottomRight: { x: 2794, y: 2784 }
+    topLeft: { x: 1340, y: 1200 }, 
+    topRight: { x: 2772, y: 1204 },
+    bottomLeft: { x: 1338, y: 2700 },
+    bottomRight: { x: 2774, y: 2704 }
   };
   
   async generateCoordinateMockup(
@@ -41,7 +41,7 @@ export class CoordinateBasedPlacer {
       bottomLeft: { x: number; y: number };
       bottomRight: { x: number; y: number };
     },
-    fillMode: 'crop-to-fill' | 'fit-within' = 'crop-to-fill'
+    fillMode: 'crop-to-fill' | 'fit-within' = 'fit-within'
   ): Promise<CoordinatePlacementResult> {
     try {
       console.log('📍 Starting coordinate-based placement...');
