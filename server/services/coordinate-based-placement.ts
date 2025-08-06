@@ -24,12 +24,12 @@ export interface CoordinatePlacementResult {
 
 export class CoordinateBasedPlacer {
   
-  // Default coordinates for the frame mockup template (expanded for better fill)
+  // Default coordinates for the frame mockup template (full black frame opening)
   private static DEFAULT_FRAME_COORDINATES = {
-    topLeft: { x: 1370, y: 1185 }, 
-    topRight: { x: 2742, y: 1189 },
-    bottomLeft: { x: 1368, y: 2811 },
-    bottomRight: { x: 2744, y: 2815 }
+    topLeft: { x: 1320, y: 1135 }, 
+    topRight: { x: 2792, y: 1139 },
+    bottomLeft: { x: 1318, y: 2861 },
+    bottomRight: { x: 2794, y: 2865 }
   };
   
   async generateCoordinateMockup(
@@ -71,23 +71,23 @@ export class CoordinateBasedPlacer {
       
       let newWidth, newHeight, offsetX, offsetY;
       
-      // Use minimal padding - just enough to ensure clean edges
-      const padding = 0.005; // 0.5% padding instead of 2%
-      const availableWidth = frameWidth * (1 - padding * 2);
-      const availableHeight = frameHeight * (1 - padding * 2);
+      // No padding - fill the entire frame opening
+      const padding = 0; // No padding for maximum fill
+      const availableWidth = frameWidth;
+      const availableHeight = frameHeight;
       
       if (artworkAspect > frameAspect) {
         // Artwork is wider than frame - fit to available width
         newWidth = availableWidth;
         newHeight = availableWidth / artworkAspect;
-        offsetX = frameX + frameWidth * padding;
+        offsetX = frameX;
         offsetY = frameY + (frameHeight - newHeight) / 2;
       } else {
         // Artwork is taller than frame - fit to available height  
         newHeight = availableHeight;
         newWidth = availableHeight * artworkAspect;
         offsetX = frameX + (frameWidth - newWidth) / 2;
-        offsetY = frameY + frameHeight * padding;
+        offsetY = frameY;
       }
       
       console.log(`📍 Placing artwork at (${offsetX.toFixed(1)}, ${offsetY.toFixed(1)}) with size ${newWidth.toFixed(1)}x${newHeight.toFixed(1)}`);
