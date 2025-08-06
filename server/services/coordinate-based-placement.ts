@@ -24,10 +24,18 @@ export interface CoordinatePlacementResult {
 
 export class CoordinateBasedPlacer {
   
+  // Default coordinates for the frame mockup template
+  private static DEFAULT_FRAME_COORDINATES = {
+    topLeft: { x: 1404, y: 1219 },
+    topRight: { x: 2708, y: 1223 },
+    bottomLeft: { x: 1402, y: 2777 },
+    bottomRight: { x: 2710, y: 2779 }
+  };
+  
   async generateCoordinateMockup(
     mockupBuffer: Buffer, 
     artworkBuffer: Buffer,
-    coordinates: {
+    coordinates?: {
       topLeft: { x: number; y: number };
       topRight: { x: number; y: number };
       bottomLeft: { x: number; y: number };
@@ -36,6 +44,9 @@ export class CoordinateBasedPlacer {
   ): Promise<CoordinatePlacementResult> {
     try {
       console.log('📍 Starting coordinate-based placement...');
+      
+      // Use provided coordinates or fall back to defaults
+      const finalCoordinates = coordinates || CoordinateBasedPlacer.DEFAULT_FRAME_COORDINATES;
       
       const mockupImage = await loadImage(mockupBuffer);
       const artworkImage = await loadImage(artworkBuffer);
@@ -47,10 +58,10 @@ export class CoordinateBasedPlacer {
       ctx.drawImage(mockupImage, 0, 0);
       
       // Calculate frame dimensions from coordinates
-      const frameWidth = Math.abs(coordinates.topRight.x - coordinates.topLeft.x);
-      const frameHeight = Math.abs(coordinates.bottomLeft.y - coordinates.topLeft.y);
-      const frameX = Math.min(coordinates.topLeft.x, coordinates.topRight.x);
-      const frameY = Math.min(coordinates.topLeft.y, coordinates.bottomLeft.y);
+      const frameWidth = Math.abs(finalCoordinates.topRight.x - finalCoordinates.topLeft.x);
+      const frameHeight = Math.abs(finalCoordinates.bottomLeft.y - finalCoordinates.topLeft.y);
+      const frameX = Math.min(finalCoordinates.topLeft.x, finalCoordinates.topRight.x);
+      const frameY = Math.min(finalCoordinates.topLeft.y, finalCoordinates.bottomLeft.y);
       
       console.log(`📍 Frame area: ${frameWidth}x${frameHeight} at (${frameX}, ${frameY})`);
       
@@ -90,7 +101,7 @@ export class CoordinateBasedPlacer {
         mockup: canvas.toDataURL('image/jpeg', 0.95),
         placement: {
           method: 'Coordinate-Based Placement',
-          coordinates,
+          coordinates: finalCoordinates,
           artworkSize: {
             width: Math.round(newWidth),
             height: Math.round(newHeight)

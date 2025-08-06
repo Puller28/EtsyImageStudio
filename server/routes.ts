@@ -978,7 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Improved pink area placement endpoint
+  // Coordinate-based placement testing endpoint
   app.post("/api/improved-pink-placement", upload.fields([
     { name: "mockup", maxCount: 1 }, 
     { name: "artwork", maxCount: 1 }
@@ -992,23 +992,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('🎯 Testing simple improved pink area placement...');
+      console.log('📍 Testing coordinate-based placement (replacing improved method)...');
       
-      // Import the simple placement service for better reliability
-      const { SimplePinkPlacer } = await import('./services/simple-pink-placement');
-      const simplePlacer = new SimplePinkPlacer();
+      // Parse custom coordinates from request body if provided
+      let coordinates;
+      if (req.body.coordinates) {
+        try {
+          coordinates = JSON.parse(req.body.coordinates);
+          console.log('📍 Using custom coordinates:', coordinates);
+        } catch (error) {
+          console.log('📍 Invalid coordinates provided, using defaults');
+        }
+      }
       
-      const result = await simplePlacer.generateSimpleMockup(
+      const { CoordinateBasedPlacer } = await import('./services/coordinate-based-placement');
+      const placer = new CoordinateBasedPlacer();
+      
+      const result = await placer.generateCoordinateMockup(
         files.mockup[0].buffer,
-        files.artwork[0].buffer
+        files.artwork[0].buffer,
+        coordinates // Will use defaults if undefined
       );
       
-      res.json(result);
+      // Format response to match expected structure
+      res.json({
+        success: result.success,
+        mockup: result.mockup,
+        detection: {
+          method: result.placement.method,
+          areas: 1,
+          totalPixels: result.placement.artworkSize.width * result.placement.artworkSize.height,
+          largestArea: {
+            x: result.placement.artworkPosition.x,
+            y: result.placement.artworkPosition.y,
+            width: result.placement.artworkSize.width,
+            height: result.placement.artworkSize.height,
+            pixels: result.placement.artworkSize.width * result.placement.artworkSize.height
+          }
+        }
+      });
       
     } catch (error) {
-      console.error('🎨 Improved pink placement failed:', error);
+      console.error('📍 Coordinate-based placement failed:', error);
       res.status(500).json({ 
-        error: 'Failed to generate improved pink placement',
+        error: 'Failed to generate coordinate-based placement',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
