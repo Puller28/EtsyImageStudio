@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Image as ImageIcon, Download, ArrowRight } from "lucide-react";
+import { Upload, Image as ImageIcon, Download, ArrowRight, Wand2 } from "lucide-react";
 
 interface MockupResult {
   success: boolean;
@@ -83,8 +83,8 @@ export default function SimpleMockupComparison() {
     onSuccess: (result) => {
       setImprovedResult(result);
       toast({
-        title: "Improved Method Complete",
-        description: "Enhanced pink area placement finished",
+        title: "Coordinate Placement Complete",
+        description: "Pixel-perfect placement finished in ~500ms",
       });
     },
   });
@@ -145,11 +145,11 @@ export default function SimpleMockupComparison() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-blue-500" />
-            Improved Image Placement Test
+            <Wand2 className="w-5 h-5 text-blue-500" />
+            Coordinate-Based Placement Test
           </CardTitle>
           <CardDescription>
-            Compare the original pink area detection with improved algorithms for better image placement
+            Test the new pixel-perfect coordinate system that replaces slow pink area detection with instant ~500ms placement
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -216,16 +216,28 @@ export default function SimpleMockupComparison() {
             </div>
           </div>
 
-          {/* Test Button */}
-          <div className="text-center">
+          {/* Test Buttons */}
+          <div className="flex justify-center gap-4">
+            <Button
+              onClick={() => testImproved.mutate()}
+              disabled={!mockupFile || !artworkFile || isPending}
+              size="lg"
+              className="px-8 bg-blue-600 hover:bg-blue-700"
+              data-testid="button-test-coordinate"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              {testImproved.isPending ? "Testing..." : "Test Coordinate Placement"}
+            </Button>
             <Button
               onClick={testBoth}
               disabled={!mockupFile || !artworkFile || isPending}
               size="lg"
+              variant="outline"
               className="px-8"
               data-testid="button-test-both"
             >
-              {isPending ? "Processing..." : "Compare Both Methods"}
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Compare Both Methods
             </Button>
           </div>
 
@@ -278,10 +290,10 @@ export default function SimpleMockupComparison() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    Improved Method
-                    <ArrowRight className="w-4 h-4 text-green-500" />
+                    Coordinate Placement
+                    <Wand2 className="w-4 h-4 text-blue-500" />
                   </CardTitle>
-                  <CardDescription>Enhanced placement algorithms</CardDescription>
+                  <CardDescription>Pixel-perfect coordinate-based positioning</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {improvedResult ? (
@@ -310,7 +322,7 @@ export default function SimpleMockupComparison() {
                         data-testid="button-download-improved"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Download Improved
+                        Download Coordinate Result
                       </Button>
                     </div>
                   ) : (
