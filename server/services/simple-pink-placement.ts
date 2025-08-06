@@ -115,7 +115,6 @@ export class SimplePinkPlacer {
       
       // Draw the artwork with high quality
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(artworkImage, offsetX, offsetY, newWidth, newHeight);
       
       return {

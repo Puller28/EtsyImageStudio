@@ -995,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🎯 Testing simple improved pink area placement...');
       
       // Import the simple placement service for better reliability
-      const { SimplePinkPlacer } = await import('./services/simple-pink-placement.js');
+      const { SimplePinkPlacer } = await import('./services/simple-pink-placement');
       const simplePlacer = new SimplePinkPlacer();
       
       const result = await simplePlacer.generateSimpleMockup(
