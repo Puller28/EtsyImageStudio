@@ -36,36 +36,44 @@ export class SimplePinkPlacer {
       const imageData = ctx.getImageData(0, 0, mockupImage.width, mockupImage.height);
       const data = imageData.data;
       
-      // Simple but effective pink detection
+      // Enhanced pink detection using same logic as Sharp-based method
       let minX = mockupImage.width, maxX = 0, minY = mockupImage.height, maxY = 0;
       let pinkPixelCount = 0;
-      const pinkThreshold = 100000; // Stop after finding enough pink pixels
       
-      // Sample pixels efficiently - check every 4th pixel
-      for (let y = 0; y < mockupImage.height; y += 4) {
-        for (let x = 0; x < mockupImage.width; x += 4) {
+      // Pink detection function matching the working Sharp implementation
+      const isPink = (r: number, g: number, b: number): boolean => {
+        // Use exact same logic as the working Sharp-based detection
+        return (
+          r > 180 && // High red component
+          g < 150 && // Low green component
+          b > 100 && // Moderate to high blue component
+          r > g + 50 && // Red significantly higher than green
+          r > b - 50 // Red higher than or close to blue
+        ) || (
+          // Bright magenta/fuchsia detection
+          r > 200 && b > 200 && g < 100
+        ) || (
+          // Light pink detection
+          r > 220 && g > 150 && b > 150 && r > g && r > b
+        );
+      };
+      
+      // Sample pixels efficiently - check every pixel for better accuracy
+      for (let y = 0; y < mockupImage.height; y++) {
+        for (let x = 0; x < mockupImage.width; x++) {
           const index = (y * mockupImage.width + x) * 4;
           const r = data[index];
           const g = data[index + 1];
           const b = data[index + 2];
           
-          // Simple pink detection - focus on magenta/hot pink colors
-          const isPink = (r > 200 && g < 150 && b > 150) || // Hot pink
-                        (r > 240 && g < 100 && b > 200) || // Magenta
-                        (Math.abs(r - 255) < 20 && g < 50 && Math.abs(b - 255) < 20); // Pure magenta
-          
-          if (isPink) {
+          if (isPink(r, g, b)) {
             minX = Math.min(minX, x);
             maxX = Math.max(maxX, x);
             minY = Math.min(minY, y);
             maxY = Math.max(maxY, y);
             pinkPixelCount++;
-            
-            // Early exit if we found enough pink area
-            if (pinkPixelCount > pinkThreshold) break;
           }
         }
-        if (pinkPixelCount > pinkThreshold) break;
       }
       
       if (pinkPixelCount === 0 || minX >= maxX || minY >= maxY) {
@@ -152,12 +160,16 @@ export class SimplePinkPlacer {
         const g = data[index + 1];
         const b = data[index + 2];
         
-        // Skip if this is also a pink pixel
-        const isPink = (r > 200 && g < 150 && b > 150) || 
-                      (r > 240 && g < 100 && b > 200) ||
-                      (Math.abs(r - 255) < 20 && g < 50 && Math.abs(b - 255) < 20);
+        // Skip if this is also a pink pixel (use same detection logic)
+        const isPinkPixel = (
+          r > 180 && g < 150 && b > 100 && r > g + 50 && r > b - 50
+        ) || (
+          r > 200 && b > 200 && g < 100
+        ) || (
+          r > 220 && g > 150 && b > 150 && r > g && r > b
+        );
         
-        if (!isPink) {
+        if (!isPinkPixel) {
           colors.push({ r, g, b });
         }
       }
