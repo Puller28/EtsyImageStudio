@@ -24,12 +24,12 @@ export interface CoordinatePlacementResult {
 
 export class CoordinateBasedPlacer {
   
-  // Default coordinates for the frame mockup template
+  // Default coordinates for the frame mockup template (expanded for better fill)
   private static DEFAULT_FRAME_COORDINATES = {
-    topLeft: { x: 1404, y: 1219 },
-    topRight: { x: 2708, y: 1223 },
-    bottomLeft: { x: 1402, y: 2777 },
-    bottomRight: { x: 2710, y: 2779 }
+    topLeft: { x: 1370, y: 1185 }, 
+    topRight: { x: 2742, y: 1189 },
+    bottomLeft: { x: 1368, y: 2811 },
+    bottomRight: { x: 2744, y: 2815 }
   };
   
   async generateCoordinateMockup(
@@ -71,8 +71,8 @@ export class CoordinateBasedPlacer {
       
       let newWidth, newHeight, offsetX, offsetY;
       
-      // Add small padding to ensure artwork doesn't touch frame edges
-      const padding = 0.02; // 2% padding
+      // Use minimal padding - just enough to ensure clean edges
+      const padding = 0.005; // 0.5% padding instead of 2%
       const availableWidth = frameWidth * (1 - padding * 2);
       const availableHeight = frameHeight * (1 - padding * 2);
       
@@ -83,7 +83,7 @@ export class CoordinateBasedPlacer {
         offsetX = frameX + frameWidth * padding;
         offsetY = frameY + (frameHeight - newHeight) / 2;
       } else {
-        // Artwork is taller than frame - fit to available height
+        // Artwork is taller than frame - fit to available height  
         newHeight = availableHeight;
         newWidth = availableHeight * artworkAspect;
         offsetX = frameX + (frameWidth - newWidth) / 2;
