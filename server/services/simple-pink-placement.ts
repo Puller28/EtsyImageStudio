@@ -36,60 +36,62 @@ export class SimplePinkPlacer {
       const imageData = ctx.getImageData(0, 0, mockupImage.width, mockupImage.height);
       const data = imageData.data;
       
-      // Enhanced pink detection using same logic as Sharp-based method
-      let minX = mockupImage.width, maxX = 0, minY = mockupImage.height, maxY = 0;
-      let pinkPixelCount = 0;
+      // Find discrete pink areas using flood-fill approach like the original method
+      const visitedPixels = new Set<string>();
+      const pinkAreas: Array<{x: number, y: number, width: number, height: number, pixels: number}> = [];
       
       // Pink detection function matching the working Sharp implementation
       const isPink = (r: number, g: number, b: number): boolean => {
-        // Use exact same logic as the working Sharp-based detection
         return (
-          r > 180 && // High red component
-          g < 150 && // Low green component
-          b > 100 && // Moderate to high blue component
-          r > g + 50 && // Red significantly higher than green
-          r > b - 50 // Red higher than or close to blue
+          r > 180 && g < 150 && b > 100 && r > g + 50 && r > b - 50
         ) || (
-          // Bright magenta/fuchsia detection
           r > 200 && b > 200 && g < 100
         ) || (
-          // Light pink detection
           r > 220 && g > 150 && b > 150 && r > g && r > b
         );
       };
       
-      // Sample pixels efficiently - check every pixel for better accuracy
-      for (let y = 0; y < mockupImage.height; y++) {
-        for (let x = 0; x < mockupImage.width; x++) {
+      // Scan for pink pixels and perform flood fill to find discrete areas
+      for (let y = 0; y < mockupImage.height; y += 2) { // Sample every 2nd pixel for efficiency
+        for (let x = 0; x < mockupImage.width; x += 2) {
+          const pixelKey = `${x},${y}`;
+          if (visitedPixels.has(pixelKey)) continue;
+          
           const index = (y * mockupImage.width + x) * 4;
           const r = data[index];
           const g = data[index + 1];
           const b = data[index + 2];
           
           if (isPink(r, g, b)) {
-            minX = Math.min(minX, x);
-            maxX = Math.max(maxX, x);
-            minY = Math.min(minY, y);
-            maxY = Math.max(maxY, y);
-            pinkPixelCount++;
+            // Found a pink pixel, perform flood fill to find the entire area
+            const area = this.floodFillPinkArea(data, mockupImage.width, mockupImage.height, x, y, visitedPixels, isPink);
+            if (area.pixels > 1000) { // Minimum area threshold
+              pinkAreas.push(area);
+            }
           }
         }
       }
       
-      if (pinkPixelCount === 0 || minX >= maxX || minY >= maxY) {
+      console.log(`🎯 Found ${pinkAreas.length} discrete pink areas`);
+      
+      if (pinkAreas.length === 0) {
         throw new Error('No pink areas detected in mockup template');
       }
       
-      // Calculate the pink area bounds
+      // Use the largest pink area (like the original method)
+      const largestArea = pinkAreas.reduce((largest, current) => 
+        current.pixels > largest.pixels ? current : largest
+      );
+      
       const pinkArea = {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY,
-        pixels: pinkPixelCount
+        x: largestArea.x,
+        y: largestArea.y,
+        width: largestArea.width,
+        height: largestArea.height,
+        pixels: largestArea.pixels
       };
       
-      console.log(`🎯 Found pink area: ${pinkArea.width}x${pinkArea.height} at (${pinkArea.x}, ${pinkArea.y}) with ${pinkPixelCount} samples`);
+      console.log(`🎯 Found largest pink area: ${pinkArea.width}x${pinkArea.height} at (${pinkArea.x}, ${pinkArea.y}) with ${pinkArea.pixels} pixels`);
       
       // Fill pink area with intelligent background color
       this.fillPinkAreaIntelligently(ctx, pinkArea, data, mockupImage.width, mockupImage.height);
@@ -130,8 +132,8 @@ export class SimplePinkPlacer {
         mockup: canvas.toDataURL('image/jpeg', 0.95),
         detection: {
           method: 'Simple Pink Area Placement',
-          areas: 1,
-          totalPixels: pinkPixelCount * 16, // Estimate full pixels from samples
+          areas: pinkAreas.length,
+          totalPixels: pinkAreas.reduce((sum, area) => sum + area.pixels, 0),
           largestArea: pinkArea
         }
       };
@@ -140,6 +142,63 @@ export class SimplePinkPlacer {
       console.error('🎯 Simple pink placement failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Flood fill algorithm to find connected pink pixels (Canvas version)
+   */
+  private floodFillPinkArea(
+    data: Uint8ClampedArray, 
+    width: number, 
+    height: number,
+    startX: number, 
+    startY: number, 
+    visitedPixels: Set<string>,
+    isPink: (r: number, g: number, b: number) => boolean
+  ): {x: number, y: number, width: number, height: number, pixels: number} {
+    const stack: Array<{x: number, y: number}> = [{x: startX, y: startY}];
+    let pixelCount = 0;
+    let minX = startX, maxX = startX;
+    let minY = startY, maxY = startY;
+    
+    while (stack.length > 0) {
+      const {x, y} = stack.pop()!;
+      const pixelKey = `${x},${y}`;
+      
+      if (visitedPixels.has(pixelKey) || x < 0 || x >= width || y < 0 || y >= height) {
+        continue;
+      }
+      
+      const index = (y * width + x) * 4;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      
+      if (!isPink(r, g, b)) continue;
+      
+      visitedPixels.add(pixelKey);
+      pixelCount++;
+      
+      // Update bounds
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+      
+      // Add neighboring pixels
+      stack.push({x: x + 1, y});
+      stack.push({x: x - 1, y});
+      stack.push({x, y: y + 1});
+      stack.push({x, y: y - 1});
+    }
+    
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      pixels: pixelCount
+    };
   }
   
   private fillPinkAreaIntelligently(ctx: any, pinkArea: any, data: Uint8ClampedArray, width: number, height: number) {
