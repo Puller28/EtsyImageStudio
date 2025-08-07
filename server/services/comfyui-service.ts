@@ -184,10 +184,10 @@ export class ComfyUIService {
         }
       }
       
-      // RunPod serverless API format expects the prompt directly
+      // RunPod serverless API format - your specific setup expects 'workflow' parameter
       const requestBody = {
         input: {
-          prompt: workflow,
+          workflow: workflow,
           client_id: `etsyart-${Date.now()}`
         }
       };

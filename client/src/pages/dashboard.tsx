@@ -15,8 +15,6 @@ import EtsyListingGenerator from "@/components/etsy-listing-generator";
 import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
 import RecentProjects from "@/components/recent-projects";
-import PinkAreaMockupTest from "@/components/pink-area-mockup-test";
-import SimpleMockupComparison from "@/components/simple-mockup-comparison";
 import { ComfyUITest } from "@/components/comfyui-test";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon } from "lucide-react";
@@ -34,7 +32,6 @@ export default function Dashboard() {
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showUploadMode, setShowUploadMode] = useState(false);
-  const [showPinkAreaTest, setShowPinkAreaTest] = useState(false);
   const [showComfyUITest, setShowComfyUITest] = useState(false);
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
@@ -431,13 +428,13 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {!uploadedImage && !showAIGenerator && !showUploadMode && !showPinkAreaTest && !showComfyUITest && (
+            {!uploadedImage && !showAIGenerator && !showUploadMode && !showComfyUITest && (
               <div className="bg-white rounded-lg shadow-sm p-8">
                 <div className="text-center space-y-6">
                   <h2 className="text-2xl font-bold text-gray-900">Start Your Etsy Art Project</h2>
                   <p className="text-gray-600">Choose how you want to begin:</p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <button
                       onClick={() => setShowAIGenerator(true)}
                       className="p-6 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors duration-200 group"
@@ -474,22 +471,6 @@ export default function Dashboard() {
                         <div>
                           <h3 className="font-medium text-gray-900">Upload Your Art</h3>
                           <p className="text-sm text-gray-500">Use existing digital artwork</p>
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setShowPinkAreaTest(true)}
-                      className="p-6 border-2 border-dashed border-pink-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-colors duration-200 group"
-                      data-testid="button-pink-area-test"
-                    >
-                      <div className="flex flex-col items-center space-y-3">
-                        <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center group-hover:bg-pink-200">
-                          <ImageIcon className="w-6 h-6 text-pink-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">Improved Placement</h3>
-                          <p className="text-sm text-gray-500">Compare placement algorithms</p>
                         </div>
                       </div>
                     </button>
@@ -542,7 +523,6 @@ export default function Dashboard() {
                       setShowComfyUITest(false);
                       setShowAIGenerator(false);
                       setShowUploadMode(false);
-                      setShowPinkAreaTest(false);
                     }}
                     variant="outline"
                     data-testid="button-back-to-home"
@@ -552,26 +532,6 @@ export default function Dashboard() {
                   <h2 className="text-xl font-semibold">ComfyUI Mockup Generation MVP</h2>
                 </div>
                 <ComfyUITest />
-              </div>
-            )}
-
-            {showPinkAreaTest && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={() => {
-                      setShowPinkAreaTest(false);
-                      setShowAIGenerator(false);
-                      setShowUploadMode(false);
-                    }}
-                    variant="outline"
-                    size="sm"
-                    data-testid="button-back-to-main"
-                  >
-                    ← Back to Main Menu
-                  </Button>
-                </div>
-                <SimpleMockupComparison />
               </div>
             )}
 
