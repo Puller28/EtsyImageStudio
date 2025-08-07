@@ -1,0 +1,75 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input_image.jpg",
+      "upload": "image"
+    }
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "A realistic modern bedroom interior with natural lighting, contemporary furniture, a bed with a headboard, a framed artwork hanging on the wall above the bed, professional interior photography, well-lit room with windows and curtains",
+      "clip": ["4", 1]
+    }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode", 
+    "inputs": {
+      "text": "blurry, low quality, distorted, amateur, empty frame, no artwork, plain wall, bad composition",
+      "clip": ["4", 1]
+    }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["9", 0],
+      "vae": ["4", 2]
+    }
+  },
+  "6": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "RANDOM_SEED",
+      "steps": 30,
+      "cfg": 8.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.85,
+      "model": ["4", 0],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "9": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["1", 0],
+      "width": 512,
+      "height": 512,
+      "upscale_method": "lanczos",
+      "crop": "center"
+    }
+  },
+  "7": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["6", 0],
+      "vae": ["4", 2]
+    }
+  },
+  "8": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "bedroom_mockup",
+      "images": ["7", 0]
+    }
+  }
+}
