@@ -8,6 +8,8 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Upload, Zap, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ComfyUIStatus {
   success: boolean;
@@ -33,11 +35,12 @@ export function ComfyUITest() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
   const [mockupFile, setMockupFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState("Create a professional product mockup in a modern living room setting");
+  const [prompt, setPrompt] = useState("A realistic bedroom with natural light filtering through curtains, a framed artwork with a black border featuring the uploaded image, well-lit and integrated into the room decor.");
   const [strength, setStrength] = useState([0.8]);
-  const [steps, setSteps] = useState([20]);
+  const [steps, setSteps] = useState([30]);
   const [result, setResult] = useState<ComfyUIResult | null>(null);
   const { toast } = useToast();
+  const { token } = useAuth();
 
   const testConnection = async () => {
     setIsTestingConnection(true);
@@ -98,7 +101,7 @@ export function ComfyUITest() {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          'Authorization': `Bearer ${token || ''}`
         }
       });
 
