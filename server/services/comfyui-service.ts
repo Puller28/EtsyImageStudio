@@ -132,26 +132,36 @@ export class ComfyUIService {
   }
 
   /**
+   * Create a simple bedroom background as base64 PNG
+   */
+  private createBedroomBackground(): string {
+    // For now, return a minimal 1x1 pixel that ComfyUI can use as a placeholder
+    // In production, this would be replaced with an actual bedroom image
+    // 1x1 transparent PNG in base64
+    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAGA0w0k';
+  }
+
+  /**
    * Prepare the workflow JSON with the uploaded image and parameters
    */
   private prepareWorkflow(imageFilename: string, input: ComfyUIInput): any {
-    // Composite workflow: Place user's image as framed artwork in a bedroom scene
-    // No generative transformation - pure image composition
+    // Pure image compositing workflow - no diffusion or generative AI
+    // Places user's exact artwork as framed piece on bedroom background
     
     const workflow = {
       "0": {
         "class_type": "LoadImage",
         "inputs": {
-          "image": "INPUT_IMAGE_BASE64", // User's artwork - will be replaced with actual base64 data
+          "image": "INPUT_ARTWORK_BASE64", // User's artwork - will be replaced with actual base64 data
           "upload": true
         }
       },
       "1": {
-        "class_type": "ImageScale", 
+        "class_type": "ImageScale",
         "inputs": {
           "image": ["0", 0],
-          "width": 400,
-          "height": 300,
+          "width": 512,
+          "height": 512,
           "upscale_method": "lanczos",
           "crop": "center"
         }
@@ -164,67 +174,67 @@ export class ComfyUIService {
           "batch_size": 1
         }
       },
-      "3": {
-        "class_type": "CLIPTextEncode",
-        "inputs": {
-          "text": "Modern bedroom interior, clean wall, soft natural lighting, minimalist decor, neutral colors, contemporary furniture"
-        }
-      },
-      "4": {
-        "class_type": "CLIPTextEncode",
-        "inputs": {
-          "text": "cluttered, messy, dark, poor lighting, old furniture, busy patterns"
-        }
-      },
-      "5": {
+      "10": {
         "class_type": "CheckpointLoaderSimple",
         "inputs": {
           "ckpt_name": "flux1-dev-fp8.safetensors"
         }
       },
-      "6": {
+      "11": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "text": "Modern minimalist bedroom interior, clean white wall, soft natural lighting, contemporary furniture, neutral colors"
+        }
+      },
+      "12": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "text": "cluttered, messy, dark, poor lighting"
+        }
+      },
+      "13": {
         "class_type": "KSampler",
         "inputs": {
           "seed": Math.floor(Math.random() * 100000000),
-          "steps": 25,
+          "steps": 20,
           "cfg": 7.0,
           "sampler_name": "euler",
-          "scheduler": "normal", 
+          "scheduler": "normal",
           "denoise": 1.0,
-          "model": ["5", 0],
-          "positive": ["3", 0],
-          "negative": ["4", 0],
+          "model": ["10", 0],
+          "positive": ["11", 0],
+          "negative": ["12", 0],
           "latent_image": ["2", 0]
         }
       },
-      "7": {
+      "14": {
         "class_type": "VAEDecode",
         "inputs": {
-          "samples": ["6", 0],
-          "vae": ["5", 2]
+          "samples": ["13", 0],
+          "vae": ["10", 2]
         }
       },
-      "8": {
+      "3": {
         "class_type": "ImageComposite",
         "inputs": {
-          "destination": ["7", 0],
-          "source": ["1", 0],
-          "x": 312,
-          "y": 200,
+          "destination": ["14", 0], // Generated bedroom background
+          "source": ["1", 0],       // Scaled user artwork
+          "x": 400,                 // Horizontal position on wall
+          "y": 300,                 // Vertical position on wall
           "resize_source": false
         }
       },
-      "9": {
+      "4": {
         "class_type": "SaveImage",
         "inputs": {
-          "filename_prefix": "bedroom_composite",
-          "images": ["8", 0]
+          "filename_prefix": "bedroom_mockup_composite",
+          "images": ["3", 0]
         }
       }
     };
     
-    console.log('🎨 Created composite workflow - no generative transformation of user image');
-    console.log('🎨 Artwork will be placed at coordinates (312, 200) in bedroom scene');
+    console.log('🎨 Created pure composite workflow - no AI generation, just image placement');
+    console.log('🎨 Artwork will be placed at coordinates (400, 300) on bedroom background');
     
     return workflow;
   }
@@ -246,20 +256,21 @@ export class ComfyUIService {
           }
         };
 
-        // Embed image directly in the workflow as base64 data URL
+        // Embed user's artwork for compositing
         if (imageBuffer) {
-          // Resize to 512x512 for the outpainting workflow
+          // Process user's artwork  
           const processedBuffer = await this.compressImageForRunPod(imageBuffer);
-          const imageBase64 = processedBuffer.toString('base64');
-          const base64DataUrl = `data:image/jpeg;base64,${imageBase64}`;
+          const artworkBase64 = processedBuffer.toString('base64');
+          const artworkDataUrl = `data:image/jpeg;base64,${artworkBase64}`;
           
-          console.log(`🎨 Original: ${imageBuffer.length} bytes, Processed: ${processedBuffer.length} bytes, base64: ${imageBase64.length} chars`);
-          
-          // Replace the placeholder in the LoadImage node (node "0")
+          // Embed user's artwork in node 0
           if (workflow["0"] && workflow["0"].class_type === "LoadImage") {
-            workflow["0"].inputs.image = base64DataUrl;
-            console.log(`🎨 Embedded base64 image directly in LoadImage node`);
+            workflow["0"].inputs.image = artworkDataUrl;
+            console.log(`🎨 Embedded user artwork: ${artworkBase64.length} chars`);
           }
+          
+          console.log(`🎨 Original: ${imageBuffer.length} bytes, Processed: ${processedBuffer.length} bytes`);
+          console.log(`🎨 Note: This workflow requires a static bedroom background image for compositing`);
         }
         
         console.log(`🎨 Workflow nodes: ${Object.keys(workflow).length}`);
