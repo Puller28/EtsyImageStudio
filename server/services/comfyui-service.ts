@@ -93,38 +93,80 @@ export class ComfyUIService {
    * Prepare the workflow JSON with the uploaded image and parameters
    */
   private prepareWorkflow(imageFilename: string, input: ComfyUIInput): any {
-    const workflow = JSON.parse(JSON.stringify(this.config.workflowJson));
+    // Create a simplified, compatible ComfyUI workflow for bedroom mockup generation
+    // Based on standard ComfyUI node types that should exist in most ComfyUI installations
     
-    // Update the specific nodes in your bedroom mockup workflow
-    const nodes = workflow.nodes;
-    
-    // Update LoadImage node (node 1) with uploaded image
-    const loadImageNode = nodes.find((node: any) => node.id === 1 && node.type === 'LoadImage');
-    if (loadImageNode) {
-      loadImageNode.widgets_values = [imageFilename];
-      console.log('🎨 Updated LoadImage node with:', imageFilename);
-    }
-    
-    // Update PromptInput node (node 2) with custom prompt
-    const promptNode = nodes.find((node: any) => node.id === 2 && node.type === 'PromptInput');
-    if (promptNode && input.prompt) {
-      promptNode.widgets_values = [input.prompt];
-      console.log('🎨 Updated PromptInput node with:', input.prompt);
-    }
-    
-    // Update StableDiffusionXL node (node 3) with generation parameters
-    const sdxlNode = nodes.find((node: any) => node.id === 3 && node.type === 'StableDiffusionXL');
-    if (sdxlNode) {
-      if (input.steps) {
-        sdxlNode.widgets_values.steps = input.steps;
+    const prompt: Record<string, any> = {
+      "1": {
+        "class_type": "LoadImage",
+        "inputs": {
+          "image": "input_image.jpg", // Will be replaced with base64 data
+          "upload": "image"
+        }
+      },
+      "2": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "text": input.prompt || "A realistic bedroom with natural light filtering through curtains, a framed artwork with a black border featuring the uploaded image, well-lit and integrated into the room decor.",
+          "clip": ["4", 1]
+        }
+      },
+      "3": {
+        "class_type": "CLIPTextEncode", 
+        "inputs": {
+          "text": "blurry, low quality, distorted, amateur",
+          "clip": ["4", 1]
+        }
+      },
+      "4": {
+        "class_type": "CheckpointLoaderSimple",
+        "inputs": {
+          "ckpt_name": "sd_xl_base_1.0.safetensors"
+        }
+      },
+      "5": {
+        "class_type": "KSampler",
+        "inputs": {
+          "seed": Math.floor(Math.random() * 1000000),
+          "steps": input.steps || 30,
+          "cfg": input.strength ? input.strength * 10 : 7.5,
+          "sampler_name": "euler",
+          "scheduler": "normal",
+          "denoise": 0.85,
+          "model": ["4", 0],
+          "positive": ["2", 0],
+          "negative": ["3", 0],
+          "latent_image": ["6", 0]
+        }
+      },
+      "6": {
+        "class_type": "EmptyLatentImage",
+        "inputs": {
+          "width": 1024,
+          "height": 1024,
+          "batch_size": 1
+        }
+      },
+      "7": {
+        "class_type": "VAEDecode",
+        "inputs": {
+          "samples": ["5", 0],
+          "vae": ["4", 2]
+        }
+      },
+      "8": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "filename_prefix": "bedroom_mockup",
+          "images": ["7", 0]
+        }
       }
-      if (input.strength) {
-        sdxlNode.widgets_values.guidance_scale = input.strength * 10; // Convert 0-1 to 0-10 scale
-      }
-      console.log('🎨 Updated SDXL node with steps:', input.steps, 'guidance:', sdxlNode.widgets_values.guidance_scale);
-    }
-
-    return workflow;
+    };
+    
+    console.log('🎨 Created standard ComfyUI workflow with prompt:', input.prompt);
+    console.log('🎨 Parameters - Steps:', input.steps, 'CFG:', prompt["5"].inputs.cfg);
+    
+    return prompt;
   }
 
   /**
@@ -132,14 +174,21 @@ export class ComfyUIService {
    */
   private async queueWorkflow(workflow: any, imageBuffer?: Buffer): Promise<{success: boolean, jobId?: string, error?: string}> {
     try {
-      // Convert image to base64 for RunPod serverless
-      const imageBase64 = imageBuffer ? imageBuffer.toString('base64') : '';
+      // For RunPod serverless, we need to embed the image data into the workflow
+      if (imageBuffer) {
+        const imageBase64 = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+        
+        // Update the LoadImage node with the base64 image data
+        if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
+          workflow["1"].inputs.image = imageBase64;
+        }
+      }
       
-      // RunPod serverless API format
+      // RunPod serverless API format expects the prompt directly
       const requestBody = {
         input: {
-          workflow: workflow,
-          image: imageBase64 // Include image data directly
+          prompt: workflow,
+          client_id: `etsyart-${Date.now()}`
         }
       };
 
