@@ -12,6 +12,7 @@ import { resizeImageToFormats } from "./services/image-processor";
 import { generateMockupsForCategory } from "./services/mockup-templates";
 import { generateProjectZip } from "./services/zip-generator";
 import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
+import { comfyUIService } from "./services/comfyui-service";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -1074,6 +1075,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: 'Failed to generate coordinate-based placement',
         details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ComfyUI mockup generation endpoint
+  app.post("/api/comfyui-mockup", optionalAuth, upload.fields([
+    { name: "artwork", maxCount: 1 },
+    { name: "mockupTemplate", maxCount: 1 }
+  ]), async (req: AuthenticatedRequest, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files.artwork) {
+        return res.status(400).json({ 
+          error: "Artwork image is required" 
+        });
+      }
+
+      // Check if user is authenticated for credit deduction
+      if (!req.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log('🎨 Starting ComfyUI mockup generation...');
+      
+      // Test connection first
+      const connectionTest = await comfyUIService.testConnection();
+      if (!connectionTest.success) {
+        return res.status(503).json({
+          error: "ComfyUI service unavailable",
+          details: connectionTest.error,
+          suggestion: "Please ensure your RunPod ComfyUI instance is running and accessible"
+        });
+      }
+
+      console.log('🎨 ComfyUI connection successful:', connectionTest.info);
+
+      // Prepare input for ComfyUI
+      const comfyInput = {
+        artworkImage: files.artwork[0].buffer,
+        mockupTemplate: files.mockupTemplate ? files.mockupTemplate[0].buffer : undefined,
+        prompt: req.body.prompt || "Create a professional product mockup",
+        strength: parseFloat(req.body.strength) || 0.8,
+        steps: parseInt(req.body.steps) || 20
+      };
+
+      // Generate mockup
+      const result = await comfyUIService.generateMockup(comfyInput);
+      
+      if (result.success && result.mockupBuffer) {
+        // Convert to base64 for response
+        const mockupBase64 = result.mockupBuffer.toString('base64');
+        
+        res.json({
+          success: true,
+          mockup: `data:image/jpeg;base64,${mockupBase64}`,
+          jobId: result.jobId,
+          info: {
+            method: 'ComfyUI Workflow',
+            processingTime: 'Variable (AI generation)',
+            workflowUrl: result.mockupUrl
+          }
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error || "ComfyUI generation failed",
+          jobId: result.jobId
+        });
+      }
+      
+    } catch (error) {
+      console.error('🎨 ComfyUI endpoint error:', error);
+      res.status(500).json({ 
+        error: 'ComfyUI mockup generation failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ComfyUI test connection endpoint
+  app.get("/api/comfyui-status", async (req, res) => {
+    try {
+      const result = await comfyUIService.testConnection();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Connection test failed'
       });
     }
   });
