@@ -190,23 +190,28 @@ export class ComfyUIService {
       try {
         // For RunPod serverless, we need to embed the image data into the workflow
         if (imageBuffer) {
-          const imageBase64 = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+          const imageBase64 = imageBuffer.toString('base64');
+          console.log(`🎨 Image size: ${imageBuffer.length} bytes, base64 size: ${imageBase64.length} chars`);
           
-          // Update the LoadImage node with the base64 image data
+          // Update the LoadImage node with the base64 image data  
           if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
             workflow["1"].inputs.image = imageBase64;
+            console.log(`🎨 Updated LoadImage node with base64 data`);
           }
         }
         
-        // RunPod serverless API format - your specific setup expects 'workflow' parameter
+        // RunPod serverless API format - test with simpler payload first
         const requestBody = {
           input: {
-            workflow: workflow,
+            prompt: workflow,
             client_id: `etsyart-${Date.now()}`
           }
         };
+        
+        console.log(`🎨 Workflow nodes: ${Object.keys(workflow).length}`);
 
         console.log(`🎨 Sending RunPod serverless request (attempt ${attempt + 1}/${maxRetries + 1})...`);
+        console.log(`🎨 Request payload size: ${JSON.stringify(requestBody).length} bytes`);
 
         const response = await fetch(`${this.config.runpodUrl}/run`, {
           method: 'POST',
@@ -214,9 +219,7 @@ export class ComfyUIService {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${this.config.apiKey}`
           },
-          body: JSON.stringify(requestBody),
-          // Add timeout to prevent hanging
-          signal: AbortSignal.timeout(30000) // 30 second timeout
+          body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -243,16 +246,18 @@ export class ComfyUIService {
         
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.log(`🎨 Attempt ${attempt + 1} failed with error: ${errorMessage}`);
         
         // Check if this is a retryable network error
         if ((errorMessage.includes('502') || errorMessage.includes('503') || errorMessage.includes('504') || 
-             errorMessage.includes('timeout') || errorMessage.includes('ECONNRESET')) && attempt < maxRetries) {
-          console.log(`🔄 Network error, retrying in ${retryDelays[attempt]}ms...`);
+             errorMessage.includes('timeout') || errorMessage.includes('ECONNRESET') || 
+             errorMessage.includes('terminated')) && attempt < maxRetries) {
+          console.log(`🔄 Retryable error detected, retrying in ${retryDelays[attempt]}ms...`);
           await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
           continue; // Retry
         }
         
-        // If we've exhausted retries or it's not a retryable error, throw
+        // If we've exhausted retries or it's not a retryable error, return error
         if (attempt === maxRetries) {
           return {
             success: false,
@@ -260,7 +265,11 @@ export class ComfyUIService {
           };
         }
         
-        throw error;
+        // For non-retryable errors, fail immediately
+        return {
+          success: false,
+          error: `Non-retryable error: ${errorMessage}`
+        };
       }
     }
     
