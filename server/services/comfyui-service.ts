@@ -63,9 +63,19 @@ export class ComfyUIService {
 
     } catch (error) {
       console.error('🎨 ComfyUI mockup generation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Handle specific RunPod service issues
+      if (errorMessage.includes('502') || errorMessage.includes('Bad Gateway')) {
+        return {
+          success: false,
+          error: 'RunPod service is temporarily unavailable (502 Bad Gateway). Please try again in a few minutes.'
+        };
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }
