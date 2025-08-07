@@ -106,35 +106,27 @@ export class ComfyUIService {
     const sharp = (await import('sharp')).default;
     
     try {
-      // Target: Keep final payload under 5MB (image should be under 2MB)
+      // Resize to exactly 512x512 as required by the workflow
       const metadata = await sharp(imageBuffer).metadata();
       console.log(`🎨 Original image: ${metadata.width}x${metadata.height}, ${imageBuffer.length} bytes`);
       
-      // Resize if too large, compress aggressively
-      let processedImage = sharp(imageBuffer);
-      
-      // Resize if width/height > 1024
-      if (metadata.width && metadata.height && (metadata.width > 1024 || metadata.height > 1024)) {
-        processedImage = processedImage.resize(1024, 1024, { 
-          fit: 'inside', 
-          withoutEnlargement: true 
-        });
-      }
-      
-      // Compress as JPEG with aggressive quality settings
-      const compressedBuffer = await processedImage
+      // Always resize to 512x512 for the outpainting workflow
+      const processedBuffer = await sharp(imageBuffer)
+        .resize(512, 512, { 
+          fit: 'cover', // Fill the entire 512x512 area
+          position: 'center'
+        })
         .jpeg({ 
-          quality: 75,
-          progressive: true,
-          mozjpeg: true
+          quality: 85,
+          progressive: true
         })
         .toBuffer();
         
-      console.log(`🎨 Compressed to: ${compressedBuffer.length} bytes (${((compressedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% of original)`);
+      console.log(`🎨 Resized to 512x512: ${processedBuffer.length} bytes (${((processedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% of original)`);
       
-      return compressedBuffer;
+      return processedBuffer;
     } catch (error) {
-      console.warn(`🎨 Image compression failed, using original: ${error}`);
+      console.warn(`🎨 Image processing failed, using original: ${error}`);
       return imageBuffer;
     }
   }
@@ -143,89 +135,77 @@ export class ComfyUIService {
    * Prepare the workflow JSON with the uploaded image and parameters
    */
   private prepareWorkflow(imageFilename: string, input: ComfyUIInput): any {
-    // Create a simplified, compatible ComfyUI workflow for bedroom mockup generation
-    // Based on standard ComfyUI node types that should exist in most ComfyUI installations
+    // Use the working bedroom mockup outpainting workflow structure
+    // This workflow produces 1024x1024 final images from 512x512 input artwork
     
-    const prompt: Record<string, any> = {
-      "1": {
+    const workflow = {
+      "0": {
         "class_type": "LoadImage",
         "inputs": {
-          "image": "input_image.jpg", // Will be replaced with base64 data
-          "upload": "image"
+          "image": "INPUT_IMAGE_BASE64", // Will be replaced with actual base64 data
+          "upload": true
+        }
+      },
+      "1": {
+        "class_type": "ImageScale",
+        "inputs": {
+          "image": ["0", 0],
+          "width": 512,
+          "height": 512,
+          "upscale_method": "nearest-exact"
         }
       },
       "2": {
-        "class_type": "CLIPTextEncode",
+        "class_type": "VAEEncode",
         "inputs": {
-          "text": input.prompt || "A realistic modern bedroom interior with natural lighting, contemporary furniture, a bed with a headboard, a framed artwork hanging on the wall above the bed, professional interior photography, well-lit room with windows and curtains",
-          "clip": ["4", 1]
+          "pixels": ["1", 0]
         }
       },
       "3": {
-        "class_type": "CLIPTextEncode", 
+        "class_type": "KSampler",
         "inputs": {
-          "text": "blurry, low quality, distorted, amateur, empty frame, no artwork, plain wall, bad composition",
-          "clip": ["4", 1]
+          "latent_image": ["2", 0],
+          "denoise": input.strength || 0.85,
+          "cfg": 8.0,
+          "steps": input.steps || 30,
+          "sampler_name": "euler",
+          "scheduler": "normal",
+          "seed": Math.floor(Math.random() * 100000000),
+          "positive": ["4", 0],
+          "negative": ["5", 0]
         }
       },
       "4": {
-        "class_type": "CheckpointLoaderSimple",
+        "class_type": "CLIPTextEncode",
         "inputs": {
-          "ckpt_name": "flux1-dev-fp8.safetensors"
+          "text": input.prompt || "Framed print of a coffee shop hanging on a bedroom wall with soft natural light and elegant decor"
         }
       },
       "5": {
-        "class_type": "VAEEncode",
+        "class_type": "CLIPTextEncode",
         "inputs": {
-          "pixels": ["9", 0],
-          "vae": ["4", 2]
+          "text": "blurry, distorted, bad framing, low resolution, poorly rendered room"
         }
       },
       "6": {
-        "class_type": "KSampler",
+        "class_type": "VAEDecode",
         "inputs": {
-          "seed": Math.floor(Math.random() * 1000000),
-          "steps": input.steps || 30,
-          "cfg": input.strength ? input.strength * 10 : 8.0,
-          "sampler_name": "euler",
-          "scheduler": "normal",
-          "denoise": 0.85,
-          "model": ["4", 0],
-          "positive": ["2", 0],
-          "negative": ["3", 0],
-          "latent_image": ["5", 0]
-        }
-      },
-      "9": {
-        "class_type": "ImageScale",
-        "inputs": {
-          "image": ["1", 0],
-          "width": 512,
-          "height": 512,
-          "upscale_method": "lanczos",
-          "crop": "center"
+          "samples": ["3", 0]
         }
       },
       "7": {
-        "class_type": "VAEDecode",
-        "inputs": {
-          "samples": ["6", 0],
-          "vae": ["4", 2]
-        }
-      },
-      "8": {
         "class_type": "SaveImage",
         "inputs": {
-          "filename_prefix": "bedroom_mockup",
-          "images": ["7", 0]
+          "filename_prefix": "mockup_result",
+          "images": ["6", 0]
         }
       }
     };
     
-    console.log('🎨 Created standard ComfyUI workflow with prompt:', input.prompt);
-    console.log('🎨 Parameters - Steps:', input.steps, 'CFG:', prompt["5"].inputs.cfg);
+    console.log('🎨 Created outpainting workflow with prompt:', input.prompt);
+    console.log('🎨 Parameters - Steps:', input.steps, 'Denoise:', input.strength, 'CFG: 8.0');
     
-    return prompt;
+    return workflow;
   }
 
   /**
@@ -245,23 +225,19 @@ export class ComfyUIService {
           }
         };
 
-        // For RunPod serverless, images must be passed in the images array
+        // Embed image directly in the workflow as base64 data URL
         if (imageBuffer) {
-          // Compress image to reduce payload size (max 2MB target)
-          const compressedBuffer = await this.compressImageForRunPod(imageBuffer);
-          const imageBase64 = compressedBuffer.toString('base64');
-          console.log(`🎨 Original: ${imageBuffer.length} bytes, Compressed: ${compressedBuffer.length} bytes, base64: ${imageBase64.length} chars`);
+          // Resize to 512x512 for the outpainting workflow
+          const processedBuffer = await this.compressImageForRunPod(imageBuffer);
+          const imageBase64 = processedBuffer.toString('base64');
+          const base64DataUrl = `data:image/jpeg;base64,${imageBase64}`;
           
-          // Add images array to the request body
-          requestBody.input.images = [{
-            name: "input_image.png",
-            image: imageBase64
-          }];
+          console.log(`🎨 Original: ${imageBuffer.length} bytes, Processed: ${processedBuffer.length} bytes, base64: ${imageBase64.length} chars`);
           
-          // Update the LoadImage node to reference the image by name  
-          if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
-            workflow["1"].inputs.image = "input_image.png";
-            console.log(`🎨 Updated LoadImage node to reference image by name`);
+          // Replace the placeholder in the LoadImage node (node "0")
+          if (workflow["0"] && workflow["0"].class_type === "LoadImage") {
+            workflow["0"].inputs.image = base64DataUrl;
+            console.log(`🎨 Embedded base64 image directly in LoadImage node`);
           }
         }
         

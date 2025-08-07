@@ -1,75 +1,63 @@
 {
-  "1": {
+  "0": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input_image.jpg",
-      "upload": "image"
+      "image": "DATA_URL_BASE64_IMAGE",
+      "upload": true
+    }
+  },
+  "1": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["0", 0],
+      "width": 512,
+      "height": 512,
+      "upscale_method": "nearest-exact"
     }
   },
   "2": {
-    "class_type": "CLIPTextEncode",
+    "class_type": "VAEEncode",
     "inputs": {
-      "text": "A realistic modern bedroom interior with natural lighting, contemporary furniture, a bed with a headboard, a framed artwork hanging on the wall above the bed, professional interior photography, well-lit room with windows and curtains",
-      "clip": ["4", 1]
+      "pixels": ["1", 0]
     }
   },
   "3": {
-    "class_type": "CLIPTextEncode", 
+    "class_type": "KSampler",
     "inputs": {
-      "text": "blurry, low quality, distorted, amateur, empty frame, no artwork, plain wall, bad composition",
-      "clip": ["4", 1]
+      "latent_image": ["2", 0],
+      "denoise": 0.85,
+      "cfg": 8.0,
+      "steps": 30,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "seed": "RANDOM_SEED",
+      "positive": ["4", 0],
+      "negative": ["5", 0]
     }
   },
   "4": {
-    "class_type": "CheckpointLoaderSimple",
+    "class_type": "CLIPTextEncode",
     "inputs": {
-      "ckpt_name": "flux1-dev-fp8.safetensors"
+      "text": "Framed print of a coffee shop hanging on a bedroom wall with soft natural light and elegant decor"
     }
   },
   "5": {
-    "class_type": "VAEEncode",
+    "class_type": "CLIPTextEncode",
     "inputs": {
-      "pixels": ["9", 0],
-      "vae": ["4", 2]
+      "text": "blurry, distorted, bad framing, low resolution, poorly rendered room"
     }
   },
   "6": {
-    "class_type": "KSampler",
+    "class_type": "VAEDecode",
     "inputs": {
-      "seed": "RANDOM_SEED",
-      "steps": 30,
-      "cfg": 8.0,
-      "sampler_name": "euler",
-      "scheduler": "normal",
-      "denoise": 0.85,
-      "model": ["4", 0],
-      "positive": ["2", 0],
-      "negative": ["3", 0],
-      "latent_image": ["5", 0]
-    }
-  },
-  "9": {
-    "class_type": "ImageScale",
-    "inputs": {
-      "image": ["1", 0],
-      "width": 512,
-      "height": 512,
-      "upscale_method": "lanczos",
-      "crop": "center"
+      "samples": ["3", 0]
     }
   },
   "7": {
-    "class_type": "VAEDecode",
-    "inputs": {
-      "samples": ["6", 0],
-      "vae": ["4", 2]
-    }
-  },
-  "8": {
     "class_type": "SaveImage",
     "inputs": {
-      "filename_prefix": "bedroom_mockup",
-      "images": ["7", 0]
+      "filename_prefix": "mockup_result",
+      "images": ["6", 0]
     }
   }
 }
