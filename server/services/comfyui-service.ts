@@ -180,58 +180,95 @@ export class ComfyUIService {
   }
 
   /**
-   * Queue a workflow for execution (RunPod Serverless)
+   * Queue a workflow for execution (RunPod Serverless) with retry logic
    */
   private async queueWorkflow(workflow: any, imageBuffer?: Buffer): Promise<{success: boolean, jobId?: string, error?: string}> {
-    try {
-      // For RunPod serverless, we need to embed the image data into the workflow
-      if (imageBuffer) {
-        const imageBase64 = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+    const maxRetries = 3;
+    const retryDelays = [2000, 5000, 10000]; // 2s, 5s, 10s
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // For RunPod serverless, we need to embed the image data into the workflow
+        if (imageBuffer) {
+          const imageBase64 = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+          
+          // Update the LoadImage node with the base64 image data
+          if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
+            workflow["1"].inputs.image = imageBase64;
+          }
+        }
         
-        // Update the LoadImage node with the base64 image data
-        if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
-          workflow["1"].inputs.image = imageBase64;
+        // RunPod serverless API format - your specific setup expects 'workflow' parameter
+        const requestBody = {
+          input: {
+            workflow: workflow,
+            client_id: `etsyart-${Date.now()}`
+          }
+        };
+
+        console.log(`🎨 Sending RunPod serverless request (attempt ${attempt + 1}/${maxRetries + 1})...`);
+
+        const response = await fetch(`${this.config.runpodUrl}/run`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.config.apiKey}`
+          },
+          body: JSON.stringify(requestBody),
+          // Add timeout to prevent hanging
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          const errorMessage = `RunPod request failed: ${response.status} ${response.statusText} - ${errorText.slice(0, 200)}`;
+          
+          // Check if this is a retryable error (5xx server errors)
+          if (response.status >= 500 && attempt < maxRetries) {
+            console.log(`🔄 Server error ${response.status}, retrying in ${retryDelays[attempt]}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+            continue; // Retry
+          }
+          
+          throw new Error(errorMessage);
         }
-      }
-      
-      // RunPod serverless API format - your specific setup expects 'workflow' parameter
-      const requestBody = {
-        input: {
-          workflow: workflow,
-          client_id: `etsyart-${Date.now()}`
+
+        const result = await response.json() as any;
+        console.log('🎨 RunPod response:', result);
+        
+        return {
+          success: true,
+          jobId: result.id || result.jobId // RunPod returns job ID
+        };
+        
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Check if this is a retryable network error
+        if ((errorMessage.includes('502') || errorMessage.includes('503') || errorMessage.includes('504') || 
+             errorMessage.includes('timeout') || errorMessage.includes('ECONNRESET')) && attempt < maxRetries) {
+          console.log(`🔄 Network error, retrying in ${retryDelays[attempt]}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+          continue; // Retry
         }
-      };
-
-      console.log('🎨 Sending RunPod serverless request...');
-
-      const response = await fetch(`${this.config.runpodUrl}/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`RunPod request failed: ${response.status} ${response.statusText} - ${errorText}`);
+        
+        // If we've exhausted retries or it's not a retryable error, throw
+        if (attempt === maxRetries) {
+          return {
+            success: false,
+            error: `Failed after ${maxRetries + 1} attempts: ${errorMessage}`
+          };
+        }
+        
+        throw error;
       }
-
-      const result = await response.json() as any;
-      console.log('🎨 RunPod response:', result);
-      
-      return {
-        success: true,
-        jobId: result.id || result.jobId // RunPod returns job ID
-      };
-
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Queue failed'
-      };
     }
+    
+    // This should never be reached
+    return {
+      success: false,
+      error: 'Unexpected error in retry logic'
+    };
   }
 
   /**
