@@ -157,7 +157,7 @@ export class ComfyUIService {
       "2": {
         "class_type": "CLIPTextEncode",
         "inputs": {
-          "text": input.prompt || "A realistic modern bedroom interior with natural lighting, the uploaded artwork framed and hanging on the wall above a bed, professional interior photography style, contemporary decor, well-lit room",
+          "text": input.prompt || "A realistic modern bedroom interior with natural lighting, contemporary furniture, a bed with a headboard, a framed artwork hanging on the wall above the bed, professional interior photography, well-lit room with windows and curtains",
           "clip": ["4", 1]
         }
       },
@@ -185,11 +185,11 @@ export class ComfyUIService {
         "class_type": "KSampler",
         "inputs": {
           "seed": Math.floor(Math.random() * 1000000),
-          "steps": input.steps || 25,
-          "cfg": input.strength ? input.strength * 10 : 7.0,
+          "steps": input.steps || 30,
+          "cfg": input.strength ? input.strength * 10 : 8.0,
           "sampler_name": "euler",
           "scheduler": "normal",
-          "denoise": 0.65,
+          "denoise": 0.85,
           "model": ["4", 0],
           "positive": ["2", 0],
           "negative": ["3", 0],
@@ -200,8 +200,8 @@ export class ComfyUIService {
         "class_type": "ImageScale",
         "inputs": {
           "image": ["1", 0],
-          "width": 1024,
-          "height": 1024,
+          "width": 512,
+          "height": 512,
           "upscale_method": "lanczos",
           "crop": "center"
         }
