@@ -459,8 +459,19 @@ export class ComfyUIService {
         // Image in output.image
         imageBase64 = output.image;
       } else if (output.images && output.images.length > 0) {
-        // Array of images
-        imageBase64 = output.images[0];
+        // Array of images - check structure
+        console.log('🎨 Image object structure:', JSON.stringify(output.images[0], null, 2));
+        const imageObj = output.images[0];
+        if (typeof imageObj === 'string') {
+          imageBase64 = imageObj;
+        } else if (imageObj.data) {
+          imageBase64 = imageObj.data;
+        } else if (imageObj.image) {
+          imageBase64 = imageObj.image;
+        } else {
+          // Try to find base64 data in the object
+          imageBase64 = imageObj.base64 || imageObj.content || imageObj.url;
+        }
       } else if (output.result) {
         // Result wrapper
         imageBase64 = output.result;
@@ -470,8 +481,14 @@ export class ComfyUIService {
         throw new Error('No image data found in job output');
       }
 
+      console.log('🎨 Final imageBase64 type:', typeof imageBase64);
+      console.log('🎨 Final imageBase64 preview:', String(imageBase64).substring(0, 100));
+
+      // Ensure we have a string for processing
+      const imageString = String(imageBase64);
+      
       // Remove data URL prefix if present
-      const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+      const base64Data = imageString.replace(/^data:image\/[a-z]+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
       
       return {
