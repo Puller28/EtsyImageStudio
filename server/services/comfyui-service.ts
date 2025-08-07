@@ -228,27 +228,33 @@ export class ComfyUIService {
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        // For RunPod serverless, we need to compress and embed the image data
+        // RunPod serverless API format with proper image handling
+        const requestBody: any = {
+          input: {
+            workflow: workflow,
+            client_id: `etsyart-${Date.now()}`
+          }
+        };
+
+        // For RunPod serverless, images must be passed in the images array
         if (imageBuffer) {
           // Compress image to reduce payload size (max 2MB target)
           const compressedBuffer = await this.compressImageForRunPod(imageBuffer);
           const imageBase64 = compressedBuffer.toString('base64');
           console.log(`🎨 Original: ${imageBuffer.length} bytes, Compressed: ${compressedBuffer.length} bytes, base64: ${imageBase64.length} chars`);
           
-          // Update the LoadImage node with the base64 image data  
+          // Add images array to the request body
+          requestBody.input.images = [{
+            name: "input_image.png",
+            image: imageBase64
+          }];
+          
+          // Update the LoadImage node to reference the image by name  
           if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
-            workflow["1"].inputs.image = imageBase64;
-            console.log(`🎨 Updated LoadImage node with compressed base64 data`);
+            workflow["1"].inputs.image = "input_image.png";
+            console.log(`🎨 Updated LoadImage node to reference image by name`);
           }
         }
-        
-        // RunPod serverless API format - use correct parameter name
-        const requestBody = {
-          input: {
-            workflow: workflow,
-            client_id: `etsyart-${Date.now()}`
-          }
-        };
         
         console.log(`🎨 Workflow nodes: ${Object.keys(workflow).length}`);
 
