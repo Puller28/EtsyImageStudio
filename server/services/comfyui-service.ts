@@ -100,6 +100,46 @@ export class ComfyUIService {
   }
 
   /**
+   * Compress image for RunPod to stay under payload limits
+   */
+  private async compressImageForRunPod(imageBuffer: Buffer): Promise<Buffer> {
+    const sharp = (await import('sharp')).default;
+    
+    try {
+      // Target: Keep final payload under 5MB (image should be under 2MB)
+      const metadata = await sharp(imageBuffer).metadata();
+      console.log(`🎨 Original image: ${metadata.width}x${metadata.height}, ${imageBuffer.length} bytes`);
+      
+      // Resize if too large, compress aggressively
+      let processedImage = sharp(imageBuffer);
+      
+      // Resize if width/height > 1024
+      if (metadata.width && metadata.height && (metadata.width > 1024 || metadata.height > 1024)) {
+        processedImage = processedImage.resize(1024, 1024, { 
+          fit: 'inside', 
+          withoutEnlargement: true 
+        });
+      }
+      
+      // Compress as JPEG with aggressive quality settings
+      const compressedBuffer = await processedImage
+        .jpeg({ 
+          quality: 75,
+          progressive: true,
+          mozjpeg: true
+        })
+        .toBuffer();
+        
+      console.log(`🎨 Compressed to: ${compressedBuffer.length} bytes (${((compressedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% of original)`);
+      
+      return compressedBuffer;
+    } catch (error) {
+      console.warn(`🎨 Image compression failed, using original: ${error}`);
+      return imageBuffer;
+    }
+  }
+
+  /**
    * Prepare the workflow JSON with the uploaded image and parameters
    */
   private prepareWorkflow(imageFilename: string, input: ComfyUIInput): any {
@@ -188,15 +228,17 @@ export class ComfyUIService {
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        // For RunPod serverless, we need to embed the image data into the workflow
+        // For RunPod serverless, we need to compress and embed the image data
         if (imageBuffer) {
-          const imageBase64 = imageBuffer.toString('base64');
-          console.log(`🎨 Image size: ${imageBuffer.length} bytes, base64 size: ${imageBase64.length} chars`);
+          // Compress image to reduce payload size (max 2MB target)
+          const compressedBuffer = await this.compressImageForRunPod(imageBuffer);
+          const imageBase64 = compressedBuffer.toString('base64');
+          console.log(`🎨 Original: ${imageBuffer.length} bytes, Compressed: ${compressedBuffer.length} bytes, base64: ${imageBase64.length} chars`);
           
           // Update the LoadImage node with the base64 image data  
           if (workflow["1"] && workflow["1"].class_type === "LoadImage") {
             workflow["1"].inputs.image = imageBase64;
-            console.log(`🎨 Updated LoadImage node with base64 data`);
+            console.log(`🎨 Updated LoadImage node with compressed base64 data`);
           }
         }
         
