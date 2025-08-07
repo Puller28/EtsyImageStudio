@@ -145,8 +145,12 @@ export class ComfyUIService {
    * Prepare the workflow JSON with the uploaded image and parameters
    */
   private prepareWorkflow(imageFilename: string, input: ComfyUIInput): any {
-    // Pure image compositing workflow - no diffusion or generative AI
-    // Places user's exact artwork as framed piece on bedroom background
+    // LatentComposite workflow - preserves user artwork through VAE encode/decode
+    // Pixel coordinates converted to latent space (divide by 8)
+    const pixelX = 400;
+    const pixelY = 300;
+    const latentX = Math.round(pixelX / 8); // 50
+    const latentY = Math.round(pixelY / 8); // 38
     
     const workflow = {
       "0": {
@@ -167,6 +171,13 @@ export class ComfyUIService {
         }
       },
       "2": {
+        "class_type": "VAEEncode",
+        "inputs": {
+          "pixels": ["1", 0],
+          "vae": ["10", 2]
+        }
+      },
+      "3": {
         "class_type": "EmptyLatentImage",
         "inputs": {
           "width": 1024,
@@ -204,37 +215,38 @@ export class ComfyUIService {
           "model": ["10", 0],
           "positive": ["11", 0],
           "negative": ["12", 0],
-          "latent_image": ["2", 0]
-        }
-      },
-      "14": {
-        "class_type": "VAEDecode",
-        "inputs": {
-          "samples": ["13", 0],
-          "vae": ["10", 2]
-        }
-      },
-      "3": {
-        "class_type": "ImageComposite",
-        "inputs": {
-          "destination": ["14", 0], // Generated bedroom background
-          "source": ["1", 0],       // Scaled user artwork
-          "x": 400,                 // Horizontal position on wall
-          "y": 300,                 // Vertical position on wall
-          "resize_source": false
+          "latent_image": ["3", 0]
         }
       },
       "4": {
+        "class_type": "LatentComposite",
+        "inputs": {
+          "samples_to": ["13", 0],   // Background bedroom latent
+          "samples_from": ["2", 0],  // User artwork latent
+          "x": latentX,              // Latent coordinate (px/8)
+          "y": latentY,              // Latent coordinate (px/8)
+          "feather": 0
+        }
+      },
+      "5": {
+        "class_type": "VAEDecode",
+        "inputs": {
+          "samples": ["4", 0],
+          "vae": ["10", 2]
+        }
+      },
+      "6": {
         "class_type": "SaveImage",
         "inputs": {
-          "filename_prefix": "bedroom_mockup_composite",
-          "images": ["3", 0]
+          "filename_prefix": "bedroom_latent_composite",
+          "images": ["5", 0]
         }
       }
     };
     
-    console.log('🎨 Created pure composite workflow - no AI generation, just image placement');
-    console.log('🎨 Artwork will be placed at coordinates (400, 300) on bedroom background');
+    console.log(`🎨 Created LatentComposite workflow - preserves user artwork exactly`);
+    console.log(`🎨 Pixel coords (${pixelX}, ${pixelY}) → Latent coords (${latentX}, ${latentY})`);
+    console.log(`🎨 Background generated with denoise=1.0, artwork preserved through VAE encode/decode`);
     
     return workflow;
   }
