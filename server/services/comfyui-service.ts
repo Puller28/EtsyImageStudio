@@ -135,75 +135,96 @@ export class ComfyUIService {
    * Prepare the workflow JSON with the uploaded image and parameters
    */
   private prepareWorkflow(imageFilename: string, input: ComfyUIInput): any {
-    // Use the working bedroom mockup outpainting workflow structure
-    // This workflow produces 1024x1024 final images from 512x512 input artwork
+    // Composite workflow: Place user's image as framed artwork in a bedroom scene
+    // No generative transformation - pure image composition
     
     const workflow = {
       "0": {
         "class_type": "LoadImage",
         "inputs": {
-          "image": "INPUT_IMAGE_BASE64", // Will be replaced with actual base64 data
+          "image": "INPUT_IMAGE_BASE64", // User's artwork - will be replaced with actual base64 data
           "upload": true
         }
       },
       "1": {
-        "class_type": "ImageScale",
+        "class_type": "ImageScale", 
         "inputs": {
           "image": ["0", 0],
-          "width": 512,
-          "height": 512,
-          "upscale_method": "nearest-exact"
+          "width": 400,
+          "height": 300,
+          "upscale_method": "lanczos",
+          "crop": "center"
         }
       },
       "2": {
-        "class_type": "VAEEncode",
+        "class_type": "EmptyLatentImage",
         "inputs": {
-          "pixels": ["1", 0]
+          "width": 1024,
+          "height": 1024,
+          "batch_size": 1
         }
       },
       "3": {
-        "class_type": "KSampler",
+        "class_type": "CLIPTextEncode",
         "inputs": {
-          "latent_image": ["2", 0],
-          "denoise": input.strength || 0.85,
-          "cfg": 8.0,
-          "steps": input.steps || 30,
-          "sampler_name": "euler",
-          "scheduler": "normal",
-          "seed": Math.floor(Math.random() * 100000000),
-          "positive": ["4", 0],
-          "negative": ["5", 0]
+          "text": "Modern bedroom interior, clean wall, soft natural lighting, minimalist decor, neutral colors, contemporary furniture"
         }
       },
       "4": {
         "class_type": "CLIPTextEncode",
         "inputs": {
-          "text": input.prompt || "Framed print of a coffee shop hanging on a bedroom wall with soft natural light and elegant decor"
+          "text": "cluttered, messy, dark, poor lighting, old furniture, busy patterns"
         }
       },
       "5": {
-        "class_type": "CLIPTextEncode",
+        "class_type": "CheckpointLoaderSimple",
         "inputs": {
-          "text": "blurry, distorted, bad framing, low resolution, poorly rendered room"
+          "ckpt_name": "flux1-dev-fp8.safetensors"
         }
       },
       "6": {
-        "class_type": "VAEDecode",
+        "class_type": "KSampler",
         "inputs": {
-          "samples": ["3", 0]
+          "seed": Math.floor(Math.random() * 100000000),
+          "steps": 25,
+          "cfg": 7.0,
+          "sampler_name": "euler",
+          "scheduler": "normal", 
+          "denoise": 1.0,
+          "model": ["5", 0],
+          "positive": ["3", 0],
+          "negative": ["4", 0],
+          "latent_image": ["2", 0]
         }
       },
       "7": {
+        "class_type": "VAEDecode",
+        "inputs": {
+          "samples": ["6", 0],
+          "vae": ["5", 2]
+        }
+      },
+      "8": {
+        "class_type": "ImageComposite",
+        "inputs": {
+          "destination": ["7", 0],
+          "source": ["1", 0],
+          "x": 312,
+          "y": 200,
+          "resize_source": false
+        }
+      },
+      "9": {
         "class_type": "SaveImage",
         "inputs": {
-          "filename_prefix": "mockup_result",
-          "images": ["6", 0]
+          "filename_prefix": "bedroom_composite",
+          "images": ["8", 0]
         }
       }
     };
     
-    console.log('🎨 Created outpainting workflow with prompt:', input.prompt);
-    console.log('🎨 Parameters - Steps:', input.steps, 'Denoise:', input.strength, 'CFG: 8.0');
+    console.log('🎨 Created composite workflow - no generative transformation of user image');
+    console.log('🎨 Artwork will be placed at coordinates (312, 200) in bedroom scene');
     
     return workflow;
   }
