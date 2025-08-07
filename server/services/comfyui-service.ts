@@ -157,14 +157,14 @@ export class ComfyUIService {
       "2": {
         "class_type": "CLIPTextEncode",
         "inputs": {
-          "text": input.prompt || "A realistic bedroom with natural light filtering through curtains, a framed artwork with a black border featuring the uploaded image, well-lit and integrated into the room decor.",
+          "text": input.prompt || "A realistic modern bedroom interior with natural lighting, the uploaded artwork framed and hanging on the wall above a bed, professional interior photography style, contemporary decor, well-lit room",
           "clip": ["4", 1]
         }
       },
       "3": {
         "class_type": "CLIPTextEncode", 
         "inputs": {
-          "text": "blurry, low quality, distorted, amateur",
+          "text": "blurry, low quality, distorted, amateur, empty frame, no artwork, plain wall, bad composition",
           "clip": ["4", 1]
         }
       },
@@ -175,32 +175,41 @@ export class ComfyUIService {
         }
       },
       "5": {
-        "class_type": "KSampler",
+        "class_type": "VAEEncode",
         "inputs": {
-          "seed": Math.floor(Math.random() * 1000000),
-          "steps": input.steps || 30,
-          "cfg": input.strength ? input.strength * 10 : 7.5,
-          "sampler_name": "euler",
-          "scheduler": "normal",
-          "denoise": 0.85,
-          "model": ["4", 0],
-          "positive": ["2", 0],
-          "negative": ["3", 0],
-          "latent_image": ["6", 0]
+          "pixels": ["9", 0],
+          "vae": ["4", 2]
         }
       },
       "6": {
-        "class_type": "EmptyLatentImage",
+        "class_type": "KSampler",
         "inputs": {
+          "seed": Math.floor(Math.random() * 1000000),
+          "steps": input.steps || 25,
+          "cfg": input.strength ? input.strength * 10 : 7.0,
+          "sampler_name": "euler",
+          "scheduler": "normal",
+          "denoise": 0.65,
+          "model": ["4", 0],
+          "positive": ["2", 0],
+          "negative": ["3", 0],
+          "latent_image": ["5", 0]
+        }
+      },
+      "9": {
+        "class_type": "ImageScale",
+        "inputs": {
+          "image": ["1", 0],
           "width": 1024,
           "height": 1024,
-          "batch_size": 1
+          "upscale_method": "lanczos",
+          "crop": "center"
         }
       },
       "7": {
         "class_type": "VAEDecode",
         "inputs": {
-          "samples": ["5", 0],
+          "samples": ["6", 0],
           "vae": ["4", 2]
         }
       },
