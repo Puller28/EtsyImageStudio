@@ -1172,11 +1172,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ComfyUI FastAPI proxy endpoints
   app.get("/api/comfyui/healthz", async (req, res) => {
     try {
-      const response = await fetch('http://localhost:8001/healthz');
+      console.log('🔗 Attempting to connect to FastAPI at http://127.0.0.1:8001/healthz');
+      const response = await fetch('http://127.0.0.1:8001/healthz');
       const data = await response.json();
+      console.log('✅ FastAPI response:', data);
       res.json(data);
     } catch (error) {
-      res.status(503).json({ error: "FastAPI service unavailable" });
+      console.error('❌ FastAPI connection error:', error);
+      res.status(503).json({ error: "FastAPI service unavailable", details: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -1202,7 +1205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const response = await fetch('http://localhost:8001/generate', {
+      const response = await fetch('http://127.0.0.1:8001/generate', {
         method: 'POST',
         body: formData,
         headers: formData.getHeaders()
@@ -1238,7 +1241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const response = await fetch('http://localhost:8001/batch', {
+      const response = await fetch('http://127.0.0.1:8001/batch', {
         method: 'POST',
         body: formData,
         headers: formData.getHeaders()
