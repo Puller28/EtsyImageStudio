@@ -1168,6 +1168,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ComfyUI FastAPI proxy endpoints
+  app.get("/api/comfyui/healthz", async (req, res) => {
+    try {
+      const response = await fetch('http://localhost:8000/healthz');
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(503).json({ error: "FastAPI service unavailable" });
+    }
+  });
+
+  app.post("/api/comfyui/generate", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      // Create FormData for FastAPI
+      const FormData = (await import('form-data')).default;
+      const formData = new FormData();
+      
+      formData.append('file', req.file.buffer, {
+        filename: 'artwork.jpg',
+        contentType: 'image/jpeg'
+      });
+      
+      // Add other form fields
+      const fields = ['prompt', 'negative', 'canvas_w', 'canvas_h', 'art_w', 'art_h', 'pos_x', 'pos_y', 'steps', 'cfg', 'seed', 'poll_seconds'];
+      fields.forEach(field => {
+        if (req.body[field]) {
+          formData.append(field, req.body[field]);
+        }
+      });
+
+      const response = await fetch('http://localhost:8000/generate', {
+        method: 'POST',
+        body: formData,
+        headers: formData.getHeaders()
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("ComfyUI generate proxy error:", error);
+      res.status(500).json({ error: "Failed to proxy request to ComfyUI service" });
+    }
+  });
+
+  app.post("/api/comfyui/batch", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      // Create FormData for FastAPI
+      const FormData = (await import('form-data')).default;
+      const formData = new FormData();
+      
+      formData.append('file', req.file.buffer, {
+        filename: 'artwork.jpg',
+        contentType: 'image/jpeg'
+      });
+      
+      // Add other form fields  
+      const fields = ['canvas_w', 'canvas_h', 'art_w', 'art_h', 'pos_x', 'pos_y', 'steps', 'cfg', 'seed', 'poll_seconds', 'prompts'];
+      fields.forEach(field => {
+        if (req.body[field]) {
+          formData.append(field, req.body[field]);
+        }
+      });
+
+      const response = await fetch('http://localhost:8000/batch', {
+        method: 'POST',
+        body: formData,
+        headers: formData.getHeaders()
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("ComfyUI batch proxy error:", error);
+      res.status(500).json({ error: "Failed to proxy batch request to ComfyUI service" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

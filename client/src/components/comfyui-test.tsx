@@ -46,7 +46,7 @@ export function ComfyUITest() {
     setIsTestingConnection(true);
     try {
       // Test the new FastAPI health endpoint
-      const response = await fetch('http://localhost:8000/healthz');
+      const response = await fetch('/api/comfyui/healthz');
       const data = await response.json();
       
       if (data.ok) {
@@ -107,7 +107,7 @@ export function ComfyUITest() {
       formData.append('seed', Math.floor(Math.random() * 1000000).toString());
       formData.append('poll_seconds', '90');
 
-      const response = await fetch('http://localhost:8000/generate', {
+      const response = await fetch('/api/comfyui/generate', {
         method: 'POST',
         body: formData
       });
@@ -181,7 +181,7 @@ export function ComfyUITest() {
       formData.append('seed', Math.floor(Math.random() * 1000000).toString());
       formData.append('poll_seconds', '90');
 
-      const response = await fetch('http://localhost:8000/batch', {
+      const response = await fetch('/api/comfyui/batch', {
         method: 'POST',
         body: formData
       });
