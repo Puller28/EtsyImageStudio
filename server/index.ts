@@ -3,10 +3,13 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { spawn, ChildProcess } from "child_process";
 
 // Global state for application readiness
 let isDbReady = false;
 let isAppReady = false;
+let fastApiProcess: ChildProcess | null = null;
+let fastApiReady = false;
 
 const app = express();
 app.use(express.json());
@@ -18,6 +21,7 @@ app.get("/health", (req, res) => {
     status: "ok",
     database: isDbReady ? "ready" : "initializing",
     application: isAppReady ? "ready" : "starting",
+    fastapi: fastApiReady ? "ready" : "starting",
     timestamp: new Date().toISOString()
   });
 });
@@ -142,6 +146,90 @@ async function initializeDatabase() {
   }
 }
 
+// FastAPI Process Management
+async function startFastApiServer() {
+  return new Promise<void>((resolve, reject) => {
+    console.log('🚀 Starting FastAPI server...');
+    
+    const env = { ...process.env };
+    env.PORT = '8001';
+    env.MOCK_MODE = 'true'; // Start in mock mode for reliability
+    
+    fastApiProcess = spawn('uvicorn', [
+      'app:app',
+      '--host', '0.0.0.0', 
+      '--port', '8001',
+      '--workers', '1',
+      '--no-access-log'
+    ], {
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: false
+    });
+
+    if (fastApiProcess.stdout) {
+      fastApiProcess.stdout.on('data', (data) => {
+        const message = data.toString().trim();
+        if (message.includes('Uvicorn running on') || message.includes('Application startup complete')) {
+          fastApiReady = true;
+          console.log('✅ FastAPI server ready on port 8001');
+          resolve();
+        }
+        if (message) console.log(`[FastAPI] ${message}`);
+      });
+    }
+
+    if (fastApiProcess.stderr) {
+      fastApiProcess.stderr.on('data', (data) => {
+        const message = data.toString().trim();
+        if (message) console.error(`[FastAPI Error] ${message}`);
+      });
+    }
+
+    fastApiProcess.on('exit', (code, signal) => {
+      fastApiReady = false;
+      console.log(`⚠️  FastAPI process exited with code ${code}, signal ${signal}`);
+      
+      // Auto-restart after 2 seconds if it wasn't killed intentionally
+      if (code !== 0 && signal !== 'SIGTERM') {
+        setTimeout(() => {
+          console.log('🔄 Restarting FastAPI server...');
+          startFastApiServer().catch(console.error);
+        }, 2000);
+      }
+    });
+
+    fastApiProcess.on('error', (error) => {
+      console.error('❌ FastAPI process error:', error.message);
+      fastApiReady = false;
+      reject(error);
+    });
+
+    // Timeout if server doesn't start within 30 seconds
+    setTimeout(() => {
+      if (!fastApiReady) {
+        console.log('⚠️  FastAPI startup timeout, continuing anyway...');
+        resolve();
+      }
+    }, 30000);
+  });
+}
+
+// Cleanup function
+function cleanup() {
+  console.log('🛑 Shutting down FastAPI server...');
+  if (fastApiProcess && !fastApiProcess.killed) {
+    fastApiProcess.kill('SIGTERM');
+    fastApiProcess = null;
+    fastApiReady = false;
+  }
+}
+
+// Handle process cleanup
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+process.on('exit', cleanup);
+
 (async () => {
 
   // Start database initialization in the background (non-blocking)
@@ -149,7 +237,12 @@ async function initializeDatabase() {
     console.error('Database initialization failed:', err);
   });
 
-  // Register routes immediately (don't wait for database)
+  // Start FastAPI server in the background (non-blocking)
+  startFastApiServer().catch(err => {
+    console.error('FastAPI server startup failed:', err);
+  });
+
+  // Register routes immediately (don't wait for database or FastAPI)
   const server = await registerRoutes(app);
 
   // Error handling middleware
