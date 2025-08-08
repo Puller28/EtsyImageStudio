@@ -31,7 +31,11 @@ EtsyArt Pro is a comprehensive web application designed specifically for Etsy AI
 ✅ **Paystack Subscription Cancellation Fixed** - Resolved API integration by implementing correct Paystack disable subscription endpoint with both subscription code and email token parameters as required by Paystack API specifications
 ✅ **ComfyUI MVP Integration Complete** - Successfully integrated RunPod serverless ComfyUI 5.2.0 for AI-powered mockup generation with bedroom workflow, standard node compatibility, base64 image embedding, and proper authentication flow
 ✅ **LatentComposite Workflow Fixed** - Resolved RunPod workflow structure with proper VAE loader, CLIP model integration, and correct node connections for flux1-dev-fp8.safetensors model
-✅ **FastAPI ComfyUI Service Operational** - Dual-service architecture running Express (port 5000) and FastAPI (port 8000) with RunPod API integration for pure image compositing without diffusion transformation
+✅ **Single-Server FastAPI Architecture Complete** - Migrated from dual-service to unified FastAPI server following user specification: `uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log`
+✅ **Production-Ready RunPod Integration** - Implemented async-first architecture with exponential backoff retry logic, comprehensive error handling for 502/503/504 responses, and MOCK_MODE support for development
+✅ **Health & Monitoring Endpoints** - Added `/healthz` (fast response), `/` (root probe), and `/status` (detailed diagnostics) following Replit deployment requirements
+✅ **Background Task Architecture** - Replaced blocking operations with asyncio.create_task() for concurrent job submission and polling, ensuring server responsiveness during long RunPod operations
+✅ **Robust Error Handling** - Implemented Redis client error detection, connection retry logic, and graceful degradation when RunPod services are unavailable - server stays alive in all scenarios
 
 ## User Preferences
 
