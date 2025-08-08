@@ -15,8 +15,11 @@ ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")  # e.g. https://api.runpod.ai/
 RUN_URL = f"{ENDPOINT_BASE}/run"
 STATUS_URL = f"{ENDPOINT_BASE}/status"
 
-if not API_KEY or not ENDPOINT_BASE:
-    raise RuntimeError("Missing RUNPOD_API_KEY or RUNPOD_ENDPOINT_BASE in .env")
+# Don't raise errors at import time - handle in endpoints
+if not API_KEY:
+    print("WARNING: RUNPOD_API_KEY not found in environment")
+if not ENDPOINT_BASE:
+    print("WARNING: RUNPOD_ENDPOINT_BASE not found in environment")
 
 app = FastAPI()
 app.add_middleware(
@@ -103,6 +106,10 @@ def build_workflow_dict(
     }
 
 def submit_job(payload: Dict[str, Any]) -> str:
+    # Check credentials at runtime
+    if not API_KEY or not ENDPOINT_BASE:
+        raise HTTPException(500, "RunPod credentials not configured. Please check RUNPOD_API_KEY and RUNPOD_ENDPOINT_BASE environment variables.")
+    
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     try:
         print(f"🔗 Submitting to RunPod: {RUN_URL}")
@@ -151,7 +158,7 @@ def health():
     # Test RunPod endpoint availability
     try:
         headers = {"Authorization": f"Bearer {API_KEY}"}
-        test_response = requests.get(f"{RUNPOD_ENDPOINT_BASE}/health", headers=headers, timeout=10)
+        test_response = requests.get(f"{ENDPOINT_BASE}/health", headers=headers, timeout=10)
         runpod_status = "available" if test_response.status_code < 400 else f"error_{test_response.status_code}"
     except Exception as e:
         runpod_status = f"unreachable_{str(e)[:50]}"
@@ -277,7 +284,14 @@ async def batch_generate(
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting FastAPI on port 8001...")
-    print(f"📡 RunPod endpoint: {RUN_URL}")
+    
+    # Use FASTAPI_PORT first, then fallback to 8001 
+    # Don't use PORT as that conflicts with Express
+    port = int(os.getenv("FASTAPI_PORT", 8001))
+    
+    print(f"🚀 Starting FastAPI on 0.0.0.0:{port}")
+    print(f"📡 RunPod endpoint: {RUN_URL if API_KEY and ENDPOINT_BASE else 'Not configured'}")
     print(f"🔑 API Key present: {bool(API_KEY)}")
-    uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")
+    
+    # Always bind to 0.0.0.0 for Replit compatibility
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

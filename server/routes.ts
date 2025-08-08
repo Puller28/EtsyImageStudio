@@ -1172,8 +1172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ComfyUI FastAPI proxy endpoints
   app.get("/api/comfyui/healthz", async (req, res) => {
     try {
-      console.log('🔗 Attempting to connect to FastAPI at http://127.0.0.1:8001/healthz');
-      const response = await fetch('http://127.0.0.1:8001/healthz');
+      // Use dynamic port detection - try 8001 first, then check other common ports
+      const fastApiPort = process.env.FASTAPI_PORT || 8001;
+      const fastApiUrl = `http://127.0.0.1:${fastApiPort}/healthz`;
+      
+      console.log(`🔗 Attempting to connect to FastAPI at ${fastApiUrl}`);
+      const response = await fetch(fastApiUrl);
       const data = await response.json();
       console.log('✅ FastAPI response:', data);
       res.json(data);
@@ -1205,7 +1209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const response = await fetch('http://127.0.0.1:8001/generate', {
+      const fastApiPort = process.env.FASTAPI_PORT || 8001;
+      const response = await fetch(`http://127.0.0.1:${fastApiPort}/generate`, {
         method: 'POST',
         body: formData,
         headers: formData.getHeaders()
@@ -1241,7 +1246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const response = await fetch('http://127.0.0.1:8001/batch', {
+      const fastApiPort = process.env.FASTAPI_PORT || 8001;
+      const response = await fetch(`http://127.0.0.1:${fastApiPort}/batch`, {
         method: 'POST',
         body: formData,
         headers: formData.getHeaders()
