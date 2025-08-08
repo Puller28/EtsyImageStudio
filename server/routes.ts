@@ -1193,15 +1193,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file provided" });
       }
 
-      // Use native FormData for proper boundary compatibility with FastAPI
+      // Use form-data package for proper multipart handling
+      const FormData = require('form-data');
+      const { Readable } = require('stream');
       const formData = new FormData();
       
-      // Create a Blob from the buffer for proper file handling
-      const fileBlob = new Blob([req.file.buffer], {
-        type: req.file.mimetype || 'image/jpeg'
-      });
+      // Convert buffer to stream for form-data package compatibility
+      const bufferStream = new Readable();
+      bufferStream.push(req.file.buffer);
+      bufferStream.push(null); // End the stream
       
-      formData.append('file', fileBlob, req.file.originalname || 'artwork.jpg');
+      formData.append('file', bufferStream, {
+        filename: req.file.originalname || 'artwork.jpg',
+        contentType: req.file.mimetype || 'image/jpeg'
+      });
       
       // Add other form fields with defaults
       const formFields = {
@@ -1224,22 +1229,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
-      const response = await fetch(`http://127.0.0.1:${fastApiPort}/generate`, {
-        method: 'POST',
-        body: formData
+      
+      // Use axios for proper form-data handling
+      const axios = require('axios');
+      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate`, formData, {
+        headers: formData.getHeaders(),
+        timeout: 120000 // 2 minute timeout for AI processing
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`FastAPI error (${response.status}):`, errorText);
-        return res.status(response.status).json({ 
-          error: "FastAPI processing failed", 
-          details: errorText 
-        });
-      }
-
-      const data = await response.json();
-      res.json(data);
+      res.json(response.data);
     } catch (error) {
       console.error("ComfyUI generate proxy error:", error);
       res.status(500).json({ 
@@ -1255,15 +1253,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file provided" });
       }
 
-      // Use native FormData for proper boundary compatibility with FastAPI
+      // Use form-data package for proper multipart handling  
+      const FormData = require('form-data');
+      const { Readable } = require('stream');
       const formData = new FormData();
       
-      // Create a Blob from the buffer for proper file handling
-      const fileBlob = new Blob([req.file.buffer], {
-        type: req.file.mimetype || 'image/jpeg'
-      });
+      // Convert buffer to stream for form-data package compatibility
+      const bufferStream = new Readable();
+      bufferStream.push(req.file.buffer);
+      bufferStream.push(null); // End the stream
       
-      formData.append('file', fileBlob, req.file.originalname || 'artwork.jpg');
+      formData.append('file', bufferStream, {
+        filename: req.file.originalname || 'artwork.jpg',
+        contentType: req.file.mimetype || 'image/jpeg'
+      });
       
       // Add other form fields with defaults
       const formFields = {
@@ -1285,22 +1288,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
-      const response = await fetch(`http://127.0.0.1:${fastApiPort}/batch`, {
-        method: 'POST',
-        body: formData
+      
+      // Use axios for proper form-data handling
+      const axios = require('axios');
+      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/batch`, formData, {
+        headers: formData.getHeaders(),
+        timeout: 180000 // 3 minute timeout for batch processing
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`FastAPI batch error (${response.status}):`, errorText);
-        return res.status(response.status).json({ 
-          error: "FastAPI batch processing failed", 
-          details: errorText 
-        });
-      }
-
-      const data = await response.json();
-      res.json(data);
+      res.json(response.data);
     } catch (error) {
       console.error("ComfyUI batch proxy error:", error);
       res.status(500).json({ 
