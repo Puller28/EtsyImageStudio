@@ -313,10 +313,15 @@ async def generate(
     poll_seconds: int = Form(60),
 ):
     img_bytes = await file.read()
+    logger.info(f"📋 Received file: {file.filename}, size: {len(img_bytes)} bytes, content_type: {file.content_type}")
+    
     try:
-        Image.open(io.BytesIO(img_bytes)).convert("RGB")
-    except Exception:
-        raise HTTPException(400, "Invalid image upload")
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        logger.info(f"✅ Image validated: {img.size}, mode: {img.mode}")
+    except Exception as e:
+        logger.error(f"❌ Image validation failed: {str(e)}")
+        logger.error(f"📋 File details - filename: {file.filename}, content_type: {file.content_type}, size: {len(img_bytes)}")
+        raise HTTPException(400, f"Invalid image upload: {str(e)}")
 
     art_b64 = to_b64(img_bytes)
     workflow = build_workflow_dict(

@@ -1198,14 +1198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use form-data package for proper multipart handling
       const formData = new FormData();
       
-      // Convert buffer to stream for form-data package compatibility
-      const bufferStream = new Readable();
-      bufferStream.push(req.file.buffer);
-      bufferStream.push(null); // End the stream
-      
-      formData.append('file', bufferStream, {
+      // Append buffer directly - form-data handles buffer-to-stream conversion internally
+      formData.append('file', req.file.buffer, {
         filename: req.file.originalname || 'artwork.jpg',
-        contentType: req.file.mimetype || 'image/jpeg'
+        contentType: req.file.mimetype || 'image/jpeg',
+        knownLength: req.file.buffer.length
       });
       
       // Add other form fields with defaults
@@ -1255,14 +1252,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use form-data package for proper multipart handling  
       const formData = new FormData();
       
-      // Convert buffer to stream for form-data package compatibility
-      const bufferStream = new Readable();
-      bufferStream.push(req.file.buffer);
-      bufferStream.push(null); // End the stream
-      
-      formData.append('file', bufferStream, {
+      // Append buffer directly - form-data handles buffer-to-stream conversion internally
+      formData.append('file', req.file.buffer, {
         filename: req.file.originalname || 'artwork.jpg',
-        contentType: req.file.mimetype || 'image/jpeg'
+        contentType: req.file.mimetype || 'image/jpeg',
+        knownLength: req.file.buffer.length
       });
       
       // Add other form fields with defaults
