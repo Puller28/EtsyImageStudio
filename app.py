@@ -60,36 +60,45 @@ def build_workflow_dict(
                 "class_type": "ImageScale",
                 "inputs": { "image": ["0", 0], "width": art_w, "height": art_h, "upscale_method": "lanczos" }
             },
-            "2": {  # Encode art to latent
-                "class_type": "VAEEncode",
-                "inputs": { "pixels": ["1", 0] }
+            "2": {  # Load VAE
+                "class_type": "VAELoader",
+                "inputs": { "vae_name": "ae.safetensors" }
             },
-            "3": { "class_type": "CLIPTextEncode", "inputs": { "text": prompt } },
-            "4": { "class_type": "CLIPTextEncode", "inputs": { "text": neg_prompt } },
-            "5": {  # Empty background latent
+            "3": {  # Encode art to latent
+                "class_type": "VAEEncode",
+                "inputs": { "pixels": ["1", 0], "vae": ["2", 0] }
+            },
+            "4": {  # Load CLIP model
+                "class_type": "CheckpointLoaderSimple", 
+                "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }
+            },
+            "5": { "class_type": "CLIPTextEncode", "inputs": { "text": prompt, "clip": ["4", 1] } },
+            "6": { "class_type": "CLIPTextEncode", "inputs": { "text": neg_prompt, "clip": ["4", 1] } },
+            "7": {  # Empty background latent
                 "class_type": "EmptyLatentImage",
                 "inputs": { "width": canvas_w, "height": canvas_h, "batch_size": 1 }
             },
-            "6": {  # Generate room background
+            "8": {  # Generate room background
                 "class_type": "KSampler",
                 "inputs": {
-                    "latent_image": ["5", 0],
-                    "positive": ["3", 0],
-                    "negative": ["4", 0],
+                    "model": ["4", 0],
+                    "latent_image": ["7", 0],
+                    "positive": ["5", 0],
+                    "negative": ["6", 0],
                     "steps": steps, "cfg": cfg, "denoise": 1.0,
                     "sampler_name": "euler", "scheduler": "normal", "seed": seed
                 }
             },
-            "7": {  # Composite: place art latent onto background latent
+            "9": {  # Composite: place art latent onto background latent
                 "class_type": "LatentComposite",
                 "inputs": {
-                    "samples_to": ["6", 0],
-                    "samples_from": ["2", 0],
+                    "samples_to": ["8", 0],
+                    "samples_from": ["3", 0],
                     "x": x_lat, "y": y_lat, "feather": 0, "tiled": False
                 }
             },
-            "8": { "class_type": "VAEDecode", "inputs": { "samples": ["7", 0] } },
-            "9": { "class_type": "SaveImage", "inputs": { "images": ["8", 0], "filename_prefix": "mockup_out" } }
+            "10": { "class_type": "VAEDecode", "inputs": { "samples": ["9", 0], "vae": ["2", 0] } },
+            "11": { "class_type": "SaveImage", "inputs": { "images": ["10", 0], "filename_prefix": "mockup_out" } }
         }
     }
 
