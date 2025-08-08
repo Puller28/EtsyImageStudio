@@ -1193,34 +1193,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file provided" });
       }
 
-      // Create FormData for FastAPI
+      // Use native FormData for proper boundary compatibility with FastAPI
       const formData = new FormData();
       
-      formData.append('file', req.file.buffer, {
-        filename: 'artwork.jpg',
-        contentType: 'image/jpeg'
+      // Create a Blob from the buffer for proper file handling
+      const fileBlob = new Blob([req.file.buffer], {
+        type: req.file.mimetype || 'image/jpeg'
       });
       
-      // Add other form fields
-      const fields = ['prompt', 'negative', 'canvas_w', 'canvas_h', 'art_w', 'art_h', 'pos_x', 'pos_y', 'steps', 'cfg', 'seed', 'poll_seconds'];
-      fields.forEach(field => {
-        if (req.body[field]) {
-          formData.append(field, req.body[field]);
-        }
+      formData.append('file', fileBlob, req.file.originalname || 'artwork.jpg');
+      
+      // Add other form fields with defaults
+      const formFields = {
+        prompt: req.body.prompt || 'Modern bedroom with framed artwork on wall',
+        negative: req.body.negative || 'blurry, low detail, distorted',
+        canvas_w: req.body.canvas_w || '1024',
+        canvas_h: req.body.canvas_h || '1024', 
+        art_w: req.body.art_w || '512',
+        art_h: req.body.art_h || '512',
+        pos_x: req.body.pos_x || '256',
+        pos_y: req.body.pos_y || '256',
+        steps: req.body.steps || '20',
+        cfg: req.body.cfg || '6.5',
+        seed: req.body.seed || '1234567',
+        poll_seconds: req.body.poll_seconds || '60'
+      };
+
+      Object.entries(formFields).forEach(([key, value]) => {
+        formData.append(key, value);
       });
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
       const response = await fetch(`http://127.0.0.1:${fastApiPort}/generate`, {
         method: 'POST',
-        body: formData,
-        headers: formData.getHeaders()
+        body: formData
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`FastAPI error (${response.status}):`, errorText);
+        return res.status(response.status).json({ 
+          error: "FastAPI processing failed", 
+          details: errorText 
+        });
+      }
 
       const data = await response.json();
       res.json(data);
     } catch (error) {
       console.error("ComfyUI generate proxy error:", error);
-      res.status(500).json({ error: "Failed to proxy request to ComfyUI service" });
+      res.status(500).json({ 
+        error: "Failed to proxy request to ComfyUI service",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -1230,34 +1255,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file provided" });
       }
 
-      // Create FormData for FastAPI
+      // Use native FormData for proper boundary compatibility with FastAPI
       const formData = new FormData();
       
-      formData.append('file', req.file.buffer, {
-        filename: 'artwork.jpg',
-        contentType: 'image/jpeg'
+      // Create a Blob from the buffer for proper file handling
+      const fileBlob = new Blob([req.file.buffer], {
+        type: req.file.mimetype || 'image/jpeg'
       });
       
-      // Add other form fields  
-      const fields = ['canvas_w', 'canvas_h', 'art_w', 'art_h', 'pos_x', 'pos_y', 'steps', 'cfg', 'seed', 'poll_seconds', 'prompts'];
-      fields.forEach(field => {
-        if (req.body[field]) {
-          formData.append(field, req.body[field]);
-        }
+      formData.append('file', fileBlob, req.file.originalname || 'artwork.jpg');
+      
+      // Add other form fields with defaults
+      const formFields = {
+        canvas_w: req.body.canvas_w || '1024',
+        canvas_h: req.body.canvas_h || '1024', 
+        art_w: req.body.art_w || '512',
+        art_h: req.body.art_h || '512',
+        pos_x: req.body.pos_x || '256',
+        pos_y: req.body.pos_y || '256',
+        steps: req.body.steps || '20',
+        cfg: req.body.cfg || '6.5',
+        seed: req.body.seed || '1234567',
+        poll_seconds: req.body.poll_seconds || '90',
+        prompts: req.body.prompts || ''
+      };
+
+      Object.entries(formFields).forEach(([key, value]) => {
+        formData.append(key, value);
       });
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
       const response = await fetch(`http://127.0.0.1:${fastApiPort}/batch`, {
         method: 'POST',
-        body: formData,
-        headers: formData.getHeaders()
+        body: formData
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`FastAPI batch error (${response.status}):`, errorText);
+        return res.status(response.status).json({ 
+          error: "FastAPI batch processing failed", 
+          details: errorText 
+        });
+      }
 
       const data = await response.json();
       res.json(data);
     } catch (error) {
       console.error("ComfyUI batch proxy error:", error);
-      res.status(500).json({ error: "Failed to proxy batch request to ComfyUI service" });
+      res.status(500).json({ 
+        error: "Failed to proxy batch request to ComfyUI service",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
