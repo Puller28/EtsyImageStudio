@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import FormData from "form-data";
+import axios from "axios";
+import { Readable } from "stream";
 import { z } from "zod";
 import { storage } from "./storage";
 import { insertProjectSchema, insertUserSchema } from "@shared/schema";
@@ -1194,8 +1196,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use form-data package for proper multipart handling
-      const FormData = require('form-data');
-      const { Readable } = require('stream');
       const formData = new FormData();
       
       // Convert buffer to stream for form-data package compatibility
@@ -1231,7 +1231,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
       
       // Use axios for proper form-data handling
-      const axios = require('axios');
       const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate`, formData, {
         headers: formData.getHeaders(),
         timeout: 120000 // 2 minute timeout for AI processing
@@ -1254,8 +1253,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use form-data package for proper multipart handling  
-      const FormData = require('form-data');
-      const { Readable } = require('stream');
       const formData = new FormData();
       
       // Convert buffer to stream for form-data package compatibility
@@ -1290,7 +1287,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
       
       // Use axios for proper form-data handling
-      const axios = require('axios');
       const response = await axios.post(`http://127.0.0.1:${fastApiPort}/batch`, formData, {
         headers: formData.getHeaders(),
         timeout: 180000 // 3 minute timeout for batch processing
