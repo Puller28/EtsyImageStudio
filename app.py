@@ -104,14 +104,27 @@ def build_workflow_dict(
 
 def submit_job(payload: Dict[str, Any]) -> str:
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-    r = requests.post(RUN_URL, headers=headers, json={"input": payload}, timeout=60)
-    if r.status_code >= 400:
-        raise HTTPException(r.status_code, r.text)
-    data = r.json()
-    job_id = data.get("id")
-    if not job_id:
-        raise HTTPException(500, f"RunPod did not return a job id: {data}")
-    return job_id
+    try:
+        print(f"🔗 Submitting to RunPod: {RUN_URL}")
+        r = requests.post(RUN_URL, headers=headers, json={"input": payload}, timeout=60)
+        print(f"📡 RunPod response status: {r.status_code}")
+        
+        if r.status_code == 502:
+            raise HTTPException(503, "RunPod serverless endpoint is currently unavailable (502 Bad Gateway). This is a temporary infrastructure issue. Please try again in a few minutes.")
+        
+        if r.status_code >= 400:
+            error_text = r.text[:500] if r.text else "Unknown error"
+            print(f"❌ RunPod error: {error_text}")
+            raise HTTPException(r.status_code, f"RunPod request failed: {r.status_code} {r.reason} - {error_text}")
+            
+        data = r.json()
+        job_id = data.get("id")
+        if not job_id:
+            raise HTTPException(500, f"RunPod did not return a job id: {data}")
+        return job_id
+    except requests.exceptions.RequestException as e:
+        print(f"🔥 Connection error: {str(e)}")
+        raise HTTPException(503, f"Failed to connect to RunPod endpoint: {str(e)}")
 
 def poll_job(job_id: str, timeout_sec: int = 90) -> Dict[str, Any]:
     headers = {"Authorization": f"Bearer {API_KEY}"}
@@ -135,7 +148,19 @@ def poll_job(job_id: str, timeout_sec: int = 90) -> Dict[str, Any]:
 
 @app.get("/healthz")
 def health():
-    return {"ok": True}
+    # Test RunPod endpoint availability
+    try:
+        headers = {"Authorization": f"Bearer {API_KEY}"}
+        test_response = requests.get(f"{RUNPOD_ENDPOINT_BASE}/health", headers=headers, timeout=10)
+        runpod_status = "available" if test_response.status_code < 400 else f"error_{test_response.status_code}"
+    except Exception as e:
+        runpod_status = f"unreachable_{str(e)[:50]}"
+    
+    return {
+        "ok": True, 
+        "runpod_endpoint": runpod_status,
+        "endpoint_url": RUN_URL
+    }
 
 @app.post("/generate")
 async def generate(
@@ -168,9 +193,16 @@ async def generate(
         steps=steps, cfg=cfg, seed=seed
     )
 
-    job_id = submit_job(workflow)
-    result = poll_job(job_id, timeout_sec=poll_seconds)
-    return {"job_id": job_id, "result": result}
+    try:
+        print(f"🔧 Submitting workflow with {len(workflow['workflow'])} nodes")
+        job_id = submit_job(workflow)
+        print(f"✅ Job submitted successfully: {job_id}")
+        result = poll_job(job_id, timeout_sec=poll_seconds)
+        return {"job_id": job_id, "result": result}
+    except Exception as e:
+        print(f"❌ Error in generate endpoint: {str(e)}")
+        print(f"🔍 Workflow structure: {list(workflow['workflow'].keys())}")
+        raise HTTPException(500, f"Workflow submission failed: {str(e)}")
 
 # ======== NEW: /batch ========
 
@@ -245,4 +277,7 @@ async def batch_generate(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("🚀 Starting FastAPI on port 8001...")
+    print(f"📡 RunPod endpoint: {RUN_URL}")
+    print(f"🔑 API Key present: {bool(API_KEY)}")
+    uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")
