@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
+import FormData from "form-data";
 import { z } from "zod";
 import { storage } from "./storage";
 import { insertProjectSchema, insertUserSchema } from "@shared/schema";
@@ -1171,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ComfyUI FastAPI proxy endpoints
   app.get("/api/comfyui/healthz", async (req, res) => {
     try {
-      const response = await fetch('http://localhost:8000/healthz');
+      const response = await fetch('http://localhost:8001/healthz');
       const data = await response.json();
       res.json(data);
     } catch (error) {
@@ -1186,7 +1187,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create FormData for FastAPI
-      const FormData = (await import('form-data')).default;
       const formData = new FormData();
       
       formData.append('file', req.file.buffer, {
@@ -1202,7 +1202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const response = await fetch('http://localhost:8000/generate', {
+      const response = await fetch('http://localhost:8001/generate', {
         method: 'POST',
         body: formData,
         headers: formData.getHeaders()
@@ -1223,7 +1223,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create FormData for FastAPI
-      const FormData = (await import('form-data')).default;
       const formData = new FormData();
       
       formData.append('file', req.file.buffer, {
@@ -1239,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const response = await fetch('http://localhost:8000/batch', {
+      const response = await fetch('http://localhost:8001/batch', {
         method: 'POST',
         body: formData,
         headers: formData.getHeaders()
