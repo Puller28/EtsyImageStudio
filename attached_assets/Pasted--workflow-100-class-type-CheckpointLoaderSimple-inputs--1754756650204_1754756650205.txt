@@ -1,0 +1,105 @@
+{
+  "workflow": {
+    "100": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {
+        "ckpt_name": "{CKPT_NAME}"
+      }
+    },
+
+    "0": {
+      "class_type": "LoadImage",
+      "inputs": {
+        "image": "{ART_BASE64}",
+        "upload": true
+      }
+    },
+
+    "1": {
+      "class_type": "ImageScale",
+      "inputs": {
+        "image": [ "0", 0 ],
+        "width": {ART_W},
+        "height": {ART_H},
+        "upscale_method": "lanczos"
+      }
+    },
+
+    "2": {
+      "class_type": "VAEEncode",
+      "inputs": {
+        "pixels": [ "1", 0 ],
+        "vae": [ "100", 2 ]
+      }
+    },
+
+    "3": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": [ "100", 1 ],
+        "text": "{PROMPT}"
+      }
+    },
+
+    "4": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": [ "100", 1 ],
+        "text": "{NEGATIVE_PROMPT}"
+      }
+    },
+
+    "5": {
+      "class_type": "EmptyLatentImage",
+      "inputs": {
+        "width": {CANVAS_W},
+        "height": {CANVAS_H},
+        "batch_size": 1
+      }
+    },
+
+    "6": {
+      "class_type": "KSampler",
+      "inputs": {
+        "model": [ "100", 0 ],
+        "positive": [ "3", 0 ],
+        "negative": [ "4", 0 ],
+        "latent_image": [ "5", 0 ],
+        "seed": {SEED},
+        "steps": {STEPS},
+        "cfg": {CFG},
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1.0
+      }
+    },
+
+    "7": {
+      "class_type": "LatentComposite",
+      "inputs": {
+        "samples_to": [ "6", 0 ],
+        "samples_from": [ "2", 0 ],
+        "x": {POS_X_LAT},
+        "y": {POS_Y_LAT},
+        "feather": 1,
+        "tiled": false
+      }
+    },
+
+    "8": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": [ "7", 0 ],
+        "vae": [ "100", 2 ]
+      }
+    },
+
+    "9": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "images": [ "8", 0 ],
+        "filename_prefix": "{FILENAME_PREFIX}"
+      }
+    }
+  }
+}

@@ -53,73 +53,103 @@ def build_workflow_dict(
     seed: int = 1234567,
 ) -> Dict[str, Any]:
 
-    x_lat = px_to_latent(pos_x_px)
-    y_lat = px_to_latent(pos_y_px)
+    # Convert pixels to latent coordinates (pixels / 8)
+    pos_x_lat = round(pos_x_px / 8)
+    pos_y_lat = round(pos_y_px / 8)
 
-    # Following your exact rules: All processing in ComfyUI workflow
-    room_prompt = "Framed artwork hanging in a cozy bedroom with sunlight filtering through linen curtains"
-    
+    # Your exact workflow JSON with placeholders replaced
     return {
         "workflow": {
-            # Model loading
-            "1": { 
-                "class_type": "CheckpointLoaderSimple", 
-                "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }
+            "100": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {
+                    "ckpt_name": "flux1-dev-fp8.safetensors"
+                }
             },
-            
-            # Artwork path (Rule: Load Image → Image Resize)
-            "2": { 
-                "class_type": "LoadImageFromBase64", 
-                "inputs": { "image": art_b64 }
+            "0": {
+                "class_type": "LoadImage",
+                "inputs": {
+                    "image": art_b64,
+                    "upload": True
+                }
             },
-            "3": { 
-                "class_type": "ImageScale", 
-                "inputs": { "image": ["2", 0], "width": art_w, "height": art_h, "upscale_method": "lanczos" } 
+            "1": {
+                "class_type": "ImageScale",
+                "inputs": {
+                    "image": ["0", 0],
+                    "width": art_w,
+                    "height": art_h,
+                    "upscale_method": "lanczos"
+                }
             },
-            
-            # Background path (Rule: Background Generation)
-            "4": { 
-                "class_type": "EmptyLatentImage", 
-                "inputs": { "width": canvas_w, "height": canvas_h, "batch_size": 1 } 
+            "2": {
+                "class_type": "VAEEncode",
+                "inputs": {
+                    "pixels": ["1", 0],
+                    "vae": ["100", 2]
+                }
             },
-            "5": { 
-                "class_type": "CLIPTextEncode", 
-                "inputs": { "text": room_prompt, "clip": ["1", 1] } 
+            "3": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": ["100", 1],
+                    "text": prompt
+                }
             },
-            "6": { 
-                "class_type": "CLIPTextEncode", 
-                "inputs": { "text": "blurry, low detail, distorted, bad framing, artifacts", "clip": ["1", 1] } 
+            "4": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": ["100", 1],
+                    "text": neg_prompt
+                }
             },
-            "7": {
+            "5": {
+                "class_type": "EmptyLatentImage",
+                "inputs": {
+                    "width": canvas_w,
+                    "height": canvas_h,
+                    "batch_size": 1
+                }
+            },
+            "6": {
                 "class_type": "KSampler",
                 "inputs": {
-                    "model": ["1", 0],
-                    "latent_image": ["4", 0],
-                    "positive": ["5", 0],
-                    "negative": ["6", 0],
-                    "steps": 20, "cfg": cfg, "denoise": 1.0,
-                    "sampler_name": "euler", "scheduler": "normal", "seed": seed
+                    "model": ["100", 0],
+                    "positive": ["3", 0],
+                    "negative": ["4", 0],
+                    "latent_image": ["5", 0],
+                    "seed": seed,
+                    "steps": steps,
+                    "cfg": cfg,
+                    "sampler_name": "euler",
+                    "scheduler": "normal",
+                    "denoise": 1.0
                 }
             },
-            "8": { 
-                "class_type": "VAEDecode", 
-                "inputs": { "samples": ["7", 0], "vae": ["1", 2] }
-            },
-            
-            # Compositing (Rule: ImagePaste as first choice)
-            "9": {
-                "class_type": "ImagePaste",
+            "7": {
+                "class_type": "LatentComposite",
                 "inputs": {
-                    "destination": ["8", 0],
-                    "source": ["3", 0],
-                    "x": pos_x_px,
-                    "y": pos_y_px,
-                    "resize_source": False
+                    "samples_to": ["6", 0],
+                    "samples_from": ["2", 0],
+                    "x": pos_x_lat,
+                    "y": pos_y_lat,
+                    "feather": 1,
+                    "tiled": False
                 }
             },
-            "10": { 
-                "class_type": "SaveImage", 
-                "inputs": { "images": ["9", 0], "filename_prefix": "bedroom_mockup" } 
+            "8": {
+                "class_type": "VAEDecode",
+                "inputs": {
+                    "samples": ["7", 0],
+                    "vae": ["100", 2]
+                }
+            },
+            "9": {
+                "class_type": "SaveImage",
+                "inputs": {
+                    "images": ["8", 0],
+                    "filename_prefix": "mockup_out"
+                }
             }
         }
     }
@@ -393,7 +423,7 @@ async def generate(
     )
 
     try:
-        logger.info(f"🔧 Submitting workflow with {len(workflow['workflow'])} nodes")
+        logger.info(f"🔧 Submitting your exact workflow with {len(workflow['workflow'])} nodes")
         job_id = await submit_job_with_retry(workflow)
         logger.info(f"✅ Job submitted successfully: {job_id}")
         result = await poll_job_async(job_id, timeout_sec=poll_seconds)
