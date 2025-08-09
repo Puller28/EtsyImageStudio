@@ -126,11 +126,11 @@ async def submit_job_with_retry(payload: Dict[str, Any], max_retries: int = 3) -
         try:
             logger.info(f"🔗 Submitting to RunPod (attempt {attempt + 1}/{max_retries}): {RUN_URL}")
             
-            # Use asyncio executor for non-blocking HTTP request
+            # Use asyncio executor for non-blocking HTTP request  
             loop = asyncio.get_event_loop()
             r = await loop.run_in_executor(
                 None,
-                lambda: requests.post(RUN_URL, headers=headers, json={"input": payload}, timeout=60)
+                lambda: requests.post(str(RUN_URL), headers=headers, json={"input": payload}, timeout=60)
             )
             
             logger.info(f"📡 RunPod response status: {r.status_code}")
@@ -164,6 +164,9 @@ async def submit_job_with_retry(payload: Dict[str, Any], max_retries: int = 3) -
                 continue
             else:
                 logger.error(f"🔥 Connection error after {max_retries} attempts: {str(e)}")
+                # Provide more helpful error message for common RunPod issues
+                if "IncompleteRead" in str(e):
+                    raise HTTPException(503, f"RunPod serverless endpoint is experiencing connectivity issues. This is typically temporary. Please try again in a few minutes.")
                 raise HTTPException(503, f"Failed to connect to RunPod endpoint: {str(e)}")
     
     raise HTTPException(503, "Max retries exceeded")
@@ -293,7 +296,7 @@ async def detailed_status():
         except Exception as e:
             status["runpod_status"] = f"unreachable_{str(e)[:50]}"
     else:
-        status["runpod_status"] = "mock_mode" if MOCK_MODE else "not_configured"
+        status["runpod_status"] = ("mock_mode" if MOCK_MODE else "not_configured")
     
     return status
 
