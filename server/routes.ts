@@ -1233,7 +1233,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeout: 120000 // 2 minute timeout for AI processing
       });
 
-      res.json(response.data);
+      const data = response.data;
+      
+      // Transform FastAPI response to frontend format
+      if (data.result && data.result.status === 'COMPLETED') {
+        // Extract image data from RunPod response
+        const output = data.result.output;
+        if (output && output.images && output.images.length > 0) {
+          const imageData = output.images[0];
+          const base64Data = imageData.data;
+          
+          // Convert to proper data URL format
+          const dataUrl = `data:image/png;base64,${base64Data}`;
+          
+          res.json({
+            success: true,
+            mockup: dataUrl,
+            jobId: data.job_id,
+            info: {
+              method: "RunPod ComfyUI",
+              processingTime: "Generated successfully",
+              filename: imageData.filename || "bedroom_mockup.png"
+            }
+          });
+        } else {
+          res.json({
+            success: false,
+            error: "No image data in completed result",
+            jobId: data.job_id
+          });
+        }
+      } else if (data.result && data.result.status === 'FAILED') {
+        res.json({
+          success: false,
+          error: data.result.error || "ComfyUI generation failed",
+          jobId: data.job_id
+        });
+      } else {
+        res.json({
+          success: false,
+          error: "Unexpected response format from ComfyUI service",
+          details: data
+        });
+      }
     } catch (error) {
       console.error("ComfyUI generate proxy error:", error);
       res.status(500).json({ 
