@@ -36,8 +36,9 @@ EtsyArt Pro is a comprehensive web application designed specifically for Etsy AI
 ✅ **Health & Monitoring Endpoints** - Added `/healthz` (fast response), `/` (root probe), and `/status` (detailed diagnostics) following Replit deployment requirements
 ✅ **Background Task Architecture** - Replaced blocking operations with asyncio.create_task() for concurrent job submission and polling, ensuring server responsiveness during long RunPod operations
 ✅ **Robust Error Handling** - Implemented Redis client error detection, connection retry logic, and graceful degradation when RunPod services are unavailable - server stays alive in all scenarios
-✅ **ComfyUI Workflow Fixed** - Resolved RunPod ComfyUI execution errors by replacing custom nodes and unavailable models with standard ComfyUI nodes and SDXL base model - workflow now successfully executes on RunPod serverless infrastructure
+✅ **ComfyUI Workflow Fixed** - Resolved RunPod ComfyUI execution errors by replacing custom nodes and unavailable models with standard ComfyUI nodes and FLUX model - workflow now successfully executes on RunPod serverless infrastructure
 ✅ **Real RunPod Integration Active** - Successfully migrated from mock mode to live RunPod ComfyUI 5.2.0 execution with proper error handling and workflow validation
+⚠️ **Image Compositing Challenge** - Current limitation: Standard ComfyUI nodes on RunPod don't support direct image compositing, generating bedroom scenes without user artwork integration - requires post-processing solution or different approach
 
 ## User Preferences
 

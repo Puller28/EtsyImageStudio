@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import requests
-from PIL import Image
+from PIL import Image, ImageDraw
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 load_dotenv()
@@ -56,12 +56,15 @@ def build_workflow_dict(
     x_lat = px_to_latent(pos_x_px)
     y_lat = px_to_latent(pos_y_px)
 
-    # Simple working workflow using only standard ComfyUI nodes and available models  
+    # Simplified workflow that works with standard ComfyUI nodes
+    # For now, generate bedroom scene that matches user's requirements
+    enhanced_prompt = f"{prompt}, artwork display area, picture frame placement, wall space for framed art"
+    
     return {
         "workflow": {
             "1": { 
                 "class_type": "CheckpointLoaderSimple", 
-                "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }  # FLUX model (confirmed available on RunPod)
+                "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }
             },
             "2": { 
                 "class_type": "EmptyLatentImage", 
@@ -69,7 +72,7 @@ def build_workflow_dict(
             },
             "3": { 
                 "class_type": "CLIPTextEncode", 
-                "inputs": { "text": prompt, "clip": ["1", 1] } 
+                "inputs": { "text": enhanced_prompt, "clip": ["1", 1] } 
             },
             "4": { 
                 "class_type": "CLIPTextEncode", 
@@ -88,7 +91,7 @@ def build_workflow_dict(
             },
             "6": { 
                 "class_type": "VAEDecode", 
-                "inputs": { "samples": ["5", 0], "vae": ["1", 2] }  # Use built-in VAE
+                "inputs": { "samples": ["5", 0], "vae": ["1", 2] }
             },
             "7": { 
                 "class_type": "SaveImage", 
@@ -242,6 +245,46 @@ async def poll_job_async(job_id: str, timeout_sec: int = 90, max_retries: int = 
     
     logger.warning(f"⏰ Job {job_id} timed out after {timeout_sec} seconds")
     return {"status": "TIMEOUT", "last": last or {}}
+
+async def composite_artwork_on_bedroom(bedroom_result: Dict[str, Any], artwork_bytes: bytes, art_w: int, art_h: int, pos_x: int, pos_y: int) -> Dict[str, Any]:
+    """Composite user's artwork onto the generated bedroom scene"""
+    try:
+        if 'output' not in bedroom_result or 'images' not in bedroom_result['output']:
+            return bedroom_result
+            
+        # Get the generated bedroom image
+        bedroom_image_data = bedroom_result['output']['images'][0]
+        bedroom_b64 = bedroom_image_data['data']
+        bedroom_img = Image.open(io.BytesIO(base64.b64decode(bedroom_b64)))
+        
+        # Load and resize user's artwork
+        artwork_img = Image.open(io.BytesIO(artwork_bytes)).convert("RGBA")
+        artwork_resized = artwork_img.resize((art_w, art_h), Image.Resampling.LANCZOS)
+        
+        # Create a simple frame effect (add border)
+        frame_thickness = 10
+        frame_color = (101, 67, 33)  # Brown frame color
+        framed_artwork = Image.new("RGBA", (art_w + frame_thickness*2, art_h + frame_thickness*2), frame_color)
+        framed_artwork.paste(artwork_resized, (frame_thickness, frame_thickness))
+        
+        # Composite onto bedroom scene
+        bedroom_img.paste(framed_artwork, (pos_x, pos_y), framed_artwork)
+        
+        # Convert back to base64
+        output_buffer = io.BytesIO()
+        bedroom_img.save(output_buffer, format='PNG')
+        composited_b64 = base64.b64encode(output_buffer.getvalue()).decode('utf-8')
+        
+        # Update the result with composited image
+        bedroom_result['output']['images'][0]['data'] = composited_b64
+        bedroom_result['output']['images'][0]['filename'] = 'bedroom_with_artwork.png'
+        
+        logger.info("✅ Successfully composited artwork onto bedroom scene")
+        return bedroom_result
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to composite artwork: {str(e)}")
+        return bedroom_result  # Return original result if compositing fails
 
 # ---------- endpoints ----------
 
