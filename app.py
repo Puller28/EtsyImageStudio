@@ -56,9 +56,7 @@ def build_workflow_dict(
     x_lat = px_to_latent(pos_x_px)
     y_lat = px_to_latent(pos_y_px)
 
-    # Your recipe adapted for RunPod ComfyUI 5.2.0 - focus on what actually works
-    # Since image loading nodes are problematic, let's use a hybrid approach:
-    # Generate the room background with LatentComposite placeholder for now
+    # Following your exact rules: All processing in ComfyUI workflow
     room_prompt = "Framed artwork hanging in a cozy bedroom with sunlight filtering through linen curtains"
     
     return {
@@ -69,37 +67,59 @@ def build_workflow_dict(
                 "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }
             },
             
-            # Background branch (this part we know works)
+            # Artwork path (Rule: Load Image → Image Resize)
             "2": { 
+                "class_type": "LoadImageFromBase64", 
+                "inputs": { "image": art_b64 }
+            },
+            "3": { 
+                "class_type": "ImageScale", 
+                "inputs": { "image": ["2", 0], "width": art_w, "height": art_h, "upscale_method": "lanczos" } 
+            },
+            
+            # Background path (Rule: Background Generation)
+            "4": { 
                 "class_type": "EmptyLatentImage", 
                 "inputs": { "width": canvas_w, "height": canvas_h, "batch_size": 1 } 
             },
-            "3": { 
+            "5": { 
                 "class_type": "CLIPTextEncode", 
                 "inputs": { "text": room_prompt, "clip": ["1", 1] } 
             },
-            "4": { 
+            "6": { 
                 "class_type": "CLIPTextEncode", 
                 "inputs": { "text": "blurry, low detail, distorted, bad framing, artifacts", "clip": ["1", 1] } 
             },
-            "5": {
+            "7": {
                 "class_type": "KSampler",
                 "inputs": {
                     "model": ["1", 0],
-                    "latent_image": ["2", 0],
-                    "positive": ["3", 0],
-                    "negative": ["4", 0],
-                    "steps": steps, "cfg": cfg, "denoise": 1.0,
+                    "latent_image": ["4", 0],
+                    "positive": ["5", 0],
+                    "negative": ["6", 0],
+                    "steps": 20, "cfg": cfg, "denoise": 1.0,
                     "sampler_name": "euler", "scheduler": "normal", "seed": seed
                 }
             },
-            "6": { 
+            "8": { 
                 "class_type": "VAEDecode", 
-                "inputs": { "samples": ["5", 0], "vae": ["1", 2] }
+                "inputs": { "samples": ["7", 0], "vae": ["1", 2] }
             },
-            "7": { 
+            
+            # Compositing (Rule: ImagePaste as first choice)
+            "9": {
+                "class_type": "ImagePaste",
+                "inputs": {
+                    "destination": ["8", 0],
+                    "source": ["3", 0],
+                    "x": pos_x_px,
+                    "y": pos_y_px,
+                    "resize_source": False
+                }
+            },
+            "10": { 
                 "class_type": "SaveImage", 
-                "inputs": { "images": ["6", 0], "filename_prefix": "bedroom_mockup" } 
+                "inputs": { "images": ["9", 0], "filename_prefix": "bedroom_mockup" } 
             }
         }
     }
@@ -378,10 +398,7 @@ async def generate(
         logger.info(f"✅ Job submitted successfully: {job_id}")
         result = await poll_job_async(job_id, timeout_sec=poll_seconds)
         
-        # For now: Generate room background, then composite artwork using your recipe approach in Python
-        # This preserves your key principle: NO DIFFUSION ON ARTWORK
-        if result.get('status') == 'COMPLETED':
-            result = await composite_artwork_on_bedroom(result, img_bytes, art_w, art_h, pos_x, pos_y)
+        # Following your rules: All compositing done in ComfyUI workflow (no Python post-processing)
         
         return {"job_id": job_id, "result": result}
     except Exception as e:
