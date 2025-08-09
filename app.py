@@ -51,10 +51,6 @@ def build_workflow_dict(
     steps: int = 20,
     cfg: float = 6.5,
     seed: int = 1234567,
-    letterbox_w: int = 512,
-    letterbox_h: int = 512,
-    pad_left: int = 0,
-    pad_top: int = 0,
     model: str = "flux1-dev-fp8.safetensors",
 ) -> Dict[str, Any]:
 
@@ -84,26 +80,16 @@ def build_workflow_dict(
                 "class_type": "ImageScale",
                 "inputs": {
                     "image": ["0", 0],
-                    "width": letterbox_w,
-                    "height": letterbox_h,
+                    "width": art_w,
+                    "height": art_h,
                     "upscale_method": "lanczos",
                     "crop": "disabled"
-                }
-            },
-            "10": {
-                "class_type": "ImagePad",
-                "inputs": {
-                    "image": ["1", 0],
-                    "left": pad_left,
-                    "top": pad_top,
-                    "right": 512 - letterbox_w - pad_left,
-                    "bottom": 512 - letterbox_h - pad_top
                 }
             },
             "2": {
                 "class_type": "VAEEncode",
                 "inputs": {
-                    "pixels": ["10", 0],
+                    "pixels": ["1", 0],
                     "vae": ["100", 2]
                 }
             },
@@ -209,7 +195,7 @@ async def submit_job_with_retry(payload: Dict[str, Any], max_retries: int = 3) -
             logger.info(f"📡 RunPod response status: {r.status_code}")
             
             # Handle specific error codes with retry
-            if r.status_code in [502, 503, 504]:
+            if r.status_code in [502, 503, 504, 500]:
                 if attempt < max_retries - 1:
                     wait_time = 2 ** attempt  # Exponential backoff
                     logger.warning(f"🔄 RunPod temporary error {r.status_code}, retrying in {wait_time}s...")
@@ -469,22 +455,23 @@ async def generate(
         orig_w, orig_h = img.size
         logger.info(f"✅ Image validated: {img.size}, mode: {img.mode}")
         
-        # Letterbox scaling to 512x512 with aspect ratio preservation
-        target_size = 512
-        scale_factor = min(target_size / orig_w, target_size / orig_h)
-        scaled_w = int(orig_w * scale_factor)
-        scaled_h = int(orig_h * scale_factor)
+        # Letterbox scaling to preserve aspect ratio
+        if orig_w > orig_h:  # Landscape
+            scaled_w = art_w
+            scaled_h = int((orig_h / orig_w) * art_w)
+        else:  # Portrait or square
+            scaled_h = art_h  
+            scaled_w = int((orig_w / orig_h) * art_h)
+            
+        # Ensure minimum size
+        if scaled_w < 64: scaled_w = 64
+        if scaled_h < 64: scaled_h = 64
         
-        # Calculate padding for centering in 512x512
-        pad_left = (target_size - scaled_w) // 2
-        pad_top = (target_size - scaled_h) // 2
-        
-        logger.info(f"📐 Letterbox scaling: {orig_w}×{orig_h} → {scaled_w}×{scaled_h} in 512×512")
-        logger.info(f"📍 Padding: left={pad_left}, top={pad_top}")
+        logger.info(f"📐 Letterbox scaling: {orig_w}×{orig_h} → {scaled_w}×{scaled_h}")
         
         # Position on 1024x1024 canvas (centered)
-        pos_x = (canvas_w - target_size) // 2  # Center 512x512 artwork on 1024x1024 canvas
-        pos_y = (canvas_h - target_size) // 2
+        pos_x = (canvas_w - scaled_w) // 2
+        pos_y = (canvas_h - scaled_h) // 2
         
     except Exception as e:
         logger.error(f"❌ Image validation failed: {str(e)}")
@@ -495,11 +482,9 @@ async def generate(
     workflow = build_workflow_dict(
         prompt=prompt, neg_prompt=negative,
         canvas_w=canvas_w, canvas_h=canvas_h,
-        art_b64=art_b64, art_w=target_size, art_h=target_size,
+        art_b64=art_b64, art_w=scaled_w, art_h=scaled_h,
         pos_x_px=pos_x, pos_y_px=pos_y,
         steps=steps, cfg=cfg, seed=seed,
-        letterbox_w=scaled_w, letterbox_h=scaled_h,
-        pad_left=pad_left, pad_top=pad_top,
         model=model
     )
 
