@@ -16,6 +16,7 @@ ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
 MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"
 
 # Build URLs only if endpoint is configured
+# ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
 RUN_URL = f"{ENDPOINT_BASE}/run" if ENDPOINT_BASE else None
 STATUS_URL = f"{ENDPOINT_BASE}/status" if ENDPOINT_BASE else None
 
@@ -116,7 +117,7 @@ async def submit_job_with_retry(payload: Dict[str, Any], max_retries: int = 3) -
         return f"mock_job_{int(time.time())}"
     
     # Check credentials at runtime
-    if not API_KEY or not ENDPOINT_BASE:
+    if not API_KEY or not ENDPOINT_BASE or not RUN_URL:
         raise HTTPException(500, "RunPod credentials not configured. Please check RUNPOD_API_KEY and RUNPOD_ENDPOINT_BASE environment variables.")
     
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
@@ -412,11 +413,11 @@ async def batch_generate(
     job_ids: List[Dict[str, str]] = []
     for submission in job_submissions:
         if isinstance(submission, Exception):
-            results.append({"prompt": "unknown", "error": f"submit_failed: {submission}"})
-        elif submission["success"]:
+            results.append({"prompt": "unknown", "error": f"submit_failed: {str(submission)}"})
+        elif isinstance(submission, dict) and submission.get("success"):
             job_ids.append({"prompt": submission["prompt"], "job_id": submission["job_id"]})
-        else:
-            results.append({"prompt": submission["prompt"], "error": submission["error"]})
+        elif isinstance(submission, dict):
+            results.append({"prompt": submission.get("prompt", "unknown"), "error": submission.get("error", "unknown error")})
 
     # Poll each job concurrently with controlled concurrency
     if job_ids:
@@ -431,7 +432,7 @@ async def batch_generate(
         
         for poll_result in poll_results:
             if isinstance(poll_result, Exception):
-                results.append({"prompt": "unknown", "error": f"poll_failed: {poll_result}"})
+                results.append({"prompt": "unknown", "error": f"poll_failed: {str(poll_result)}"})
             else:
                 results.append(poll_result)
 
