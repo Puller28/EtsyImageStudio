@@ -56,26 +56,31 @@ def build_workflow_dict(
     x_lat = px_to_latent(pos_x_px)
     y_lat = px_to_latent(pos_y_px)
 
-    # Create a detailed bedroom scene prompt optimized for FLUX model
-    bedroom_prompt = f"photorealistic modern bedroom interior, clean white walls, wooden floor, comfortable bed with white bedding, bedside table with lamp, natural lighting through window, minimalist decor, empty wall space perfect for hanging framed artwork, interior design photography, 8k resolution, professional photography"
+    # Your recipe adapted for RunPod ComfyUI 5.2.0 - focus on what actually works
+    # Since image loading nodes are problematic, let's use a hybrid approach:
+    # Generate the room background with LatentComposite placeholder for now
+    room_prompt = "Framed artwork hanging in a cozy bedroom with sunlight filtering through linen curtains"
     
     return {
         "workflow": {
+            # Model loading
             "1": { 
                 "class_type": "CheckpointLoaderSimple", 
                 "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }
             },
+            
+            # Background branch (this part we know works)
             "2": { 
                 "class_type": "EmptyLatentImage", 
                 "inputs": { "width": canvas_w, "height": canvas_h, "batch_size": 1 } 
             },
             "3": { 
                 "class_type": "CLIPTextEncode", 
-                "inputs": { "text": bedroom_prompt, "clip": ["1", 1] } 
+                "inputs": { "text": room_prompt, "clip": ["1", 1] } 
             },
             "4": { 
                 "class_type": "CLIPTextEncode", 
-                "inputs": { "text": "blurry, low quality, cluttered, messy, dark, poor lighting, distorted, artifacts, deformed, bad architecture, unrealistic", "clip": ["1", 1] } 
+                "inputs": { "text": "blurry, low detail, distorted, bad framing, artifacts", "clip": ["1", 1] } 
             },
             "5": {
                 "class_type": "KSampler",
@@ -373,7 +378,8 @@ async def generate(
         logger.info(f"✅ Job submitted successfully: {job_id}")
         result = await poll_job_async(job_id, timeout_sec=poll_seconds)
         
-        # If bedroom generation succeeded, composite the user's artwork onto it
+        # For now: Generate room background, then composite artwork using your recipe approach in Python
+        # This preserves your key principle: NO DIFFUSION ON ARTWORK
         if result.get('status') == 'COMPLETED':
             result = await composite_artwork_on_bedroom(result, img_bytes, art_w, art_h, pos_x, pos_y)
         
