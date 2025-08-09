@@ -114,31 +114,22 @@ export function ComfyUITest() {
 
       const data = await response.json();
       
-      if (data.result && data.result.status === 'COMPLETED') {
-        const successResult = {
-          success: true,
-          jobId: data.job_id,
-          mockup: data.result.output?.[0] || null,
-          info: {
-            method: 'LatentComposite',
-            processingTime: `${data.result.executionTime}ms`,
-            workflowUrl: 'FastAPI ComfyUI Service'
-          }
-        };
-        setResult(successResult);
+      // Handle new backend response format
+      if (data.success && data.mockup) {
+        setResult(data); // Backend already returns the correct format
         toast({
           title: "Mockup Generated",
-          description: `ComfyUI workflow completed successfully (Job: ${data.job_id})`,
+          description: `ComfyUI workflow completed successfully (Job: ${data.jobId})`,
         });
-      } else if (data.result && data.result.status === 'FAILED') {
-        const errorResult = { success: false, error: data.result.error || 'ComfyUI workflow failed' };
-        setResult(errorResult);
+      } else if (data.success === false) {
+        setResult(data); // Backend returns error in correct format
         toast({
           title: "Generation Failed",
-          description: data.result.error || "ComfyUI workflow failed",
+          description: data.error || "ComfyUI workflow failed",
           variant: "destructive",
         });
       } else {
+        // Fallback for unexpected format
         const errorResult = { success: false, error: 'Unexpected response format' };
         setResult(errorResult);
         toast({
