@@ -56,9 +56,8 @@ def build_workflow_dict(
     x_lat = px_to_latent(pos_x_px)
     y_lat = px_to_latent(pos_y_px)
 
-    # Simplified workflow that works with standard ComfyUI nodes
-    # For now, generate bedroom scene that matches user's requirements
-    enhanced_prompt = f"{prompt}, artwork display area, picture frame placement, wall space for framed art"
+    # Create a detailed bedroom scene prompt optimized for FLUX model
+    bedroom_prompt = f"photorealistic modern bedroom interior, clean white walls, wooden floor, comfortable bed with white bedding, bedside table with lamp, natural lighting through window, minimalist decor, empty wall space perfect for hanging framed artwork, interior design photography, 8k resolution, professional photography"
     
     return {
         "workflow": {
@@ -72,11 +71,11 @@ def build_workflow_dict(
             },
             "3": { 
                 "class_type": "CLIPTextEncode", 
-                "inputs": { "text": enhanced_prompt, "clip": ["1", 1] } 
+                "inputs": { "text": bedroom_prompt, "clip": ["1", 1] } 
             },
             "4": { 
                 "class_type": "CLIPTextEncode", 
-                "inputs": { "text": neg_prompt, "clip": ["1", 1] } 
+                "inputs": { "text": "blurry, low quality, cluttered, messy, dark, poor lighting, distorted, artifacts, deformed, bad architecture, unrealistic", "clip": ["1", 1] } 
             },
             "5": {
                 "class_type": "KSampler",
