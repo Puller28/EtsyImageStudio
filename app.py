@@ -373,6 +373,11 @@ async def generate(
         job_id = await submit_job_with_retry(workflow)
         logger.info(f"✅ Job submitted successfully: {job_id}")
         result = await poll_job_async(job_id, timeout_sec=poll_seconds)
+        
+        # If bedroom generation succeeded, composite the user's artwork onto it
+        if result.get('status') == 'COMPLETED':
+            result = await composite_artwork_on_bedroom(result, img_bytes, art_w, art_h, pos_x, pos_y)
+        
         return {"job_id": job_id, "result": result}
     except Exception as e:
         logger.error(f"❌ Error in generate endpoint: {str(e)}")
