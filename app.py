@@ -61,7 +61,7 @@ def build_workflow_dict(
         "workflow": {
             "1": { 
                 "class_type": "CheckpointLoaderSimple", 
-                "inputs": { "ckpt_name": "v1-5-pruned-emaonly.safetensors" }  # SD 1.5 model (confirmed working)
+                "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" }  # FLUX model (confirmed available on RunPod)
             },
             "2": { 
                 "class_type": "EmptyLatentImage", 
