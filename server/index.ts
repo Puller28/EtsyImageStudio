@@ -153,7 +153,7 @@ async function startFastApiServer() {
     
     const env = { ...process.env };
     env.PORT = '8001';
-    env.MOCK_MODE = 'true'; // Start in mock mode for reliability
+    env.MOCK_MODE = 'false'; // Enable real RunPod ComfyUI integration
     
     fastApiProcess = spawn('uvicorn', [
       'app:app',
