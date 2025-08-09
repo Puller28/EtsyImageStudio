@@ -51,6 +51,11 @@ def build_workflow_dict(
     steps: int = 20,
     cfg: float = 6.5,
     seed: int = 1234567,
+    letterbox_w: int = 512,
+    letterbox_h: int = 512,
+    pad_left: int = 0,
+    pad_top: int = 0,
+    model: str = "flux1-dev-fp8.safetensors",
 ) -> Dict[str, Any]:
 
     # Convert pixels to latent coordinates (pixels / 8)
@@ -65,7 +70,7 @@ def build_workflow_dict(
             "100": {
                 "class_type": "CheckpointLoaderSimple",
                 "inputs": {
-                    "ckpt_name": "flux1-dev-fp8.safetensors"
+                    "ckpt_name": model
                 }
             },
             "0": {
@@ -79,16 +84,26 @@ def build_workflow_dict(
                 "class_type": "ImageScale",
                 "inputs": {
                     "image": ["0", 0],
-                    "width": art_w,
-                    "height": art_h,
+                    "width": letterbox_w,
+                    "height": letterbox_h,
                     "upscale_method": "lanczos",
                     "crop": "disabled"
+                }
+            },
+            "10": {
+                "class_type": "ImagePad",
+                "inputs": {
+                    "image": ["1", 0],
+                    "left": pad_left,
+                    "top": pad_top,
+                    "right": 512 - letterbox_w - pad_left,
+                    "bottom": 512 - letterbox_h - pad_top
                 }
             },
             "2": {
                 "class_type": "VAEEncode",
                 "inputs": {
-                    "pixels": ["1", 0],
+                    "pixels": ["10", 0],
                     "vae": ["100", 2]
                 }
             },
@@ -136,7 +151,7 @@ def build_workflow_dict(
                     "samples_from": ["2", 0],
                     "x": pos_x_lat,
                     "y": pos_y_lat,
-                    "feather": 1,
+                    "feather": 0,
                     "tiled": False
                 }
             },
@@ -434,6 +449,7 @@ async def generate(
     file: UploadFile = File(...),
     prompt: str = Form("Framed artwork hanging on a bedroom wall with soft natural lighting, modern interior design, clean minimal decor"),
     negative: str = Form("blurry, low detail, distorted, bad framing, artifacts"),
+    model: str = Form("flux1-dev-fp8.safetensors"),
     canvas_w: int = Form(1024),
     canvas_h: int = Form(1024),
     art_w: int = Form(512),
@@ -453,26 +469,22 @@ async def generate(
         orig_w, orig_h = img.size
         logger.info(f"✅ Image validated: {img.size}, mode: {img.mode}")
         
-        # Calculate aspect-preserving dimensions for artwork
-        if orig_w > orig_h:  # Landscape
-            scaled_w = art_w
-            scaled_h = int((orig_h / orig_w) * art_w)
-        else:  # Portrait or square
-            scaled_h = art_h  
-            scaled_w = int((orig_w / orig_h) * art_h)
-            
-        # Ensure minimum size
-        if scaled_w < 64: scaled_w = 64
-        if scaled_h < 64: scaled_h = 64
+        # Letterbox scaling to 512x512 with aspect ratio preservation
+        target_size = 512
+        scale_factor = min(target_size / orig_w, target_size / orig_h)
+        scaled_w = int(orig_w * scale_factor)
+        scaled_h = int(orig_h * scale_factor)
         
-        logger.info(f"📐 Aspect ratio preserved: {orig_w}×{orig_h} → {scaled_w}×{scaled_h}")
+        # Calculate padding for centering in 512x512
+        pad_left = (target_size - scaled_w) // 2
+        pad_top = (target_size - scaled_h) // 2
         
-        # Update positioning for different aspect ratios
-        if scaled_w != art_w or scaled_h != art_h:
-            # Recenter artwork position based on new dimensions
-            pos_x = (canvas_w - scaled_w) // 2
-            pos_y = (canvas_h - scaled_h) // 2
-            logger.info(f"📍 Repositioned artwork: ({pos_x}, {pos_y})")
+        logger.info(f"📐 Letterbox scaling: {orig_w}×{orig_h} → {scaled_w}×{scaled_h} in 512×512")
+        logger.info(f"📍 Padding: left={pad_left}, top={pad_top}")
+        
+        # Position on 1024x1024 canvas (centered)
+        pos_x = (canvas_w - target_size) // 2  # Center 512x512 artwork on 1024x1024 canvas
+        pos_y = (canvas_h - target_size) // 2
         
     except Exception as e:
         logger.error(f"❌ Image validation failed: {str(e)}")
@@ -480,16 +492,15 @@ async def generate(
         raise HTTPException(400, f"Invalid image upload: {str(e)}")
 
     art_b64 = to_b64(img_bytes)
-    # Use calculated or default positioning
-    final_pos_x = pos_x if 'pos_x' in locals() else pos_x
-    final_pos_y = pos_y if 'pos_y' in locals() else pos_y
-    
     workflow = build_workflow_dict(
         prompt=prompt, neg_prompt=negative,
         canvas_w=canvas_w, canvas_h=canvas_h,
-        art_b64=art_b64, art_w=scaled_w, art_h=scaled_h,
-        pos_x_px=final_pos_x, pos_y_px=final_pos_y,
-        steps=steps, cfg=cfg, seed=seed
+        art_b64=art_b64, art_w=target_size, art_h=target_size,
+        pos_x_px=pos_x, pos_y_px=pos_y,
+        steps=steps, cfg=cfg, seed=seed,
+        letterbox_w=scaled_w, letterbox_h=scaled_h,
+        pad_left=pad_left, pad_top=pad_top,
+        model=model
     )
 
     try:
