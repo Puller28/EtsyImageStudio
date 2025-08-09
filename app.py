@@ -433,7 +433,7 @@ async def list_models():
 @app.post("/generate")
 async def generate(
     file: UploadFile = File(...),
-    prompt: str = Form("Framed artwork hanging on a bedroom wall with soft natural lighting, modern interior design, clean minimal decor"),
+    prompt: str = Form("Framed print on a gallery wall with spot lighting and minimal decor, clean plaster wall, soft natural light"),
     negative: str = Form("blurry, low detail, distorted, bad framing, artifacts"),
     model: str = Form("flux1-dev-fp8.safetensors"),
     canvas_w: int = Form(1024),
@@ -442,7 +442,7 @@ async def generate(
     art_h: int = Form(512),
     pos_x: int = Form(256),
     pos_y: int = Form(256),
-    steps: int = Form(20),
+    steps: int = Form(22),
     cfg: float = Form(6.5),
     seed: int = Form(1234567),
     poll_seconds: int = Form(60),

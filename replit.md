@@ -43,6 +43,7 @@ EtsyArt Pro is a comprehensive web application designed specifically for Etsy AI
 ✅ **ComfyUI Workflow Execution Successful** - User's exact workflow now executing successfully on RunPod ComfyUI 5.2.0 with LoadImage → ImageScale → VAEEncode → LatentComposite → VAEDecode → SaveImage pipeline producing bedroom mockups with artwork preserved exactly as uploaded
 ✅ **Letterbox + Feather=0 Implementation Complete** - Successfully implemented letterbox scaling with aspect ratio preservation, VAEEncode and LatentComposite onto 1024×1024 generated room with feather=0 for sharp artwork edges, pixel→latent coordinate conversion (/8), no sampler after composite for direct VAEDecode output using only standard ComfyUI nodes compatible with RunPod 5.2.0
 ✅ **Model Switching Capability Added** - Added dynamic model selection parameter allowing testing of Realistic Vision, DreamShaper, and other photorealistic models for enhanced bedroom generation quality compared to FLUX
+✅ **Optimized Gallery Prompts Implemented** - Integrated tested prompts: "Framed print on a gallery wall with spot lighting and minimal decor, clean plaster wall, soft natural light" with negative "blurry, low detail, distorted, bad framing, artifacts", steps 20-24, CFG 6.0-7.0, denoise=1.0 on background sampler only for professional gallery aesthetic
 
 ## User Preferences
 
