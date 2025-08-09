@@ -82,7 +82,7 @@ def build_workflow_dict(
                     "width": art_w,
                     "height": art_h,
                     "upscale_method": "lanczos",
-                    "crop": "center"
+                    "crop": "disabled"
                 }
             },
             "2": {
@@ -398,10 +398,41 @@ async def detailed_status():
     
     return status
 
+@app.get("/models")
+async def list_models():
+    """List available models on RunPod ComfyUI instance"""
+    if MOCK_MODE:
+        return {
+            "models": [
+                "flux1-dev-fp8.safetensors",
+                "realisticVision51_v51VAE.safetensors", 
+                "dreamshaper_8.safetensors",
+                "sdxl_base_1.0.safetensors"
+            ]
+        }
+    
+    try:
+        # Try to get model list from RunPod ComfyUI API
+        headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+        
+        # This is a placeholder - RunPod ComfyUI doesn't have a standard models endpoint
+        # We'll need to check what models are actually available through trial or documentation
+        
+        return {
+            "models": [
+                "flux1-dev-fp8.safetensors",  # Current model
+                "Unknown - need to check RunPod ComfyUI 5.2.0 documentation"
+            ],
+            "note": "Model list requires checking RunPod ComfyUI 5.2.0 instance directly"
+        }
+        
+    except Exception as e:
+        return {"error": f"Could not fetch models: {str(e)}"}
+
 @app.post("/generate")
 async def generate(
     file: UploadFile = File(...),
-    prompt: str = Form("Framed print of a coffee shop hanging on a bedroom wall with soft natural light and elegant decor"),
+    prompt: str = Form("Framed artwork hanging on a bedroom wall with soft natural lighting, modern interior design, clean minimal decor"),
     negative: str = Form("blurry, low detail, distorted, bad framing, artifacts"),
     canvas_w: int = Form(1024),
     canvas_h: int = Form(1024),
@@ -419,18 +450,45 @@ async def generate(
     
     try:
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        orig_w, orig_h = img.size
         logger.info(f"✅ Image validated: {img.size}, mode: {img.mode}")
+        
+        # Calculate aspect-preserving dimensions for artwork
+        if orig_w > orig_h:  # Landscape
+            scaled_w = art_w
+            scaled_h = int((orig_h / orig_w) * art_w)
+        else:  # Portrait or square
+            scaled_h = art_h  
+            scaled_w = int((orig_w / orig_h) * art_h)
+            
+        # Ensure minimum size
+        if scaled_w < 64: scaled_w = 64
+        if scaled_h < 64: scaled_h = 64
+        
+        logger.info(f"📐 Aspect ratio preserved: {orig_w}×{orig_h} → {scaled_w}×{scaled_h}")
+        
+        # Update positioning for different aspect ratios
+        if scaled_w != art_w or scaled_h != art_h:
+            # Recenter artwork position based on new dimensions
+            pos_x = (canvas_w - scaled_w) // 2
+            pos_y = (canvas_h - scaled_h) // 2
+            logger.info(f"📍 Repositioned artwork: ({pos_x}, {pos_y})")
+        
     except Exception as e:
         logger.error(f"❌ Image validation failed: {str(e)}")
         logger.error(f"📋 File details - filename: {file.filename}, content_type: {file.content_type}, size: {len(img_bytes)}")
         raise HTTPException(400, f"Invalid image upload: {str(e)}")
 
     art_b64 = to_b64(img_bytes)
+    # Use calculated or default positioning
+    final_pos_x = pos_x if 'pos_x' in locals() else pos_x
+    final_pos_y = pos_y if 'pos_y' in locals() else pos_y
+    
     workflow = build_workflow_dict(
         prompt=prompt, neg_prompt=negative,
         canvas_w=canvas_w, canvas_h=canvas_h,
-        art_b64=art_b64, art_w=art_w, art_h=art_h,
-        pos_x_px=pos_x, pos_y_px=pos_y,
+        art_b64=art_b64, art_w=scaled_w, art_h=scaled_h,
+        pos_x_px=final_pos_x, pos_y_px=final_pos_y,
         steps=steps, cfg=cfg, seed=seed
     )
 
