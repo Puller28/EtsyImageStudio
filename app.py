@@ -57,9 +57,11 @@ def build_workflow_dict(
     pos_x_lat = round(pos_x_px / 8)
     pos_y_lat = round(pos_y_px / 8)
 
-    # Your exact workflow JSON with placeholders replaced
-    return {
-        "workflow": {
+    # Determine file extension based on image format
+    filename = "art.jpg" if art_b64.startswith("/9j/") else "art.png"
+    
+    # RunPod format: workflow nodes directly at top level with images array
+    workflow_nodes = {
             "100": {
                 "class_type": "CheckpointLoaderSimple",
                 "inputs": {
@@ -69,8 +71,8 @@ def build_workflow_dict(
             "0": {
                 "class_type": "LoadImage",
                 "inputs": {
-                    "image": art_b64,
-                    "upload": True
+                    "image": filename,
+                    "upload": False
                 }
             },
             "1": {
@@ -79,7 +81,8 @@ def build_workflow_dict(
                     "image": ["0", 0],
                     "width": art_w,
                     "height": art_h,
-                    "upscale_method": "lanczos"
+                    "upscale_method": "lanczos",
+                    "crop": "center"
                 }
             },
             "2": {
@@ -152,6 +155,15 @@ def build_workflow_dict(
                 }
             }
         }
+    
+    return {
+        "images": [
+            {
+                "name": filename,
+                "image": art_b64  # Raw base64, no data:image prefix
+            }
+        ],
+        "workflow": workflow_nodes
     }
 
 async def submit_job_with_retry(payload: Dict[str, Any], max_retries: int = 3) -> str:
@@ -423,7 +435,19 @@ async def generate(
     )
 
     try:
-        logger.info(f"🔧 Submitting your exact workflow with {len(workflow['workflow'])} nodes")
+        logger.info(f"🔧 Submitting RunPod format with {len(workflow['workflow'])} nodes and {len(workflow['images'])} images")
+        
+        # Debug: Check workflow construction
+        logger.info(f"🔍 Workflow type: {type(workflow)}")
+        logger.info(f"🔍 Workflow keys: {list(workflow.keys()) if isinstance(workflow, dict) else 'not dict'}")
+        
+        # Ensure correct images format  
+        if 'images' in workflow and workflow['images']:
+            img = workflow['images'][0]
+            logger.info(f"🔍 Image object keys: {list(img.keys())}")
+            logger.info(f"🔍 Has name key: {'name' in img}")
+            logger.info(f"🔍 Has image key: {'image' in img}")
+        
         job_id = await submit_job_with_retry(workflow)
         logger.info(f"✅ Job submitted successfully: {job_id}")
         result = await poll_job_async(job_id, timeout_sec=poll_seconds)
