@@ -17,7 +17,8 @@ import DownloadAssets from "@/components/download-assets";
 import RecentProjects from "@/components/recent-projects";
 import { ComfyUITest } from "@/components/comfyui-test";
 import { Button } from "@/components/ui/button";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Home, Palette } from "lucide-react";
+import { Link } from "wouter";
 
 interface UploadedImage {
   file: File;
@@ -434,7 +435,7 @@ export default function Dashboard() {
                   <h2 className="text-2xl font-bold text-gray-900">Start Your Etsy Art Project</h2>
                   <p className="text-gray-600">Choose how you want to begin:</p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button
                       onClick={() => setShowAIGenerator(true)}
                       className="p-6 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors duration-200 group"
@@ -474,6 +475,23 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </button>
+
+                    <Link href="/template-mockups">
+                      <button
+                        className="w-full p-6 border-2 border-dashed border-green-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors duration-200 group"
+                        data-testid="button-template-mockups"
+                      >
+                        <div className="flex flex-col items-center space-y-3">
+                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200">
+                            <Home className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900">Template Mockups</h3>
+                            <p className="text-sm text-gray-500">5 room templates via API</p>
+                          </div>
+                        </div>
+                      </button>
+                    </Link>
 
                     <button
                       onClick={() => setShowComfyUITest(true)}
