@@ -15,7 +15,7 @@ import EtsyListingGenerator from "@/components/etsy-listing-generator";
 import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
 import RecentProjects from "@/components/recent-projects";
-import { ComfyUITest } from "@/components/comfyui-test";
+
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Home, Palette } from "lucide-react";
 import { Link } from "wouter";
@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showUploadMode, setShowUploadMode] = useState(false);
-  const [showComfyUITest, setShowComfyUITest] = useState(false);
+
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
 
@@ -429,13 +429,13 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {!uploadedImage && !showAIGenerator && !showUploadMode && !showComfyUITest && (
+            {!uploadedImage && !showAIGenerator && !showUploadMode && (
               <div className="bg-white rounded-lg shadow-sm p-8">
                 <div className="text-center space-y-6">
                   <h2 className="text-2xl font-bold text-gray-900">Start Your Etsy Art Project</h2>
                   <p className="text-gray-600">Choose how you want to begin:</p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <button
                       onClick={() => setShowAIGenerator(true)}
                       className="p-6 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors duration-200 group"
@@ -493,23 +493,7 @@ export default function Dashboard() {
                       </button>
                     </Link>
 
-                    <button
-                      onClick={() => setShowComfyUITest(true)}
-                      className="p-6 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors duration-200 group"
-                      data-testid="button-comfyui-test"
-                    >
-                      <div className="flex flex-col items-center space-y-3">
-                        <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center group-hover:bg-orange-200">
-                          <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">ComfyUI MVP</h3>
-                          <p className="text-sm text-gray-500">Test AI mockup generation</p>
-                        </div>
-                      </div>
-                    </button>
+
                   </div>
                 </div>
               </div>
@@ -533,25 +517,7 @@ export default function Dashboard() {
               />
             )}
 
-            {showComfyUITest && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={() => {
-                      setShowComfyUITest(false);
-                      setShowAIGenerator(false);
-                      setShowUploadMode(false);
-                    }}
-                    variant="outline"
-                    data-testid="button-back-to-home"
-                  >
-                    ← Back to Home
-                  </Button>
-                  <h2 className="text-xl font-semibold">ComfyUI Mockup Generation MVP</h2>
-                </div>
-                <ComfyUITest />
-              </div>
-            )}
+
 
             {uploadedImage && (
               <ImageUpload
