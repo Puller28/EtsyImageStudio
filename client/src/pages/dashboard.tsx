@@ -417,14 +417,14 @@ export default function Dashboard() {
   const progress = processingSteps.filter(step => step.status === "completed").length / processingSteps.length * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navigation user={currentUser ? {
         name: currentUser.name,
         avatar: currentUser.avatar || undefined,
         credits: currentUser.credits
       } : undefined} />
       
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex-1">
         <WorkflowProgress currentStep={currentStep} hasActiveProject={!!currentProject} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
