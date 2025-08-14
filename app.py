@@ -14,8 +14,8 @@ load_dotenv()
 # Environment configuration - no network calls at import time
 API_KEY = os.getenv("RUNPOD_API_KEY")
 ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
-RENDER_API_URL = os.getenv("RENDER_API_URL", "https://your-render-api.onrender.com")
-MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"  # Enable mock mode by default
+RENDER_API_URL = os.getenv("RENDER_API_URL", "https://mockup-api-cv83.onrender.com")
+MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"  # Try real API first
 
 # Build URLs only if endpoint is configured
 # ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
@@ -467,7 +467,7 @@ async def generate_template_mockups(
         img_bytes = await file.read()
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         logger.info(f"📋 Template mockup request: mode={mode}, template={template}, image={img.size}")
-    logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
+        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
     except Exception as e:
         raise HTTPException(400, f"Invalid image upload: {str(e)}")
     
@@ -516,10 +516,14 @@ async def generate_template_mockups(
             }
         else:
             # Real API call to Render service (when not in mock mode)
+            logger.info(f"🌐 Calling real API: {RENDER_API_URL}")
             try:
+                # Choose the correct endpoint based on mode
+                endpoint = "/outpaint/mockup_single" if mode == "single_template" else "/outpaint/mockup"
+                
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
-                        f"{RENDER_API_URL}/generate-mockups",
+                        f"{RENDER_API_URL}{endpoint}",
                         json=payload,
                         timeout=aiohttp.ClientTimeout(total=120)
                     ) as response:
