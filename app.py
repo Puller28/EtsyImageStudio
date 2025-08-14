@@ -15,7 +15,7 @@ load_dotenv()
 API_KEY = os.getenv("RUNPOD_API_KEY")
 ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
 RENDER_API_URL = os.getenv("RENDER_API_URL", "https://mockup-api-cv83.onrender.com")
-MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"  # Try real API first
+MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"  # Use mock for development
 
 # Build URLs only if endpoint is configured
 # ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
@@ -464,15 +464,47 @@ async def generate_template_mockups(
     
     # Read and validate image
     try:
+        # Reset file pointer and read
+        await file.seek(0)
         img_bytes = await file.read()
+        
+        # Validate image by opening it
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         logger.info(f"📋 Template mockup request: mode={mode}, template={template}, image={img.size}")
         logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
     except Exception as e:
         raise HTTPException(400, f"Invalid image upload: {str(e)}")
     
-    # Convert image to base64 for API transmission
-    img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+    # Check file size and compress if needed
+    file_size_mb = len(img_bytes) / (1024 * 1024)
+    logger.info(f"📏 Image size: {file_size_mb:.2f}MB")
+    
+    if file_size_mb > 1.0:
+        logger.info("📦 Image > 1MB, compressing via Render API...")
+        try:
+            # Use the fit_under_1mb endpoint to reduce file size
+            img_b64_large = base64.b64encode(img_bytes).decode('utf-8')
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{RENDER_API_URL}/utils/fit_under_1mb",
+                    json={"image": img_b64_large, "format": "base64"},
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as response:
+                    
+                    if response.status == 200:
+                        compress_result = await response.json()
+                        img_b64 = compress_result.get("image", img_b64_large)
+                        logger.info("✅ Image compressed successfully")
+                    else:
+                        logger.warning(f"⚠️ Compression failed ({response.status}), using original image")
+                        img_b64 = img_b64_large
+        except Exception as e:
+            logger.warning(f"⚠️ Compression error: {str(e)}, using original image")
+            img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+    else:
+        # Image is already under 1MB
+        img_b64 = base64.b64encode(img_bytes).decode('utf-8')
     
     try:
         # Prepare request to Render API
@@ -484,7 +516,7 @@ async def generate_template_mockups(
         }
         
         # Check if we should use mock mode or real API
-        if MOCK_MODE or not RENDER_API_URL or "your-render-api" in RENDER_API_URL:
+        if MOCK_MODE:
             logger.info("🧪 MOCK MODE: Simulating template mockup generation")
             mockups = []
             
@@ -521,10 +553,22 @@ async def generate_template_mockups(
                 # Choose the correct endpoint based on mode
                 endpoint = "/outpaint/mockup_single" if mode == "single_template" else "/outpaint/mockup"
                 
+                # Prepare multipart form data for the real API
+                form_data = aiohttp.FormData()
+                
+                # Convert base64 back to bytes for file upload
+                img_bytes_final = base64.b64decode(img_b64)
+                form_data.add_field('file', img_bytes_final, 
+                                  filename='artwork.jpg', 
+                                  content_type='image/jpeg')
+                
+                if mode == "single_template" and template:
+                    form_data.add_field('template', template)
+                
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
                         f"{RENDER_API_URL}{endpoint}",
-                        json=payload,
+                        data=form_data,
                         timeout=aiohttp.ClientTimeout(total=120)
                     ) as response:
                         
