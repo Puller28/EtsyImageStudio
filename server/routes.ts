@@ -1224,7 +1224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers: {
           ...formData.getHeaders(),
         },
-        timeout: 180000, // 3 minutes
+        timeout: 300000, // 5 minutes
       });
 
       res.json(response.data);
