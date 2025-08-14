@@ -580,10 +580,13 @@ async def generate_template_mockups(
                     ) as response:
                         
                         if response.status == 200:
+                            result = await response.json()
+                            logger.info(f"🎯 API result type: {type(result)}")
+                            mockups = []
+                            
                             # Handle both single and multi-mockup API responses
                             if mode == "single_template":
                                 # Single mockup returns direct image data
-                                result = await response.json()
                                 mockup_data = {
                                     "template": template,
                                     "variation": 1,
@@ -593,8 +596,6 @@ async def generate_template_mockups(
                                 mockups = [mockup_data]
                             else:
                                 # Multi-mockup returns array of results
-                                result = await response.json()
-                                mockups = []
                                 if isinstance(result, list):
                                     for i, item in enumerate(result):
                                         mockups.append({
