@@ -19,6 +19,7 @@ import RecentProjects from "@/components/recent-projects";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Home, Palette } from "lucide-react";
 import { Link } from "wouter";
+import { Footer } from "@/components/footer";
 
 interface UploadedImage {
   file: File;
@@ -614,6 +615,7 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

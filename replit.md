@@ -47,6 +47,8 @@ EtsyArt Pro is a comprehensive web application designed specifically for Etsy AI
 ✅ **Template-Based Mockup System Complete** - Successfully implemented new architecture using Render-hosted API at https://mockup-api-cv83.onrender.com with 5 room templates (living_room, bedroom, study, gallery, kitchen) and two generation modes: single_template (5 variations) or all_templates (1 from each), replacing ComfyUI workflow approach with simpler template selection system
 ✅ **Smart Image Compression Integration** - Added automatic file size checking and compression via /utils/fit_under_1mb endpoint for images over 1MB before mockup generation, ensuring optimal API performance and compatibility
 ✅ **Real API Integration Complete** - Updated to use official Render API parameters: 'style' for single mockups, 'styles' + 'variants' for multiple, return_format=json for structured responses, matching the documented /outpaint/mockup_single and /outpaint/mockup endpoints
+✅ **Timeout Configuration Fixed** - Increased Express.js timeout from 3 minutes to 5 minutes (300,000ms) for template mockup generation, eliminating timeout errors and ensuring successful completion of image processing requests
+✅ **Company Information Pages Added** - Implemented complete set of business pages including About Us (mission and story), Terms of Service (6 sections), Privacy Policy (5 sections), and Contact Us (with working contact form), all with proper navigation and footer integration
 
 ## User Preferences
 

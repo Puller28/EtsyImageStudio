@@ -11,6 +11,10 @@ import BuyCredits from "@/pages/buy-credits";
 import PaymentCallback from "@/pages/payment-callback";
 import NotFound from "@/pages/not-found";
 import TemplateMockupPage from "@/pages/template-mockup-page";
+import AboutUsPage from "@/pages/about-us";
+import TermsOfServicePage from "@/pages/terms-of-service";
+import PrivacyPolicyPage from "@/pages/privacy-policy";
+import ContactPage from "@/pages/contact";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -31,6 +35,10 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/buy-credits" component={BuyCredits} />
       <Route path="/template-mockups" component={TemplateMockupPage} />
+      <Route path="/about-us" component={AboutUsPage} />
+      <Route path="/terms-of-service" component={TermsOfServicePage} />
+      <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+      <Route path="/contact" component={ContactPage} />
       <Route path="/payment-callback/:reference" component={PaymentCallback} />
       <Route path="/payment-callback" component={PaymentCallback} />
       <Route component={NotFound} />
