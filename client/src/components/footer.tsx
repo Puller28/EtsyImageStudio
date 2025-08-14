@@ -15,14 +15,14 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Features & Tools */}
           <div className="space-y-4">
-            <h4 className="font-medium text-foreground">Quick Links</h4>
+            <h4 className="font-medium text-foreground">Features & Tools</h4>
             <div className="space-y-2">
               <div>
-                <Link href="/">
+                <Link href="/features">
                   <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    Dashboard
+                    All Features
                   </span>
                 </Link>
               </div>
@@ -41,9 +41,9 @@ export function Footer() {
                 </Link>
               </div>
               <div>
-                <Link href="/settings">
+                <Link href="/blog">
                   <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    Settings
+                    Blog & Guides
                   </span>
                 </Link>
               </div>

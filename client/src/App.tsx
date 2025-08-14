@@ -15,6 +15,9 @@ import AboutUsPage from "@/pages/about-us";
 import TermsOfServicePage from "@/pages/terms-of-service";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import ContactPage from "@/pages/contact";
+import HomePage from "@/pages/home";
+import FeaturesPage from "@/pages/features";
+import BlogPage from "@/pages/blog";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -23,24 +26,33 @@ function Router() {
   // Debug authentication state
   console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user });
 
-  if (!isAuthenticated) {
-    return <Auth onLogin={(result) => login(result.user, result.token)} />;
-  }
-
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/buy-credits" component={BuyCredits} />
-      <Route path="/template-mockups" component={TemplateMockupPage} />
+      {/* Public routes */}
+      <Route path="/home" component={HomePage} />
+      <Route path="/features" component={FeaturesPage} />
+      <Route path="/blog" component={BlogPage} />
       <Route path="/about-us" component={AboutUsPage} />
       <Route path="/terms-of-service" component={TermsOfServicePage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route path="/contact" component={ContactPage} />
-      <Route path="/payment-callback/:reference" component={PaymentCallback} />
-      <Route path="/payment-callback" component={PaymentCallback} />
+      <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
+      <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      
+      {/* Protected routes */}
+      {isAuthenticated ? (
+        <>
+          <Route path="/" component={Dashboard} />
+          <Route path="/settings" component={Settings} />
+          <Route path="/buy-credits" component={BuyCredits} />
+          <Route path="/template-mockups" component={TemplateMockupPage} />
+          <Route path="/payment-callback/:reference" component={PaymentCallback} />
+          <Route path="/payment-callback" component={PaymentCallback} />
+        </>
+      ) : (
+        <Route path="/" component={HomePage} />
+      )}
+      
       <Route component={NotFound} />
     </Switch>
   );
