@@ -18,6 +18,7 @@ import ContactPage from "@/pages/contact";
 import HomePage from "@/pages/home";
 import FeaturesPage from "@/pages/features";
 import BlogPage from "@/pages/blog";
+import BlogPostPage from "@/pages/blog-post";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/home" component={HomePage} />
       <Route path="/features" component={FeaturesPage} />
       <Route path="/blog" component={BlogPage} />
+      <Route path="/blog/:slug" component={BlogPostPage} />
       <Route path="/about-us" component={AboutUsPage} />
       <Route path="/terms-of-service" component={TermsOfServicePage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />

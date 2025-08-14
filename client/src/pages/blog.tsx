@@ -136,10 +136,12 @@ export default function BlogPage() {
                         {post.readTime}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="group-hover:bg-primary/10" data-testid={`button-read-${post.id}`}>
-                      Read More
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
+                    <Link href={`/blog/${post.slug}`}>
+                      <Button variant="ghost" size="sm" className="group-hover:bg-primary/10" data-testid={`button-read-${post.id}`}>
+                        Read More
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -176,9 +178,11 @@ export default function BlogPage() {
                         day: 'numeric' 
                       })}
                     </span>
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" data-testid={`button-read-${post.id}`}>
-                      Read More
-                    </Button>
+                    <Link href={`/blog/${post.slug}`}>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" data-testid={`button-read-${post.id}`}>
+                        Read More
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
