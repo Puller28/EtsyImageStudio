@@ -15,7 +15,7 @@ load_dotenv()
 API_KEY = os.getenv("RUNPOD_API_KEY")
 ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
 RENDER_API_URL = os.getenv("RENDER_API_URL", "https://mockup-api-cv83.onrender.com")
-MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"  # Use mock for development
+MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"  # Use mock while API is unavailable
 
 # Build URLs only if endpoint is configured
 # ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
@@ -635,7 +635,9 @@ async def generate_template_mockups(
                 raise HTTPException(504, "Template generation timeout")
                     
     except Exception as e:
-        logger.error(f"❌ Template generation failed: {str(e)}")
+        logger.error(f"❌ Template generation failed: {type(e).__name__}: {str(e)}")
+        import traceback
+        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(500, f"Template generation failed: {str(e)}")
 
 @app.post("/generate")
