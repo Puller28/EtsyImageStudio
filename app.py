@@ -1,10 +1,11 @@
 import os, io, base64, time, asyncio, logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Literal
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import requests
+import aiohttp
 from PIL import Image, ImageDraw
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -13,7 +14,8 @@ load_dotenv()
 # Environment configuration - no network calls at import time
 API_KEY = os.getenv("RUNPOD_API_KEY")
 ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
-MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"
+RENDER_API_URL = os.getenv("RENDER_API_URL", "https://your-render-api.onrender.com")
+MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"  # Enable mock mode by default
 
 # Build URLs only if endpoint is configured
 # ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
@@ -429,6 +431,120 @@ async def list_models():
         
     except Exception as e:
         return {"error": f"Could not fetch models: {str(e)}"}
+
+# Template system endpoints
+@app.get("/templates")
+async def list_templates():
+    """List available room templates"""
+    return {
+        "templates": ["living_room", "bedroom", "study", "gallery", "kitchen"],
+        "description": "Available room templates for mockup generation"
+    }
+
+@app.post("/generate-template-mockups")
+async def generate_template_mockups(
+    file: UploadFile = File(...),
+    mode: Literal["single_template", "all_templates"] = Form("single_template"),
+    template: Optional[str] = Form(None),  # Required if mode is "single_template"
+):
+    """
+    Generate mockups using template system via Render API
+    
+    Modes:
+    - single_template: Generate 5 mockups of one template (requires template parameter)
+    - all_templates: Generate 1 mockup from each of the 5 templates
+    """
+    
+    # Validate inputs
+    available_templates = ["living_room", "bedroom", "study", "gallery", "kitchen"]
+    
+    if mode == "single_template":
+        if not template or template not in available_templates:
+            raise HTTPException(400, f"Template required for single_template mode. Available: {available_templates}")
+    
+    # Read and validate image
+    try:
+        img_bytes = await file.read()
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        logger.info(f"📋 Template mockup request: mode={mode}, template={template}, image={img.size}")
+    logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
+    except Exception as e:
+        raise HTTPException(400, f"Invalid image upload: {str(e)}")
+    
+    # Convert image to base64 for API transmission
+    img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+    
+    try:
+        # Prepare request to Render API
+        payload = {
+            "image": img_b64,
+            "mode": mode,
+            "template": template,
+            "format": "base64"
+        }
+        
+        # Check if we should use mock mode or real API
+        if MOCK_MODE or not RENDER_API_URL or "your-render-api" in RENDER_API_URL:
+            logger.info("🧪 MOCK MODE: Simulating template mockup generation")
+            mockups = []
+            
+            if mode == "single_template":
+                # Generate 5 mockups of the selected template
+                for i in range(5):
+                    mockups.append({
+                        "template": template,
+                        "variation": i + 1,
+                        "image": img_b64,  # In real implementation, this would be the mockup
+                        "metadata": {"style": f"{template}_style_{i+1}"}
+                    })
+            else:  # all_templates
+                # Generate 1 mockup from each template
+                for tmpl in available_templates:
+                    mockups.append({
+                        "template": tmpl,
+                        "variation": 1,
+                        "image": img_b64,  # In real implementation, this would be the mockup
+                        "metadata": {"style": f"{tmpl}_default"}
+                    })
+            
+            return {
+                "success": True,
+                "mode": mode,
+                "template": template,
+                "mockups": mockups,
+                "count": len(mockups)
+            }
+        else:
+            # Real API call to Render service (when not in mock mode)
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"{RENDER_API_URL}/generate-mockups",
+                        json=payload,
+                        timeout=aiohttp.ClientTimeout(total=120)
+                    ) as response:
+                        
+                        if response.status == 200:
+                            result = await response.json()
+                            logger.info(f"✅ Template mockups generated successfully: {len(result.get('mockups', []))} images")
+                            return {
+                                "success": True,
+                                "mode": mode,
+                                "template": template,
+                                "mockups": result.get("mockups", []),
+                                "count": len(result.get("mockups", []))
+                            }
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"❌ Render API error {response.status}: {error_text}")
+                            raise HTTPException(500, f"Render API error: {response.status}")
+            except aiohttp.ServerTimeoutError:
+                logger.error("⏰ Render API timeout")
+                raise HTTPException(504, "Template generation timeout")
+                    
+    except Exception as e:
+        logger.error(f"❌ Template generation failed: {str(e)}")
+        raise HTTPException(500, f"Template generation failed: {str(e)}")
 
 @app.post("/generate")
 async def generate(

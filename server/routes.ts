@@ -1189,6 +1189,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Template Mockup endpoints
+  app.get("/api/templates", async (req, res) => {
+    try {
+      const fastApiPort = process.env.FASTAPI_PORT || 8001;
+      const response = await axios.get(`http://127.0.0.1:${fastApiPort}/templates`);
+      res.json(response.data);
+    } catch (error) {
+      console.error("Templates fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch templates" });
+    }
+  });
+
+  app.post("/api/generate-template-mockups", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Prepare form data for FastAPI
+      const formData = new FormData();
+      formData.append("file", req.file.buffer, {
+        filename: req.file.originalname || "artwork.jpg",
+        contentType: req.file.mimetype,
+      });
+      formData.append("mode", req.body.mode || "single_template");
+      
+      if (req.body.template) {
+        formData.append("template", req.body.template);
+      }
+
+      const fastApiPort = process.env.FASTAPI_PORT || 8001;
+      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate-template-mockups`, formData, {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        timeout: 180000, // 3 minutes
+      });
+
+      res.json(response.data);
+    } catch (error) {
+      console.error("Template mockup generation error:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        res.status(error.response.status).json({ error: error.response.data });
+      } else {
+        res.status(500).json({ 
+          error: error instanceof Error ? error.message : "Template mockup generation failed" 
+        });
+      }
+    }
+  });
+
   app.post("/api/comfyui/generate", upload.single("file"), async (req, res) => {
     try {
       if (!req.file) {

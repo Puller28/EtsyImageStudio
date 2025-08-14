@@ -10,6 +10,7 @@ import Settings from "@/pages/settings";
 import BuyCredits from "@/pages/buy-credits";
 import PaymentCallback from "@/pages/payment-callback";
 import NotFound from "@/pages/not-found";
+import TemplateMockupPage from "@/pages/template-mockup-page";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
       <Route path="/settings" component={Settings} />
       <Route path="/buy-credits" component={BuyCredits} />
+      <Route path="/template-mockups" component={TemplateMockupPage} />
       <Route path="/payment-callback/:reference" component={PaymentCallback} />
       <Route path="/payment-callback" component={PaymentCallback} />
       <Route component={NotFound} />
