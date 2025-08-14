@@ -569,11 +569,14 @@ async def generate_template_mockups(
                     form_data.add_field('variants', '1')  # 1 variant per style
                     form_data.add_field('return_format', 'json')
                 
+                logger.info(f"🔗 Request URL: {RENDER_API_URL}{endpoint}")
+                logger.info(f"🎯 Template: {template}, Mode: {mode}")
+                
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
                         f"{RENDER_API_URL}{endpoint}",
                         data=form_data,
-                        timeout=aiohttp.ClientTimeout(total=120)
+                        timeout=aiohttp.ClientTimeout(total=300)  # 5 minutes for mockup generation
                     ) as response:
                         
                         if response.status == 200:
