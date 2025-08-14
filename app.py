@@ -550,20 +550,24 @@ async def generate_template_mockups(
             # Real API call to Render service (when not in mock mode)
             logger.info(f"🌐 Calling real API: {RENDER_API_URL}")
             try:
-                # Choose the correct endpoint based on mode
-                endpoint = "/outpaint/mockup_single" if mode == "single_template" else "/outpaint/mockup"
-                
-                # Prepare multipart form data for the real API
+                # Choose the correct endpoint and prepare form data
                 form_data = aiohttp.FormData()
-                
-                # Convert base64 back to bytes for file upload
                 img_bytes_final = base64.b64decode(img_b64)
                 form_data.add_field('file', img_bytes_final, 
                                   filename='artwork.jpg', 
                                   content_type='image/jpeg')
                 
-                if mode == "single_template" and template:
-                    form_data.add_field('template', template)
+                if mode == "single_template":
+                    # Single mockup endpoint - use 'style' parameter instead of 'template'
+                    endpoint = "/outpaint/mockup_single"
+                    form_data.add_field('style', template)
+                    form_data.add_field('return_format', 'json')  # Get JSON response with image_b64
+                else:
+                    # Multiple mockups endpoint - use 'styles' parameter for all templates
+                    endpoint = "/outpaint/mockup"
+                    form_data.add_field('styles', ','.join(available_templates))
+                    form_data.add_field('variants', '1')  # 1 variant per style
+                    form_data.add_field('return_format', 'json')
                 
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
@@ -573,19 +577,59 @@ async def generate_template_mockups(
                     ) as response:
                         
                         if response.status == 200:
-                            result = await response.json()
-                            logger.info(f"✅ Template mockups generated successfully: {len(result.get('mockups', []))} images")
+                            # Handle both single and multi-mockup API responses
+                            if mode == "single_template":
+                                # Single mockup returns direct image data
+                                result = await response.json()
+                                mockup_data = {
+                                    "template": template,
+                                    "variation": 1,
+                                    "image": result.get("image_b64", ""),
+                                    "metadata": {"style": f"{template}_api_generated"}
+                                }
+                                mockups = [mockup_data]
+                            else:
+                                # Multi-mockup returns array of results
+                                result = await response.json()
+                                mockups = []
+                                if isinstance(result, list):
+                                    for i, item in enumerate(result):
+                                        mockups.append({
+                                            "template": available_templates[i] if i < len(available_templates) else f"template_{i}",
+                                            "variation": 1,
+                                            "image": item.get("image_b64", ""),
+                                            "metadata": {"style": f"api_generated_{i}"}
+                                        })
+                                else:
+                                    # Fallback for unexpected response format
+                                    mockups = [{
+                                        "template": "unknown",
+                                        "variation": 1,
+                                        "image": result.get("image_b64", ""),
+                                        "metadata": {"style": "api_generated"}
+                                    }]
+                            
+                            logger.info(f"✅ Template mockups generated successfully: {len(mockups)} images")
                             return {
                                 "success": True,
                                 "mode": mode,
                                 "template": template,
-                                "mockups": result.get("mockups", []),
-                                "count": len(result.get("mockups", []))
+                                "mockups": mockups,
+                                "count": len(mockups)
                             }
                         else:
                             error_text = await response.text()
-                            logger.error(f"❌ Render API error {response.status}: {error_text}")
-                            raise HTTPException(500, f"Render API error: {response.status}")
+                            logger.error(f"❌ Render API error {response.status}: {error_text[:200]}")
+                            
+                            # Check for specific API issues  
+                            if response.status == 422:
+                                raise HTTPException(400, "Invalid request parameters or image format")
+                            elif response.status == 413:
+                                raise HTTPException(400, "Image file too large, try with smaller image")
+                            elif response.status >= 500:
+                                raise HTTPException(503, "External API temporarily unavailable")
+                            else:
+                                raise HTTPException(500, f"API error ({response.status}): {error_text[:100]}")
             except aiohttp.ServerTimeoutError:
                 logger.error("⏰ Render API timeout")
                 raise HTTPException(504, "Template generation timeout")
