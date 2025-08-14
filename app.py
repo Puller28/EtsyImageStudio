@@ -15,7 +15,7 @@ load_dotenv()
 API_KEY = os.getenv("RUNPOD_API_KEY")
 ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
 RENDER_API_URL = os.getenv("RENDER_API_URL", "https://mockup-api-cv83.onrender.com")
-MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"  # Use mock while API is unavailable
+MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"  # Try real API first
 
 # Build URLs only if endpoint is configured
 # ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
