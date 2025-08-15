@@ -822,6 +822,158 @@ async def batch_generate(
 
     return {"count": len(results), "items": results}
 
+# ======== NEW: /outpaint/mockup ========
+
+@app.post("/outpaint/mockup")
+async def outpaint_mockup(
+    file: UploadFile = File(...),
+    target_px: int = Form(1280),
+    pad_ratio: float = Form(0.3),
+    normalize_ratio: str = Form("normalize_ratio"),
+    mat_pct: float = Form(0),
+    variants: int = Form(5),
+    overlay_original: int = Form(0),
+    overlay_inset_px: int = Form(0),
+    make_print_previews: int = Form(0),
+    ingest_resize: int = Form(1),
+    ingest_max_long_edge: int = Form(1024),
+    return_format: str = Form("zip"),
+    filename: str = Form("mockup_bundle"),
+):
+    """
+    Generate outpainted mockups with default parameters optimized for artwork display
+    
+    Uses the following default parameters for best results:
+    - target_px: 1280 (final output resolution)
+    - pad_ratio: 0.3 (30% padding around artwork)
+    - normalize_ratio: "normalize_ratio" (maintain aspect ratios)
+    - mat_pct: 0 (no matting effect)
+    - variants: 5 (generate 5 different mockup variations)
+    - overlay_original: 0 (don't overlay original)
+    - overlay_inset_px: 0 (no inset overlay)
+    - make_print_previews: 0 (no print previews)
+    - ingest_resize: 1 (resize input if needed)
+    - ingest_max_long_edge: 1024 (max input size)
+    - return_format: "zip" (return as zip file)
+    - filename: "mockup_bundle" (default filename)
+    """
+    
+    # Read and validate image
+    try:
+        await file.seek(0)
+        img_bytes = await file.read()
+        
+        # Validate image by opening it
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        logger.info(f"📋 Outpaint mockup request: {img.size}, variants={variants}, target_px={target_px}")
+        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
+    except Exception as e:
+        raise HTTPException(400, f"Invalid image upload: {str(e)}")
+    
+    # Check file size and compress if needed
+    file_size_mb = len(img_bytes) / (1024 * 1024)
+    logger.info(f"📏 Image size: {file_size_mb:.2f}MB")
+    
+    if file_size_mb > 1.0:
+        logger.info("📦 Image > 1MB, compressing via Render API...")
+        try:
+            # Use the fit_under_1mb endpoint to reduce file size
+            img_b64_large = base64.b64encode(img_bytes).decode('utf-8')
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{RENDER_API_URL}/utils/fit_under_1mb",
+                    json={"image": img_b64_large, "format": "base64"},
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as response:
+                    
+                    if response.status == 200:
+                        compress_result = await response.json()
+                        img_b64 = compress_result.get("image", img_b64_large)
+                        logger.info("✅ Image compressed successfully")
+                    else:
+                        logger.warning(f"⚠️ Compression failed ({response.status}), using original image")
+                        img_b64 = img_b64_large
+        except Exception as e:
+            logger.warning(f"⚠️ Compression error: {str(e)}, using original image")
+            img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+    else:
+        img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+    
+    # Mock mode for development/testing
+    if MOCK_MODE:
+        logger.info("🎭 MOCK MODE: Simulating outpaint mockup generation...")
+        await asyncio.sleep(2)  # Simulate processing time
+        
+        return {
+            "success": True,
+            "message": f"Mock outpaint mockup generation completed (variants={variants})",
+            "mock": True,
+            "parameters": {
+                "target_px": target_px,
+                "pad_ratio": pad_ratio,
+                "normalize_ratio": normalize_ratio,
+                "mat_pct": mat_pct,
+                "variants": variants,
+                "overlay_original": overlay_original,
+                "overlay_inset_px": overlay_inset_px,
+                "make_print_previews": make_print_previews,
+                "ingest_resize": ingest_resize,
+                "ingest_max_long_edge": ingest_max_long_edge,
+                "return_format": return_format,
+                "filename": filename
+            },
+            "download_url": "/mock-download-url",
+            "processing_time": "2.1s"
+        }
+    
+    # Real API call to Render outpaint endpoint
+    try:
+        payload = {
+            "image": img_b64,
+            "target_px": target_px,
+            "pad_ratio": pad_ratio,
+            "normalize_ratio": normalize_ratio,
+            "mat_pct": mat_pct,
+            "variants": variants,
+            "overlay_original": overlay_original,
+            "overlay_inset_px": overlay_inset_px,
+            "make_print_previews": make_print_previews,
+            "ingest_resize": ingest_resize,
+            "ingest_max_long_edge": ingest_max_long_edge,
+            "return_format": return_format,
+            "filename": filename
+        }
+        
+        logger.info(f"🚀 Calling Render outpaint API with {variants} variants...")
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{RENDER_API_URL}/outpaint/mockup",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=300)  # 5 minute timeout for outpainting
+            ) as response:
+                
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info("✅ Outpaint mockup generation completed successfully")
+                    return {
+                        "success": True,
+                        "result": result,
+                        "parameters": payload
+                    }
+                else:
+                    error_text = await response.text()
+                    logger.error(f"❌ Render API error ({response.status}): {error_text}")
+                    raise HTTPException(response.status, f"Outpaint API error: {error_text}")
+    
+    except asyncio.TimeoutError:
+        logger.error("⏰ Outpaint mockup generation timed out")
+        raise HTTPException(408, "Outpaint mockup generation timed out. Please try again.")
+    except Exception as e:
+        logger.error(f"❌ Outpaint mockup error: {str(e)}")
+        raise HTTPException(500, f"Outpaint mockup generation failed: {str(e)}")
+
 # Helper functions for batch processing
 async def batch_submit_with_prompt(prompt: str, workflow: Dict[str, Any]) -> Dict[str, Any]:
     """Submit a single job and return result with prompt"""
