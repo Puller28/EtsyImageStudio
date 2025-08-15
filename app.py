@@ -397,7 +397,7 @@ async def detailed_status():
         except Exception as e:
             status["runpod_status"] = f"unreachable_{str(e)[:50]}"
     else:
-        status["runpod_status"] = ("mock_mode" if MOCK_MODE else "not_configured")
+        status["runpod_status"] = "mock_mode" if MOCK_MODE else "not_configured"
     
     return status
 
@@ -1001,6 +1001,7 @@ if __name__ == "__main__":
     logger.info(f"📡 RunPod endpoint: {RUN_URL if API_KEY and ENDPOINT_BASE else 'Not configured'}")
     logger.info(f"🔑 API Key present: {bool(API_KEY)}")
     logger.info(f"🎭 Mock mode: {MOCK_MODE}")
+    logger.info(f"🔧 Outpaint mockup endpoint available at /outpaint/mockup")
     
     # Use the exact uvicorn configuration specified by user
     # uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log
