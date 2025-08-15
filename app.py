@@ -929,28 +929,40 @@ async def outpaint_mockup(
     
     # Real API call to Render outpaint endpoint
     try:
-        payload = {
-            "image": img_b64,
-            "target_px": target_px,
-            "pad_ratio": pad_ratio,
-            "normalize_ratio": normalize_ratio,
-            "mat_pct": mat_pct,
-            "variants": variants,
-            "overlay_original": overlay_original,
-            "overlay_inset_px": overlay_inset_px,
-            "make_print_previews": make_print_previews,
-            "ingest_resize": ingest_resize,
-            "ingest_max_long_edge": ingest_max_long_edge,
-            "return_format": return_format,
-            "filename": filename
-        }
-        
         logger.info(f"🚀 Calling Render outpaint API with {variants} variants...")
+        
+        # Prepare form data for multipart upload
+        form_data = aiohttp.FormData()
+        
+        # Convert base64 back to bytes for file upload
+        if 'img_b64' in locals():
+            img_bytes_final = base64.b64decode(img_b64)
+        else:
+            img_bytes_final = img_bytes
+            
+        # Add file as multipart form field
+        form_data.add_field('file', io.BytesIO(img_bytes_final), 
+                           filename=file.filename or 'artwork.jpg',
+                           content_type='image/jpeg')
+        
+        # Add all other parameters as form fields
+        form_data.add_field('target_px', str(target_px))
+        form_data.add_field('pad_ratio', str(pad_ratio))
+        form_data.add_field('normalize_ratio', normalize_ratio)
+        form_data.add_field('mat_pct', str(mat_pct))
+        form_data.add_field('variants', str(variants))
+        form_data.add_field('overlay_original', str(overlay_original))
+        form_data.add_field('overlay_inset_px', str(overlay_inset_px))
+        form_data.add_field('make_print_previews', str(make_print_previews))
+        form_data.add_field('ingest_resize', str(ingest_resize))
+        form_data.add_field('ingest_max_long_edge', str(ingest_max_long_edge))
+        form_data.add_field('return_format', return_format)
+        form_data.add_field('filename', filename)
         
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f"{RENDER_API_URL}/outpaint/mockup",
-                json=payload,
+                data=form_data,
                 timeout=aiohttp.ClientTimeout(total=300)  # 5 minute timeout for outpainting
             ) as response:
                 
@@ -960,7 +972,20 @@ async def outpaint_mockup(
                     return {
                         "success": True,
                         "result": result,
-                        "parameters": payload
+                        "parameters": {
+                            "target_px": target_px,
+                            "pad_ratio": pad_ratio,
+                            "normalize_ratio": normalize_ratio,
+                            "mat_pct": mat_pct,
+                            "variants": variants,
+                            "overlay_original": overlay_original,
+                            "overlay_inset_px": overlay_inset_px,
+                            "make_print_previews": make_print_previews,
+                            "ingest_resize": ingest_resize,
+                            "ingest_max_long_edge": ingest_max_long_edge,
+                            "return_format": return_format,
+                            "filename": filename
+                        }
                     }
                 else:
                     error_text = await response.text()
