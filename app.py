@@ -32,6 +32,10 @@ JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-in-produc
 logger.info(f"🔑 FastAPI JWT Secret: hasCustom={bool(os.getenv('JWT_SECRET'))}, length={len(JWT_SECRET)}")
 
 app = FastAPI()
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "fastapi-mockup-service"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True

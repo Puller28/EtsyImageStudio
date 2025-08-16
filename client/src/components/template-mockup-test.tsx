@@ -107,6 +107,14 @@ export function TemplateMockupTest() {
         }
       });
 
+      // Handle 401 by attempting to refresh authentication
+      if (response.status === 401) {
+        console.log("🔄 Got 401, clearing old token and requesting fresh login...");
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('auth-storage-backup');
+        throw new Error("Authentication expired. Please log in again.");
+      }
+
       clearInterval(progressInterval);
       setProgress(100);
 

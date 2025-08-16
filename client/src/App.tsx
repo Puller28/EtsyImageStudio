@@ -25,7 +25,7 @@ function Router() {
   const { isAuthenticated, login, user } = useAuth();
 
   // Debug authentication state
-  console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user });
+  console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user, currentPath: window.location.pathname });
 
   return (
     <Switch>
@@ -53,7 +53,12 @@ function Router() {
           <Route path="/payment-callback" component={PaymentCallback} />
         </>
       ) : (
-        <Route path="/" component={HomePage} />
+        <>
+          <Route path="/" component={HomePage} />
+          {/* Redirect protected routes to auth for unauthenticated users */}
+          <Route path="/template-mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+          <Route path="/template-mockup" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        </>
       )}
       
       <Route component={NotFound} />
