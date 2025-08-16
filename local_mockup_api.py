@@ -71,7 +71,7 @@ def _ingest_simple_resize(file_bytes: bytes, enable: bool, max_long_edge: int) -
     long_edge = max(w, h)
     if long_edge > max_long_edge:
         s = max_long_edge / float(long_edge)
-        img = img.resize((int(w * s), int(h * s)), Image.LANCZOS)
+        img = img.resize((int(w * s), int(h * s)), Image.Resampling.LANCZOS)
     return img.convert("RGBA")
 
 def _pad_canvas_keep_center(img: Image.Image, pad_ratio: float, target_side: int):
@@ -83,7 +83,7 @@ def _pad_canvas_keep_center(img: Image.Image, pad_ratio: float, target_side: int
     longest = max(img.size)
     if longest < target_side:
         scale = target_side / float(longest)
-        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
+        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.Resampling.LANCZOS)
 
     w, h = img.size
     border = int(pad_ratio * max(w, h))
@@ -175,8 +175,8 @@ def generate_local_mockups(img_bytes: bytes, mode: str, template: str) -> Dict[s
         
         # API-safe size
         api_w, api_h, api_size_str = _api_edit_size_for(canvas.size)
-        canvas_api = canvas.resize((api_w, api_h), Image.LANCZOS)
-        mask_api = mask.resize((api_w, api_h), Image.NEAREST)
+        canvas_api = canvas.resize((api_w, api_h), Image.Resampling.LANCZOS)
+        mask_api = mask.resize((api_w, api_h), Image.Resampling.NEAREST)
         
         n_per_style = 1  # Generate 1 variant per style
         results: List[Dict[str, Any]] = []
@@ -198,7 +198,7 @@ def generate_local_mockups(img_bytes: bytes, mode: str, template: str) -> Dict[s
             for b64 in b64_list:
                 img = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGBA")
                 if img.size != canvas.size:
-                    img = img.resize(canvas.size, Image.LANCZOS)
+                    img = img.resize(canvas.size, Image.Resampling.LANCZOS)
                 
                 # Save processed image as JPEG for smaller file size
                 buf = io.BytesIO()

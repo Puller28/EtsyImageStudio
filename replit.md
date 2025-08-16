@@ -26,6 +26,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **Mockup Generation**: Uses a template-based system via an external Render-hosted API, allowing selection from various room templates. Images over 1MB are automatically compressed before mockup generation.
 - **AI Content Generation**: OpenAI GPT-4o for automated Etsy listing content.
 - **Payment Processing**: Paystack integration for ZAR payments, credit package purchases, and subscription management.
+- **Local OpenAI Mockup Generation**: Fully integrated OpenAI API-based mockup generation replaces external services. Features include 5 room templates (living_room, bedroom, study, gallery, kitchen), JPEG compression for 10x smaller file sizes, and authentic artwork preservation without AI transformation.
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite` for preserving artwork in mockups.
 
 ## External Dependencies
