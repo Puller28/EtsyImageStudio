@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Project, type InsertProject } from "@shared/schema";
-import { users, projects, processedPayments } from "@shared/schema";
+import { type User, type InsertUser, type Project, type InsertProject, type CreditTransaction, type InsertCreditTransaction } from "@shared/schema";
+import { users, projects, processedPayments, creditTransactions } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -28,6 +28,11 @@ export interface IStorage {
   // Payment tracking methods
   isPaymentProcessed(paymentReference: string): Promise<boolean>;
   markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void>;
+
+  // Credit transaction methods
+  createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
+  getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]>;
+  updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }>;
 }
 
 
@@ -36,11 +41,13 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private projects: Map<string, Project>;
   private processedPayments: Set<string>;
+  private creditTransactions: Map<string, CreditTransaction>;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.processedPayments = new Set();
+    this.creditTransactions = new Map();
     
     // Add a demo user
     const demoUser: User = {
@@ -174,6 +181,43 @@ export class MemStorage implements IStorage {
   async markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void> {
     this.processedPayments.add(paymentReference);
   }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const id = randomUUID();
+    const fullTransaction: CreditTransaction = {
+      ...transaction,
+      id,
+      createdAt: new Date(),
+    };
+    this.creditTransactions.set(id, fullTransaction);
+    return fullTransaction;
+  }
+
+  async getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]> {
+    return Array.from(this.creditTransactions.values()).filter(t => t.userId === userId);
+  }
+
+  async updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const newBalance = Math.max(0, user.credits + amount);
+    user.credits = newBalance;
+    this.users.set(userId, user);
+    
+    const transaction = await this.createCreditTransaction({
+      userId,
+      amount,
+      transactionType,
+      description,
+      balanceAfter: newBalance,
+      projectId: projectId || null,
+    });
+    
+    return { newBalance, transaction };
+  }
 }
 
 // Database storage implementation
@@ -271,6 +315,36 @@ export class DatabaseStorage implements IStorage {
       creditsAllocated,
     });
   }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const [creditTransaction] = await db.insert(creditTransactions).values(transaction).returning();
+    return creditTransaction;
+  }
+
+  async getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]> {
+    return await db.select().from(creditTransactions).where(eq(creditTransactions.userId, userId)).orderBy(creditTransactions.createdAt);
+  }
+
+  async updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const newBalance = Math.max(0, user.credits + amount);
+    await this.updateUserCredits(userId, newBalance);
+    
+    const transaction = await this.createCreditTransaction({
+      userId,
+      amount,
+      transactionType,
+      description,
+      balanceAfter: newBalance,
+      projectId: projectId || null,
+    });
+    
+    return { newBalance, transaction };
+  }
 }
 
 // Robust storage with automatic fallback to in-memory when database fails
@@ -359,6 +433,18 @@ class RobustStorage implements IStorage {
 
   async markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void> {
     return this.executeWithFallback(storage => storage.markPaymentProcessed(paymentReference, userId, creditsAllocated));
+  }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    return this.executeWithFallback(storage => storage.createCreditTransaction(transaction));
+  }
+
+  async getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]> {
+    return this.executeWithFallback(storage => storage.getCreditTransactionsByUserId(userId));
+  }
+
+  async updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }> {
+    return this.executeWithFallback(storage => storage.updateUserCreditsWithTransaction(userId, amount, transactionType, description, projectId));
   }
 }
 

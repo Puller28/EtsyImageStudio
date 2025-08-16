@@ -46,6 +46,17 @@ export const processedPayments = pgTable("processed_payments", {
   processedAt: timestamp("processed_at").default(sql`now()`),
 });
 
+export const creditTransactions = pgTable("credit_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  amount: integer("amount").notNull(), // Negative for deductions, positive for additions
+  transactionType: text("transaction_type").notNull(), // "deduction" | "purchase" | "refund"
+  description: text("description").notNull(), // "AI Art Generation", "2x Upscaling", "Mockup Generation", etc.
+  balanceAfter: integer("balance_after").notNull(),
+  projectId: varchar("project_id"), // Optional reference to project
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
@@ -60,7 +71,14 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   styleKeywords: z.string().min(1, "Style keywords are required"),
 });
 
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;

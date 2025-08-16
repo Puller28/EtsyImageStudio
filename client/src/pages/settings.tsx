@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
 
 import Navigation from "@/components/navigation";
+import CreditTransactionHistory from "@/components/credit-transaction-history";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -223,7 +224,8 @@ export default function Settings() {
                   <p>• AI image generation: 2 credits per image</p>
                   <p>• Image upscaling (2x): 1 credit per operation</p>
                   <p>• Image upscaling (4x): 2 credits per operation</p>
-                  <p>• Etsy listing generation: Free with processing</p>
+                  <p>• Etsy listing generation: 1 credit per listing</p>
+                  <p>• Mockup generation: 5 credits per session</p>
                 </div>
 
                 <Separator />
@@ -238,6 +240,9 @@ export default function Settings() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Credit Transaction History */}
+            <CreditTransactionHistory />
 
 
 

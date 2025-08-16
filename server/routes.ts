@@ -119,10 +119,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Deduct credits from user account
+  // Deduct credits from user account with transaction tracking
   app.post("/api/deduct-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { credits } = req.body;
+      const { credits, description = "Credit deduction" } = req.body;
       
       if (!credits || credits <= 0) {
         return res.status(400).json({ error: "Invalid credits amount" });
@@ -139,19 +139,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const newCredits = Math.max(0, user.credits - credits);
-      await storage.updateUserCredits(req.userId!, newCredits);
+      // Use transaction-aware method for credit deduction
+      const result = await storage.updateUserCreditsWithTransaction(
+        req.userId!, 
+        -credits, 
+        "deduction", 
+        description
+      );
       
-      console.log(`💳 Deducted ${credits} credits for mockup generation. User ${req.userId} new balance: ${newCredits}`);
+      console.log(`💳 Deducted ${credits} credits. User ${req.userId} new balance: ${result.newBalance}`);
       
       res.json({ 
         success: true, 
         creditsDeducted: credits,
-        newBalance: newCredits 
+        newBalance: result.newBalance 
       });
     } catch (error) {
       console.error("Error deducting credits:", error);
       res.status(500).json({ error: "Failed to deduct credits" });
+    }
+  });
+
+  // Get credit transaction history
+  app.get("/api/credit-transactions", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const transactions = await storage.getCreditTransactionsByUserId(req.userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Failed to get credit transactions:", error);
+      res.status(500).json({ error: "Failed to get transaction history" });
     }
   });
 
@@ -771,10 +791,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Etsy listing
   app.post("/api/projects/:id/generate-listing", async (req, res) => {
     try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
       const project = await storage.getProject(req.params.id);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
+
+      // Check if user owns the project
+      if (project.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Check if user has enough credits
+      const user = await storage.getUser(userId);
+      if (!user || user.credits < 1) {
+        return res.status(402).json({ error: "Insufficient credits. Need 1 credit for Etsy listing generation." });
+      }
+
+      // Deduct 1 credit and create transaction
+      await storage.updateUserCreditsWithTransaction(
+        userId, 
+        -1, 
+        "deduction", 
+        "Etsy Listing Generation", 
+        project.id
+      );
 
       const { artworkTitle, styleKeywords } = req.body;
       const listing = await generateEtsyListing(artworkTitle, styleKeywords);
@@ -783,6 +828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(listing);
     } catch (error) {
+      console.error("Failed to generate listing:", error);
       res.status(500).json({ error: "Failed to generate listing" });
     }
   });
