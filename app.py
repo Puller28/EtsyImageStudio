@@ -713,25 +713,10 @@ async def generate_single_mockup_endpoint(
         from local_mockup_api import generate_single_mockup
         result = generate_single_mockup(contents, style)
         
-        # Convert to frontend format
-        mockup = {
-            "template": style,
-            "variation": 1,
-            "image": f"data:image/jpeg;base64,{result['image_b64']}",
-            "metadata": {"style": style}
-        }
-        
         logger.info(f"✅ Generated single mockup for style '{style}' using OpenAI API")
         
-        return {
-            "success": True,
-            "style": style,
-            "mockup": mockup,
-            "canvas_size": result["canvas_size"],
-            "art_bbox": result["art_bbox"],
-            "local_generation": True,
-            "openai_model": result["openai_model"]
-        }
+        # Result already has the proper structure from generate_single_mockup
+        return result
         
     except HTTPException:
         raise
