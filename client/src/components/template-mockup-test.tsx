@@ -147,18 +147,34 @@ export function TemplateMockupTest() {
         }
 
         const result = await response.json();
-        console.log(`✅ Generated mockup for ${currentStyle}:`, result.success);
+        console.log(`✅ Generated mockup for ${currentStyle}:`, result);
         
-        if (result.success && result.mockup) {
-          // Adjust variation number for single template mode
-          const variationNum = mode === 'single_template' ? i + 1 : 1;
-          const mockupResult: MockupResult = {
-            ...result.mockup,
-            variation: variationNum
-          };
+        // Handle the new FastAPI response format: {"styles": {"style_name": [{"filename": "...", "image_data": "data:image/jpeg;base64,..."}]}}
+        if (result.styles && typeof result.styles === 'object') {
+          const styleName = Object.keys(result.styles)[0]; // Get first style
+          const styleImages = result.styles[styleName];
           
-          completedResults.push(mockupResult);
-          setResults([...completedResults]); // Show results as they come in
+          if (Array.isArray(styleImages) && styleImages.length > 0) {
+            const imageData = styleImages[0]; // Get first image
+            
+            if (imageData.image_data) {
+              // Extract base64 data from data URL
+              const base64Data = imageData.image_data.replace(/^data:image\/[a-z]+;base64,/, '');
+              
+              const variationNum = mode === 'single_template' ? i + 1 : 1;
+              const mockupResult: MockupResult = {
+                template: currentStyle,
+                variation: variationNum,
+                image: base64Data,
+                metadata: { style: currentStyle }
+              };
+              
+              completedResults.push(mockupResult);
+              setResults([...completedResults]); // Show results as they come in
+            }
+          }
+        } else {
+          console.warn(`⚠️ Unexpected response format for ${currentStyle}:`, result);
         }
 
         // Update progress
