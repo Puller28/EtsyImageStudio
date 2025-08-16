@@ -119,8 +119,15 @@ export function TemplateMockupTest() {
       setProgress(100);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        const errorText = await response.text();
+        console.error("❌ FastAPI Error Response:", { status: response.status, text: errorText });
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || 'Unknown error' };
+        }
+        throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${errorText}`);
       }
 
       const data: ApiResponse = await response.json();
@@ -133,8 +140,10 @@ export function TemplateMockupTest() {
       }
 
     } catch (err) {
-      console.error("Generation error:", err);
-      setError(err instanceof Error ? err.message : "Template mockup generation failed");
+      console.error("❌ Generation error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Template mockup generation failed";
+      console.error("❌ Error details:", errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setProgress(0);
