@@ -133,6 +133,20 @@ async function initializeDatabase() {
       await db.execute(sql`
         ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP;
       `);
+      
+      // Add new columns to projects table for AI-generated images
+      await db.execute(sql`
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+      `);
+      await db.execute(sql`
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_prompt TEXT;
+      `);
+      await db.execute(sql`
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+      `);
+      await db.execute(sql`
+        ALTER TABLE projects ALTER COLUMN upscale_option SET DEFAULT '2x';
+      `);
     })();
     
     await Promise.race([initPromise, timeoutPromise]);

@@ -6,7 +6,7 @@ import axios from "axios";
 import { Readable } from "stream";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertProjectSchema, insertUserSchema, insertContactMessageSchema } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, type Project } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -398,6 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               id: 'demo-user-1',
               email: "sarah@example.com",
               name: "Sarah M.",
+              password: "demo-password-hash", // Add required password field
               avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
               credits: 47,
               subscriptionStatus: "free",
@@ -1069,9 +1070,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUserCreditsWithTransaction(req.userId!, -2, 'AI Art Generation', 'Generated AI artwork');
       console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId}`);
       
+      // Create a project to preserve the AI-generated image since user paid for it
+      const projectId = Math.random().toString(36).substring(2, 15);
+      const project = {
+        userId: req.userId!,
+        title: `ai-generated-artwork`,
+        originalImageUrl: `data:image/jpeg;base64,${base64Image}`,
+        artworkTitle: `AI Generated - ${prompt.slice(0, 30)}${prompt.length > 30 ? '...' : ''}`, // Required field
+        styleKeywords: category || 'ai-generated, digital art', // Required field
+        status: 'ai-generated', // New status for AI-generated images
+        upscaleOption: '2x', // Required field with default value
+        thumbnailUrl: `data:image/jpeg;base64,${base64Image}`, // Use full image as thumbnail
+        aiPrompt: optimizedPrompt, // Store the prompt used
+        metadata: {
+          category: category || 'general',
+          originalPrompt: prompt,
+          aspectRatio: aspectRatio || '1:1'
+        }
+      };
+      
+      await storage.createProject(project);
+      console.log(`📁 Created project ${projectId} for AI-generated artwork`);
+      
       res.json({ 
         image: base64Image,
-        prompt: optimizedPrompt
+        prompt: optimizedPrompt,
+        projectId: projectId // Return project ID so frontend can reference it
       });
       
     } catch (error) {

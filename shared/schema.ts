@@ -33,9 +33,12 @@ export const projects = pgTable("projects", {
     description: string;
   }>(),
   mockupTemplate: text("mockup_template"),
-  upscaleOption: text("upscale_option").notNull(),
-  status: text("status").notNull().default("uploading"), // uploading, processing, completed, failed
+  upscaleOption: text("upscale_option").notNull().default("2x"),
+  status: text("status").notNull().default("uploading"), // uploading, processing, completed, failed, ai-generated
   zipUrl: text("zip_url"),
+  thumbnailUrl: text("thumbnail_url"), // For project previews
+  aiPrompt: text("ai_prompt"), // Store AI generation prompt
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}), // Additional flexible data
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 

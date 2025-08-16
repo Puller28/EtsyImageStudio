@@ -79,9 +79,22 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
                 )}
               </div>
               <h4 className="font-medium text-gray-900 text-sm truncate">{project.title}</h4>
-              <p className="text-xs text-gray-500">
-                {formatDate(project.createdAt)} • {project.status === "completed" ? "Downloaded" : "Processing"}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  {formatDate(project.createdAt)}
+                </p>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  project.status === 'ai-generated' ? 'bg-purple-100 text-purple-800' :
+                  project.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {project.status === 'ai-generated' ? 'AI Generated' :
+                   project.status === 'completed' ? 'Ready' :
+                   project.status === 'processing' ? 'Processing' :
+                   project.status}
+                </span>
+              </div>
             </div>
           ))}
         </div>
