@@ -15,26 +15,24 @@ function getAuthToken(): string | null {
     let authStorageBackup = localStorage.getItem('auth-storage-backup');
     let sessionAuth = sessionStorage.getItem('auth-storage');
     
-    // PRODUCTION DEBUG: Log everything for visibility
-    console.log('🚨 PRODUCTION TOKEN DEBUG:', { 
-      hasStorage: !!authStorage,
-      hasBackupStorage: !!authStorageBackup,
-      hasSessionStorage: !!sessionAuth,
-      storagePreview: authStorage ? authStorage.substring(0, 100) + '...' : 'null',
-      allStorageKeys: Object.keys(localStorage).filter(key => key.includes('auth')),
-      environment: window.location.hostname,
-      isProduction: window.location.hostname.includes('replit.app'),
-      userAgent: navigator.userAgent.substring(0, 50)
-    });
+    // Reduced debug logging for security
+    if (import.meta.env.DEV) {
+      console.log('🔍 Auth Debug:', { 
+        hasStorage: !!authStorage,
+        hasBackupStorage: !!authStorageBackup,
+        hasSessionStorage: !!sessionAuth,
+        environment: window.location.hostname
+      });
+    }
     
     // FORCE all storage locations to be checked
     if (!authStorage && authStorageBackup) {
       authStorage = authStorageBackup;
-      console.warn('🚨 Using backup storage for token');
+      if (import.meta.env.DEV) console.warn('🚨 Using backup storage for token');
     }
     if (!authStorage && sessionAuth) {
       authStorage = sessionAuth;  
-      console.warn('🚨 Using session storage for token');
+      if (import.meta.env.DEV) console.warn('🚨 Using session storage for token');
     }
     
     // Try multiple storage sources for production compatibility
@@ -43,33 +41,41 @@ function getAuthToken(): string | null {
     if (storageToTry) {
       const parsed = JSON.parse(storageToTry);
       const token = parsed.token || parsed.state?.token;
-      console.log('🔍 Parsed Auth Data:', { 
-        hasState: !!parsed.state,
-        hasToken: !!token,
-        hasUser: !!(parsed.user || parsed.state?.user),
-        tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
-        tokenExpiry: token ? 'checking...' : 'no token'
-      });
+      if (import.meta.env.DEV) {
+        console.log('🔍 Parsed Auth Data:', { 
+          hasState: !!parsed.state,
+          hasToken: !!token,
+          hasUser: !!(parsed.user || parsed.state?.user),
+          tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+          tokenExpiry: token ? 'checking...' : 'no token'
+        });
+      }
       
       // Check if token is expired
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const isExpired = payload.exp * 1000 < Date.now();
-          console.log('🔍 Token Status:', {
-            expired: isExpired,
-            expiresAt: new Date(payload.exp * 1000).toISOString(),
-            userId: payload.userId
-          });
+          if (import.meta.env.DEV) {
+            console.log('🔍 Token Status:', {
+              expired: isExpired,
+              expiresAt: new Date(payload.exp * 1000).toISOString(),
+              userId: payload.userId
+            });
+          }
           
           if (isExpired) {
-            console.warn('🔍 Token is expired, clearing authentication');
+            if (import.meta.env.DEV) {
+              console.warn('🔍 Token is expired, clearing authentication');
+            }
             localStorage.removeItem('auth-storage');
             localStorage.removeItem('auth-storage-backup');
             sessionStorage.clear();
             // Force re-authentication for production
             if (window.location.hostname.includes('replit.dev')) {
-              console.log('🔄 Production environment detected, forcing re-authentication');
+              if (import.meta.env.DEV) {
+                console.log('🔄 Production environment detected, forcing re-authentication');
+              }
               window.location.reload();
             }
             return null;
@@ -102,22 +108,15 @@ export async function apiRequest(
     (headers as any).Authorization = `Bearer ${token}`;
   }
   
-  console.log('🚨 PRODUCTION API REQUEST DEBUG:', {
-    method,
-    url,
-    hasToken: !!token,
-    tokenPreview: token ? token.substring(0, 20) + '...' : 'MISSING TOKEN',
-    hasAuthHeader: !!((headers as any).Authorization),
-    fullAuthHeader: token ? `Bearer ${token.substring(0, 20)}...` : 'NO AUTH HEADER',
-    environment: window.location.hostname,
-    allHeaders: Object.keys(headers),
-    isProduction: window.location.hostname.includes('replit.app'),
-    localStorage: {
-      authStorage: !!localStorage.getItem('auth-storage'),
-      authBackup: !!localStorage.getItem('auth-storage-backup'),
-      allKeys: Object.keys(localStorage).filter(k => k.includes('auth'))
-    }
-  });
+  // Reduced API request logging for security
+  if (import.meta.env.DEV) {
+    console.log('🔍 API Request Debug:', {
+      method,
+      url,
+      hasToken: !!token,
+      hasAuthHeader: !!((headers as any).Authorization)
+    });
+  }
 
   // Final verification before sending request
   const finalHeaders = { ...headers };

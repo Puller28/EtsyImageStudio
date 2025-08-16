@@ -79,8 +79,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # JWT Configuration (matching Express.js backend)
-JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production")
-logger.info(f"🔑 FastAPI JWT Secret: hasCustom={bool(os.getenv('JWT_SECRET'))}, length={len(JWT_SECRET)}")
+JWT_SECRET = os.getenv("JWT_SECRET")
+
+if not JWT_SECRET:
+    logger.error("🚨 CRITICAL: JWT_SECRET environment variable is not set!")
+    raise RuntimeError("JWT_SECRET must be configured for security")
+
+logger.info(f"🔑 FastAPI JWT Secret: configured=True, length={len(JWT_SECRET)}")
 
 app = FastAPI()
 
@@ -106,11 +111,7 @@ async def get_current_user(authorization: str = Header(None)):
     logger.info(f"🔍 Extracted token: {token[:20]}...")
     
     try:
-        # First try to decode without verification to see the payload
-        unverified_payload = pyjwt.decode(token, options={"verify_signature": False})
-        logger.info(f"🔍 Unverified JWT payload: {unverified_payload}")
-        
-        # Now decode with verification
+        # Decode with proper verification
         payload = pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = payload.get("userId")
         logger.info(f"🔍 JWT payload: userId={user_id}")
@@ -615,7 +616,8 @@ async def detailed_status():
         "fastapi_running": True,
         "api_key_configured": bool(API_KEY),
         "endpoint_base_configured": bool(ENDPOINT_BASE),
-        "mock_mode": MOCK_MODE
+        "mock_mode": MOCK_MODE,
+        "runpod_status": "not_configured"  # Initialize with default value
     }
     
     # Test RunPod connectivity (non-blocking)
@@ -630,11 +632,11 @@ async def detailed_status():
                 ), 
                 timeout=6.0
             )
-            status["runpod_status"] = "available" if response.status_code < 400 else f"error_{response.status_code}"
+            status["runpod_status"] = "available" if response.status_code < 400 else "error"
         except asyncio.TimeoutError:
             status["runpod_status"] = "timeout"
         except Exception as e:
-            status["runpod_status"] = f"unreachable_{str(e)[:50]}"
+            status["runpod_status"] = "unreachable"
     else:
         status["runpod_status"] = "mock_mode" if MOCK_MODE else "not_configured"
     
@@ -849,7 +851,8 @@ async def generate_template_mockups(
             logger.info(f"🔧 Using integrated local mockup generation")
             try:
                 from local_mockup_api import generate_local_mockups, generate_single_mockup
-                result = generate_local_mockups(base64.b64decode(img_b64), mode, template)
+                template_str = template if template else "living_room"  # Default fallback
+                result = generate_local_mockups(base64.b64decode(img_b64), mode, template_str)
                 
                 # Convert to legacy format for frontend compatibility
                 mockups = []

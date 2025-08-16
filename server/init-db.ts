@@ -11,10 +11,24 @@ async function initializeDatabase() {
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         email TEXT NOT NULL UNIQUE,
         name TEXT NOT NULL,
+        password TEXT NOT NULL,
         avatar TEXT,
         credits INTEGER NOT NULL DEFAULT 100,
         created_at TIMESTAMP DEFAULT now()
       )
+    `);
+
+    // Add password column if it doesn't exist (migration for existing databases)
+    await db.execute(sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS password TEXT
+    `);
+
+    // For development - set a default password for existing users without passwords
+    await db.execute(sql`
+      UPDATE users 
+      SET password = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LFcxhNQx3yEqzl4E6'  
+      WHERE password IS NULL OR password = ''
     `);
     
     // Create projects table

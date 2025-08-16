@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  password: text("password").notNull(), // Added password field for security
   avatar: text("avatar"),
   credits: integer("credits").notNull().default(100),
   subscriptionStatus: text("subscription_status").default("free"), // free, active, cancelled, expired
@@ -70,7 +71,19 @@ export const contactMessages = pgTable("contact_messages", {
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
+  password: true,
   avatar: true,
+});
+
+export const registerUserSchema = createInsertSchema(users).pick({
+  email: true,
+  name: true,
+  password: true,
+});
+
+export const loginUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({

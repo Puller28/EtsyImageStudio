@@ -4,7 +4,12 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('🚨 CRITICAL: JWT_SECRET environment variable is not set!');
+  process.exit(1);
+}
 
 // Log JWT secret info for production debugging (without exposing the actual secret)
 console.log('🔑 JWT Secret configured:', {
@@ -41,16 +46,26 @@ export class AuthService {
   }
 
   static generateToken(userId: string): string {
+    if (!JWT_SECRET) {
+      throw new Error('JWT_SECRET is required');
+    }
     return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
   }
 
   static verifyToken(token: string): { userId: string } | null {
     try {
+      if (!JWT_SECRET) {
+        throw new Error('JWT_SECRET is required');
+      }
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      console.log('🔍 Token verification successful:', { userId: decoded.userId });
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🔍 Token verification successful:', { userId: decoded.userId });
+      }
       return decoded;
     } catch (error) {
-      console.error('🔍 Token verification failed:', error instanceof Error ? error.message : 'Unknown error');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('🔍 Token verification failed:', error instanceof Error ? error.message : 'Unknown error');
+      }
       return null;
     }
   }
@@ -61,12 +76,11 @@ export class AuthService {
       return null; // User not found
     }
 
-    // For now, we'll skip password verification in demo mode
-    // In production, uncomment the following lines:
-    // const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
-    // if (!isPasswordValid) {
-    //   return null; // Invalid password
-    // }
+    // Always verify password for security
+    const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
+    if (!isPasswordValid) {
+      return null; // Invalid password
+    }
 
     const token = this.generateToken(user.id);
     
@@ -86,14 +100,13 @@ export class AuthService {
       throw new Error('User already exists with this email');
     }
 
-    // For now, we'll skip password hashing in demo mode
-    // In production, uncomment the following line:
-    // const hashedPassword = await this.hashPassword(registerData.password);
+    // Always hash passwords for security
+    const hashedPassword = await this.hashPassword(registerData.password);
 
     const user = await storage.createUser({
       name: registerData.name,
       email: registerData.email,
-      // password: hashedPassword, // Add this field to schema in production
+      password: hashedPassword,
     });
 
     const token = this.generateToken(user.id);
@@ -138,39 +151,52 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔍 OptionalAuth Debug:', { 
-    hasToken: !!token, 
-    hasAuthHeader: !!authHeader,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    endpoint: `${req.method} ${req.path}`
-  });
+  // Reduced logging for production security
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔍 OptionalAuth Debug:', { 
+      hasToken: !!token, 
+      hasAuthHeader: !!authHeader,
+      endpoint: `${req.method} ${req.path}`
+    });
+  }
 
   if (token) {
     const decoded = AuthService.verifyToken(token);
     if (decoded) {
       try {
         const user = await storage.getUser(decoded.userId);
-        console.log('🔍 User lookup result:', { userId: decoded.userId, found: !!user });
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('🔍 User lookup result:', { userId: decoded.userId, found: !!user });
+        }
         if (user) {
           req.userId = decoded.userId;
           req.user = user;
-          console.log('🔍 Token auth successful:', req.userId);
-          console.log('🔍 Final auth state:', { userId: req.userId, hasUser: !!req.user });
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('🔍 Token auth successful:', req.userId);
+          }
           return next();
         } else {
-          console.warn('🔍 User not found for token:', decoded.userId);
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('🔍 User not found for token:', decoded.userId);
+          }
         }
       } catch (error) {
-        console.warn('🔍 Token auth failed:', error);
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('🔍 Token auth failed:', error);
+        }
       }
     } else {
-      console.warn('🔍 Token verification failed - invalid or expired token');
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('🔍 Token verification failed - invalid or expired token');
+      }
     }
   }
 
   // Don't use demo user fallback - this was causing users to see other users' data
   // Authentication should fail properly if no valid token is provided
 
-  console.log('🔍 Final auth state:', { userId: req.userId, hasUser: !!req.user });
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔍 Final auth state:', { userId: req.userId, hasUser: !!req.user });
+  }
   next();
 };
