@@ -40,35 +40,48 @@ app.add_middleware(
 
 async def get_current_user(authorization: str = Header(None)):
     """Extract and validate JWT token, return user info"""
+    logger.info(f"🔍 FastAPI Auth Debug: authorization={authorization[:50] if authorization else 'None'}...")
+    
     if not authorization or not authorization.startswith("Bearer "):
+        logger.error("❌ No valid Authorization header")
         raise HTTPException(401, "Authorization header required")
     
     token = authorization.split(" ")[1]
+    logger.info(f"🔍 Extracted token: {token[:20]}...")
     
     try:
         # Decode JWT token
         payload = pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = payload.get("userId")
+        logger.info(f"🔍 JWT payload: userId={user_id}")
         
         if not user_id:
+            logger.error("❌ No userId in JWT payload")
             raise HTTPException(401, "Invalid token")
         
         # Make request to Express.js backend to get user info
+        logger.info(f"🔗 Requesting user info from Express.js for userId: {user_id}")
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 "http://localhost:5000/api/user",
                 headers={"Authorization": authorization}
             ) as response:
+                response_text = await response.text()
+                logger.info(f"🔍 Express.js response: status={response.status}, body={response_text[:100]}...")
+                
                 if response.status == 200:
-                    user_data = await response.json()
+                    user_data = await response.json() if response_text else None
+                    logger.info(f"✅ User authenticated: {user_data.get('id') if user_data else 'None'}")
                     return user_data
                 else:
+                    logger.error(f"❌ Express.js auth failed: {response.status} - {response_text}")
                     raise HTTPException(401, "User not found")
                     
-    except pyjwt.InvalidTokenError:
+    except pyjwt.InvalidTokenError as e:
+        logger.error(f"❌ JWT decode error: {str(e)}")
         raise HTTPException(401, "Invalid token")
     except Exception as e:
-        logger.error(f"Auth error: {str(e)}")
+        logger.error(f"❌ Auth error: {str(e)}")
         raise HTTPException(401, "Authentication failed")
 
 async def deduct_credits(user_id: str, credits: int, authorization: str):

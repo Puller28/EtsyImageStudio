@@ -94,6 +94,11 @@ export function TemplateMockupTest() {
         throw new Error("Authentication required. Please log in.");
       }
 
+      console.log("🔍 Sending authenticated request to FastAPI:", { 
+        hasToken: !!token, 
+        tokenPreview: token.substring(0, 20) + "..." 
+      });
+      
       const response = await fetch("http://127.0.0.1:8001/generate-template-mockups", {
         method: "POST",
         body: formData,
