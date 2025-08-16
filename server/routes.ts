@@ -879,31 +879,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate standalone Etsy listing (independent of any project)
   app.post("/api/generate-listing", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      console.log("🎯 Etsy listing generation started");
       const userId = req.userId!;
       if (!userId) {
+        console.log("❌ No userId found");
         return res.status(401).json({ error: "Unauthorized" });
       }
+      console.log("✅ UserId:", userId);
 
       // Check if user has enough credits
       const user = await storage.getUser(userId);
+      console.log("👤 User lookup:", { found: !!user, credits: user?.credits });
       if (!user || user.credits < 1) {
         return res.status(402).json({ error: "Insufficient credits. Need 1 credit for Etsy listing generation." });
       }
 
       // Deduct 1 credit and create transaction
+      console.log("💳 Deducting credits...");
       await storage.updateUserCreditsWithTransaction(
         userId, 
         -1, 
         "deduction", 
         "Standalone Etsy Listing Generation"
       );
+      console.log("✅ Credits deducted successfully");
 
       const { artworkTitle, styleKeywords } = req.body;
+      console.log("📝 Request data:", { artworkTitle, styleKeywords });
+      
+      console.log("🤖 Calling generateEtsyListing...");
       const listing = await generateEtsyListing(artworkTitle, styleKeywords);
+      console.log("✅ Listing generated successfully:", listing);
       
       res.json(listing);
     } catch (error) {
-      console.error("Failed to generate standalone listing:", error);
+      console.error("❌ FULL ERROR DETAILS:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        name: error instanceof Error ? error.name : 'Unknown error type',
+        cause: error instanceof Error ? error.cause : undefined
+      });
       res.status(500).json({ error: "Failed to generate listing" });
     }
   });

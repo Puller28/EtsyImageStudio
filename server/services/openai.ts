@@ -11,7 +11,8 @@ export async function generateEtsyListing(artworkTitle: string, styleKeywords: s
   description: string;
 }> {
   try {
-    console.log('Generating Etsy listing for:', { artworkTitle, styleKeywords });
+    console.log('🎨 OpenAI Service: Generating Etsy listing for:', { artworkTitle, styleKeywords });
+    console.log('🔑 OpenAI Service: API key status:', { hasKey: !!process.env.OPENAI_API_KEY, keyLength: process.env.OPENAI_API_KEY?.length });
     
     const prompt = `Create an optimized Etsy listing for a digital art print.
     
@@ -28,6 +29,7 @@ Generate a complete listing with:
 
 Return valid JSON only: {"title": "...", "tags": ["tag1", "tag2", ...], "description": "para1\\n\\npara2\\n\\npara3"}`;
 
+    console.log('🔄 OpenAI Service: Making API call...');
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -39,16 +41,19 @@ Return valid JSON only: {"title": "...", "tags": ["tag1", "tag2", ...], "descrip
       response_format: { type: "json_object" },
       temperature: 0.7,
     });
+    console.log('✅ OpenAI Service: API call successful');
 
-    const content = response.choices[0].message.content;
-    console.log('OpenAI response:', content);
+    const content = response.choices[0]?.message?.content;
+    console.log('📝 OpenAI Service: Raw response:', content);
     
     if (!content) {
+      console.error('❌ OpenAI Service: Empty response from OpenAI');
       throw new Error("Empty response from OpenAI");
     }
     
+    console.log('🔍 OpenAI Service: Parsing JSON...');
     const result = JSON.parse(content);
-    console.log('Parsed result:', result);
+    console.log('✅ OpenAI Service: Parsed result:', result);
     
     return {
       title: result.title || "Digital Art Print - Printable Wall Art Download",
@@ -64,7 +69,12 @@ This versatile piece works great as wall art, in frames, or as part of a gallery
 You'll receive 5 high-resolution files (300 DPI) in multiple sizes, ready for instant download and printing.`
     };
   } catch (error) {
-    console.error("Etsy listing generation failed:", error);
+    console.error("❌ OpenAI Service: Etsy listing generation failed:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      name: error instanceof Error ? error.name : 'Unknown error type',
+      cause: error instanceof Error ? error.cause : undefined
+    });
     throw new Error("Failed to generate Etsy listing: " + (error as Error).message);
   }
 }
