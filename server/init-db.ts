@@ -24,12 +24,9 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS password TEXT
     `);
 
-    // For development - set a default password for existing users without passwords
-    await db.execute(sql`
-      UPDATE users 
-      SET password = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LFcxhNQx3yEqzl4E6'  
-      WHERE password IS NULL OR password = ''
-    `);
+    // Note: Users without passwords will need to use password reset functionality
+    // We removed the hardcoded default password for security reasons
+    // Users can reset their password through the auth system if needed
     
     // Create projects table
     await db.execute(sql`
