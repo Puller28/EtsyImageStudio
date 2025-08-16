@@ -243,6 +243,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to simulate webhook with proper subscription data
+  app.post("/api/debug/simulate-webhook", async (req, res) => {
+    try {
+      const { userId, reference = "test-ref", planId = "pro_monthly" } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId required" });
+      }
+
+      // Simulate a proper Paystack webhook payload with subscription data
+      const mockWebhookPayload = {
+        event: "charge.success",
+        data: {
+          reference: reference,
+          metadata: {
+            planId: planId,
+            credits: "300",
+            userId: userId,
+          },
+          subscription: {
+            subscription_code: `SUB_${Date.now()}`,
+            next_payment_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        }
+      };
+
+      // Process through the same logic as the webhook
+      const { SubscriptionService } = await import("./subscription");
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { reference: ref, metadata, subscription } = mockWebhookPayload.data;
+      
+      // Activate subscription
+      await SubscriptionService.activateSubscription(metadata.userId, {
+        planId: metadata.planId,
+        subscriptionId: subscription.subscription_code,
+        startDate: new Date(),
+        endDate: new Date(subscription.next_payment_date),
+      });
+
+      // Add credits
+      const creditsToAdd = parseInt(metadata.credits);
+      const newCredits = user.credits + creditsToAdd;
+      await storage.updateUserCredits(metadata.userId, newCredits);
+      
+      console.log(`🔧 DEBUG: Simulated webhook activation for user ${userId}`);
+      
+      res.json({ 
+        success: true, 
+        message: "Webhook simulation completed",
+        subscriptionActivated: true,
+        creditsAdded: creditsToAdd,
+        newCreditBalance: newCredits
+      });
+    } catch (error) {
+      console.error("Debug webhook simulation error:", error);
+      res.status(500).json({ error: "Webhook simulation failed" });
+    }
+  });
+
   // Paystack connectivity test endpoint
   app.get("/api/debug/paystack-status", async (req, res) => {
     try {
@@ -551,14 +615,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Paystack webhook endpoint
-  app.post("/api/paystack-webhook", async (req, res) => {
+  // Paystack webhook endpoint - matches production webhook URL configuration
+  app.post("/api/webhook/paystack", async (req, res) => {
     try {
+      console.log(`🔔 Webhook received: ${req.body?.event || 'unknown'} - ${new Date().toISOString()}`);
+      
       const { PaystackService } = await import("./paystack");
       const { SubscriptionService } = await import("./subscription");
       const secret = process.env.PAYSTACK_SECRET_KEY;
       
       if (!secret) {
+        console.error("🔔 Webhook error: No Paystack secret key configured");
         return res.status(500).json({ error: "Paystack secret key not configured" });
       }
 
@@ -568,11 +635,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .update(JSON.stringify(req.body))
         .digest('hex');
 
-      if (hash !== req.headers['x-paystack-signature']) {
+      const providedSignature = req.headers['x-paystack-signature'];
+      if (hash !== providedSignature) {
+        console.error("🔔 Webhook signature mismatch:", { 
+          calculated: hash.substring(0, 20) + '...', 
+          provided: providedSignature?.toString().substring(0, 20) + '...' 
+        });
         return res.status(400).json({ error: "Invalid signature" });
       }
 
       const event = req.body;
+      console.log(`🔔 Webhook signature verified for event: ${event.event}`);
+      
+      if (event.event === 'charge.success') {
+        const { reference, metadata, subscription } = event.data;
+        console.log(`🔔 Processing charge.success webhook:`, {
+          reference,
+          hasMetadata: !!metadata,
+          hasSubscription: !!subscription,
+          planId: metadata?.planId,
+          userId: metadata?.userId,
+          subscriptionCode: subscription?.subscription_code
+        });
+      }
       
       if (event.event === 'charge.success') {
         const { reference, metadata, subscription } = event.data;
