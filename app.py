@@ -1,11 +1,12 @@
 import os, io, base64, time, asyncio, logging
 from typing import Dict, Any, List, Optional, Literal
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Depends
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import requests
 import aiohttp
+import jwt as pyjwt
 from PIL import Image, ImageDraw
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -26,11 +27,70 @@ STATUS_URL = f"{ENDPOINT_BASE}/status" if ENDPOINT_BASE else None
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# JWT Configuration (matching Express.js backend)
+JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production")
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
 )
+
+# ---------- Authentication ----------
+
+async def get_current_user(authorization: str = Header(None)):
+    """Extract and validate JWT token, return user info"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Authorization header required")
+    
+    token = authorization.split(" ")[1]
+    
+    try:
+        # Decode JWT token
+        payload = pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("userId")
+        
+        if not user_id:
+            raise HTTPException(401, "Invalid token")
+        
+        # Make request to Express.js backend to get user info
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "http://localhost:5000/api/user",
+                headers={"Authorization": authorization}
+            ) as response:
+                if response.status == 200:
+                    user_data = await response.json()
+                    return user_data
+                else:
+                    raise HTTPException(401, "User not found")
+                    
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(401, "Invalid token")
+    except Exception as e:
+        logger.error(f"Auth error: {str(e)}")
+        raise HTTPException(401, "Authentication failed")
+
+async def deduct_credits(user_id: str, credits: int, authorization: str):
+    """Deduct credits from user account via Express.js backend"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "http://localhost:5000/api/deduct-credits",
+                headers={"Authorization": authorization, "Content-Type": "application/json"},
+                json={"credits": credits}
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result
+                elif response.status == 400:
+                    error_data = await response.json()
+                    raise HTTPException(400, error_data.get("error", "Insufficient credits"))
+                else:
+                    raise HTTPException(500, "Credit deduction failed")
+    except Exception as e:
+        logger.error(f"Credit deduction error: {str(e)}")
+        raise HTTPException(500, "Credit deduction failed")
 
 # ---------- helpers ----------
 
@@ -446,6 +506,8 @@ async def generate_template_mockups(
     file: UploadFile = File(...),
     mode: Literal["single_template", "all_templates"] = Form("single_template"),
     template: Optional[str] = Form(None),  # Required if mode is "single_template"
+    user: dict = Depends(get_current_user),
+    authorization: str = Header(None)
 ):
     """
     Generate mockups using template system via mockup service
@@ -454,6 +516,16 @@ async def generate_template_mockups(
     - single_template: Generate 5 mockups of one template (requires template parameter)
     - all_templates: Generate 1 mockup from each of the 5 templates
     """
+    
+    # Deduct 5 credits for mockup generation
+    logger.info(f"💳 Deducting 5 credits for template mockup generation from user {user.get('id')}")
+    try:
+        await deduct_credits(user.get('id'), 5, authorization)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Credit deduction failed: {str(e)}")
+        raise HTTPException(500, "Credit deduction failed")
     
     # Validate inputs
     available_templates = ["living_room", "bedroom", "study", "gallery", "kitchen"]
@@ -839,6 +911,8 @@ async def outpaint_mockup(
     ingest_max_long_edge: int = Form(1024),
     return_format: str = Form("zip"),
     filename: str = Form("mockup_bundle"),
+    user: dict = Depends(get_current_user),
+    authorization: str = Header(None)
 ):
     """
     Generate outpainted mockups with default parameters optimized for artwork display
@@ -857,6 +931,16 @@ async def outpaint_mockup(
     - return_format: "zip" (return as zip file)
     - filename: "mockup_bundle" (default filename)
     """
+    
+    # Deduct 5 credits for outpaint mockup generation
+    logger.info(f"💳 Deducting 5 credits for outpaint mockup generation from user {user.get('id')}")
+    try:
+        await deduct_credits(user.get('id'), 5, authorization)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Credit deduction failed: {str(e)}")
+        raise HTTPException(500, "Credit deduction failed")
     
     # Read and validate image
     try:

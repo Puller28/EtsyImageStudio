@@ -76,6 +76,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deduct credits from user account
+  app.post("/api/deduct-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { credits } = req.body;
+      
+      if (!credits || credits <= 0) {
+        return res.status(400).json({ error: "Invalid credits amount" });
+      }
+      
+      const user = await storage.getUser(req.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      if (user.credits < credits) {
+        return res.status(400).json({ 
+          error: `Insufficient credits. Required: ${credits}, Available: ${user.credits}` 
+        });
+      }
+      
+      const newCredits = Math.max(0, user.credits - credits);
+      await storage.updateUserCredits(req.userId!, newCredits);
+      
+      console.log(`💳 Deducted ${credits} credits for mockup generation. User ${req.userId} new balance: ${newCredits}`);
+      
+      res.json({ 
+        success: true, 
+        creditsDeducted: credits,
+        newBalance: newCredits 
+      });
+    } catch (error) {
+      console.error("Error deducting credits:", error);
+      res.status(500).json({ error: "Failed to deduct credits" });
+    }
+  });
+
   // Refresh token endpoint for production authentication issues
   app.post("/api/refresh-auth", async (req, res) => {
     try {
