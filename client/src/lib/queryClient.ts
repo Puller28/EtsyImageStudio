@@ -108,13 +108,15 @@ export async function apiRequest(
     (headers as any).Authorization = `Bearer ${token}`;
   }
   
-  // Reduced API request logging for security
+  // Enhanced API request logging for debugging
   if (import.meta.env.DEV) {
     console.log('🔍 API Request Debug:', {
       method,
       url,
       hasToken: !!token,
-      hasAuthHeader: !!((headers as any).Authorization)
+      hasAuthHeader: !!((headers as any).Authorization),
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+      data: data ? JSON.stringify(data).substring(0, 100) + '...' : 'none'
     });
   }
 

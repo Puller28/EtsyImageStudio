@@ -1,0 +1,164 @@
+2025-08-16 20:39:32.86
+905ef72c
+User
+at async file:///home/runner/workspace/dist/index.js:3700:23
+2025-08-16 20:39:32.86
+905ef72c
+User
+6:39:32 PM [express] POST /api/projects/5407c929-64a3-4118-a14e-a22253d9f240/generate-listing 500 in…
+2025-08-16 20:39:42.66
+905ef72c
+User
+6:39:42 PM [express] GET /api/projects/5407c929-64a3-4118-a14e-a22253d9f240 304 in 7424ms :: {"id":"…
+2025-08-16 20:40:35.86
+905ef72c
+User
+6:40:35 PM [express] GET /api/projects/5407c929-64a3-4118-a14e-a22253d9f240 304 in 6679ms :: {"id":"…
+2025-08-16 20:40:43.90
+905ef72c
+User
+Generating Etsy listing for: { artworkTitle: 'South African Woman', styleKeywords: 'Abstract' }
+2025-08-16 20:40:44.32
+905ef72c
+User
+6:40:44 PM [express] GET /api/projects/5407c929-64a3-4118-a14e-a22253d9f240 304 in 6079ms :: {"id":"…
+2025-08-16 20:40:44.38
+905ef72c
+User
+Etsy listing generation failed: AuthenticationError: 401 Incorrect API key provided: sk-proj-****************************************************************************************************************************************************************************************************************************************************************************************************************************YuYA. You can find your API key at https://platform.openai.com/account/api-keys.
+2025-08-16 20:40:44.38
+905ef72c
+User
+at APIError.generate (file:///home/runner/workspace/node_modules/openai/core/error.mjs:44:20)
+2025-08-16 20:40:44.38
+905ef72c
+User
+at OpenAI.makeStatusError (file:///home/runner/workspace/node_modules/openai/client.mjs:156:32)
+2025-08-16 20:40:44.38
+905ef72c
+User
+at OpenAI.makeRequest (file:///home/runner/workspace/node_modules/openai/client.mjs:301:30)
+2025-08-16 20:40:44.38
+905ef72c
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-08-16 20:40:44.38
+905ef72c
+User
+at async generateEtsyListing (file:///home/runner/workspace/dist/index.js:2387:22)
+2025-08-16 20:40:44.38
+905ef72c
+User
+at async file:///home/runner/workspace/dist/index.js:3700:23 {
+2025-08-16 20:40:44.38
+905ef72c
+User
+status: 401,
+2025-08-16 20:40:44.38
+905ef72c
+User
+headers: Headers {
+2025-08-16 20:40:44.38
+905ef72c
+User
+date: 'Sat, 16 Aug 2025 18:40:44 GMT',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'content-type': 'application/json; charset=utf-8',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'content-length': '578',
+2025-08-16 20:40:44.38
+905ef72c
+User
+connection: 'keep-alive',
+2025-08-16 20:40:44.38
+905ef72c
+User
+vary: 'Origin',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'x-request-id': 'req_ab78fd5d8a2d4a8bae0eeddb16462e4a',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'x-envoy-upstream-service-time': '28',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'cf-cache-status': 'DYNAMIC',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'set-cookie': '__cf_bm=e3N3S7xR_nTOWNvh60qpHeuCuXvc0zKJ0_NhwHZlCB4-1755369644-1.0.1.1-o2mxkXvB6ZqyGqwKWQrPuqp5YOWTnwj80QHQnpg_iMaN7K0BrPc2ERJ0aC8f4h6dMDF3XXirvBE1ZQyrAWICwSNFTsaMnT6drMS01.4azWw; path=/; expires=Sat, 16-Aug-25 19:10:44 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=9RABgOQOuUfTX9lLplnZvFYu4fRRXUl59rdYGuGjtkU-1755369644377-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'x-content-type-options': 'nosniff',
+2025-08-16 20:40:44.38
+905ef72c
+User
+server: 'cloudflare',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'cf-ray': '97030fd2ab609d42-ORD',
+2025-08-16 20:40:44.38
+905ef72c
+User
+'alt-svc': 'h3=":443"; ma=86400'
+2025-08-16 20:40:44.38
+905ef72c
+User
+},
+2025-08-16 20:40:44.38
+905ef72c
+User
+requestID: 'req_ab78fd5d8a2d4a8bae0eeddb16462e4a',
+2025-08-16 20:40:44.38
+905ef72c
+User
+error: {
+2025-08-16 20:40:44.38
+905ef72c
+User
+message: 'Incorrect API key provided: sk-proj-****************************************************************************************************************************************************************************************************************************************************************************************************************************YuYA. You can find your API key at https://platform.openai.com/account/api-keys.',
+2025-08-16 20:40:44.38
+905ef72c
+User
+type: 'invalid_request_error',
+2025-08-16 20:40:44.38
+905ef72c
+User
+param: null,
+2025-08-16 20:40:44.38
+905ef72c
+User
+code: 'invalid_api_key'
+2025-08-16 20:40:44.38
+905ef72c
+User
+},
+2025-08-16 20:40:44.38
+905ef72c
+User
+code: 'invalid_api_key',
+2025-08-16 20:40:44.38
+905ef72c
+User
+param: null,
+2025-08-16 20:40:44.38
+905ef72c
+User
+type: 'invalid_request_error'
+2025-08-16 20:40:44.38
+905ef72c
+User
+}
