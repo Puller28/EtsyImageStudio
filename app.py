@@ -448,7 +448,7 @@ async def generate_template_mockups(
     template: Optional[str] = Form(None),  # Required if mode is "single_template"
 ):
     """
-    Generate mockups using template system via Render API
+    Generate mockups using template system via mockup service
     
     Modes:
     - single_template: Generate 5 mockups of one template (requires template parameter)
@@ -471,7 +471,7 @@ async def generate_template_mockups(
         # Validate image by opening it
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         logger.info(f"📋 Template mockup request: mode={mode}, template={template}, image={img.size}")
-        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
+        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, MOCKUP_API_URL='{RENDER_API_URL}'")
     except Exception as e:
         raise HTTPException(400, f"Invalid image upload: {str(e)}")
     
@@ -480,7 +480,7 @@ async def generate_template_mockups(
     logger.info(f"📏 Image size: {file_size_mb:.2f}MB")
     
     if file_size_mb > 1.0:
-        logger.info("📦 Image > 1MB, compressing via Render API...")
+        logger.info("📦 Image > 1MB, compressing via image service...")
         try:
             # Use the fit_under_1mb endpoint to reduce file size
             img_b64_large = base64.b64encode(img_bytes).decode('utf-8')
@@ -507,7 +507,7 @@ async def generate_template_mockups(
         img_b64 = base64.b64encode(img_bytes).decode('utf-8')
     
     try:
-        # Prepare request to Render API
+        # Prepare request to mockup service
         payload = {
             "image": img_b64,
             "mode": mode,
@@ -547,8 +547,8 @@ async def generate_template_mockups(
                 "count": len(mockups)
             }
         else:
-            # Real API call to Render service (when not in mock mode)
-            logger.info(f"🌐 Calling real API: {RENDER_API_URL}")
+            # Real API call to mockup service (when not in mock mode)
+            logger.info(f"🌐 Calling mockup service: {RENDER_API_URL}")
             try:
                 # Choose the correct endpoint and prepare form data
                 form_data = aiohttp.FormData()
@@ -623,7 +623,7 @@ async def generate_template_mockups(
                             }
                         else:
                             error_text = await response.text()
-                            logger.error(f"❌ Render API error {response.status}: {error_text[:200]}")
+                            logger.error(f"❌ Mockup service error {response.status}: {error_text[:200]}")
                             
                             # Check for specific API issues  
                             if response.status == 422:
@@ -635,7 +635,7 @@ async def generate_template_mockups(
                             else:
                                 raise HTTPException(500, f"API error ({response.status}): {error_text[:100]}")
             except aiohttp.ServerTimeoutError:
-                logger.error("⏰ Render API timeout")
+                logger.error("⏰ Mockup service timeout")
                 raise HTTPException(504, "Template generation timeout")
                     
     except Exception as e:
@@ -866,7 +866,7 @@ async def outpaint_mockup(
         # Validate image by opening it
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         logger.info(f"📋 Outpaint mockup request: {img.size}, variants={variants}, target_px={target_px}")
-        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, RENDER_API_URL='{RENDER_API_URL}'")
+        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, MOCKUP_API_URL='{RENDER_API_URL}'")
     except Exception as e:
         raise HTTPException(400, f"Invalid image upload: {str(e)}")
     
@@ -875,7 +875,7 @@ async def outpaint_mockup(
     logger.info(f"📏 Image size: {file_size_mb:.2f}MB")
     
     if file_size_mb > 1.0:
-        logger.info("📦 Image > 1MB, compressing via Render API...")
+        logger.info("📦 Image > 1MB, compressing via image service...")
         try:
             # Use the fit_under_1mb endpoint to reduce file size
             img_b64_large = base64.b64encode(img_bytes).decode('utf-8')
@@ -927,9 +927,9 @@ async def outpaint_mockup(
             "processing_time": "2.1s"
         }
     
-    # Real API call to Render outpaint endpoint
+    # Real API call to outpaint service endpoint
     try:
-        logger.info(f"🚀 Calling Render outpaint API with {variants} variants...")
+        logger.info(f"🚀 Calling outpaint service with {variants} variants...")
         
         # Prepare form data for multipart upload
         form_data = aiohttp.FormData()

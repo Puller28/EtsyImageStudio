@@ -122,7 +122,7 @@ export function TemplateMockupTest() {
             Template Mockup Generator
           </CardTitle>
           <CardDescription>
-            Generate mockups using predefined room templates via Render API
+            Generate mockups using predefined room templates via our mockup service
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
