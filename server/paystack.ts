@@ -78,44 +78,44 @@ export const subscriptionPlans = [
       '100 credits per month',
       'AI art generation',
       'Image upscaling (2x/4x)',
-      'Canvas mockup templates',
       'Print format resizing',
-      'Etsy listing generation'
+      'Etsy listing generation',
+      'Basic AI tools'
     ]
   },
   {
     id: 'pro_monthly',
     name: 'Pro Plan',
-    credits: 500,
-    usdPrice: 29,
-    zarPrice: 55100,
+    credits: 300,
+    usdPrice: 19.95,
+    zarPrice: 38000,
     interval: 'monthly',
-    description: 'Monthly subscription with 500 credits',
+    description: 'Perfect for regular AI art creators',
     type: 'subscription',
     features: [
-      '500 credits per month',
+      '300 credits per month',
       'All Free plan features',
-      'Higher credit allocation',
-      'Same processing speed',
-      'Same feature access'
+      'AI mockup generation (5 room templates)',
+      'Premium room templates',
+      'Priority processing'
     ],
     paystackPlanCode: 'PLN_7uytu5e4nqtjykj'
   },
   {
     id: 'business_monthly',
     name: 'Business Plan',
-    credits: 1500,
-    usdPrice: 79,
-    zarPrice: 150100,
+    credits: 800,
+    usdPrice: 49,
+    zarPrice: 93100,
     interval: 'monthly',
-    description: 'Monthly subscription with 1500 credits',
+    description: 'For serious Etsy sellers and agencies',
     type: 'subscription',
     features: [
-      '1,500 credits per month',
+      '800 credits per month',
       'All Pro plan features', 
-      'Highest credit allocation',
-      'Same processing speed',
-      'Same feature access'
+      'Bulk mockup generation',
+      'Advanced AI features',
+      'Priority support'
     ],
     paystackPlanCode: 'PLN_rlfsy9bnb8vqwsf'
   }

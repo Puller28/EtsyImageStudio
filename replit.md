@@ -6,6 +6,11 @@ EtsyArt Pro is a comprehensive web application designed for Etsy AI art sellers 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+- **Updated Pricing Structure (August 16, 2025)**: Removed mockup generation from free plan due to high costs (~$3 per set). Mockups now require paid subscription (Pro/Business plans only).
+- **Revised Subscription Plans**: Pro plan reduced from $29/500 credits to $19.95/300 credits for better conversion. Business plan adjusted to $49/800 credits.
+- **Credit Transaction Audit Trail**: Implemented comprehensive transaction tracking with database table and user interface for transparency.
+
 ## System Architecture
 
 ### Frontend Architecture

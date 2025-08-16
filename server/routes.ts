@@ -789,9 +789,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate Etsy listing
-  app.post("/api/projects/:id/generate-listing", async (req, res) => {
+  app.post("/api/projects/:id/generate-listing", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId!;
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
@@ -1318,11 +1318,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Single mockup generation endpoint for sequential processing
-  app.post("/api/generate-single-mockup", upload.single("file"), async (req, res) => {
+  // Single mockup generation endpoint for sequential processing - Requires paid plan
+  app.post("/api/generate-single-mockup", authenticateToken, upload.single("file"), async (req: AuthenticatedRequest, res) => {
     try {
+      const userId = req.userId!;
+      
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Get user and check subscription status
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check if user has a paid plan (not free)
+      if (!user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active') {
+        return res.status(403).json({ 
+          error: "Mockup generation requires a paid plan", 
+          message: "Upgrade to Pro or Business plan to generate AI mockups",
+          requiresUpgrade: true
+        });
+      }
+
+      // Check if user has enough credits
+      if (user.credits < 5) {
+        return res.status(402).json({ 
+          error: "Insufficient credits", 
+          message: "Need 5 credits for mockup generation",
+          creditsNeeded: 5,
+          currentCredits: user.credits
+        });
       }
 
       // Prepare form data for FastAPI
@@ -1355,10 +1382,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-template-mockups", upload.single("file"), async (req, res) => {
+  app.post("/api/generate-template-mockups", authenticateToken, upload.single("file"), async (req: AuthenticatedRequest, res) => {
     try {
+      const userId = req.userId!;
+      
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Get user and check subscription status
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check if user has a paid plan (not free)
+      if (!user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active') {
+        return res.status(403).json({ 
+          error: "Template mockup generation requires a paid plan", 
+          message: "Upgrade to Pro or Business plan to generate template mockups",
+          requiresUpgrade: true
+        });
+      }
+
+      // Check if user has enough credits
+      if (user.credits < 5) {
+        return res.status(402).json({ 
+          error: "Insufficient credits", 
+          message: "Need 5 credits for template mockup generation",
+          creditsNeeded: 5,
+          currentCredits: user.credits
+        });
       }
 
       // Prepare form data for FastAPI
@@ -1377,6 +1431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate-template-mockups`, formData, {
         headers: {
           ...formData.getHeaders(),
+          'Authorization': req.headers.authorization, // Pass through auth
         },
         timeout: 300000, // 5 minutes
       });
