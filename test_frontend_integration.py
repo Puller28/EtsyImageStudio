@@ -10,7 +10,7 @@ Usage:
 
 Example:
 export TEST_EMAIL="test@example.com"
-export TEST_PASSWORD="your-test-password"
+export TEST_PASSWORD="[your-secure-password]"
 python test_frontend_integration.py
 """
 
@@ -43,7 +43,7 @@ def get_auth_token():
     
     if not test_email or not test_password:
         print("❌ TEST_EMAIL and TEST_PASSWORD environment variables are required")
-        print("💡 Set them with: export TEST_EMAIL='your@email.com' TEST_PASSWORD='your-password'")
+        print("💡 Set them with: export TEST_EMAIL='your@email.com' TEST_PASSWORD='[secure-password]'")
         return None
     
     # First, try to register/login to get a token
