@@ -99,7 +99,7 @@ export const subscriptionPlans = [
       'Premium room templates',
       'Priority processing'
     ],
-    paystackPlanCode: 'PLN_7uytu5e4nqtjykj'
+    paystackPlanCode: 'PLN_0yglvnu9bd129yz'
   },
   {
     id: 'business_monthly',
@@ -117,7 +117,7 @@ export const subscriptionPlans = [
       'Suitable for agencies & teams',
       'Best value per credit'
     ],
-    paystackPlanCode: 'PLN_rlfsy9bnb8vqwsf'
+    paystackPlanCode: 'PLN_5tvhdoebxsxhddg'
   }
 ];
 

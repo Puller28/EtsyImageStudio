@@ -7,6 +7,7 @@ Etsy Art & Image Upscaler Pro is a comprehensive AI-powered web application desi
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **Production Deployment Configuration (August 16, 2025)**: Updated Paystack plan IDs to production codes for live deployment. Pro Plan: PLN_0yglvnu9bd129yz, Business Plan: PLN_5tvhdoebxsxhddg. Ready for live payment processing with production Paystack keys.
 - **Website Rebranding (August 16, 2025)**: Rebranded from "EtsyArt Pro" to "Etsy Art & Image Upscaler Pro" for imageupscaler.app deployment. Updated all branding across navigation, titles, descriptions, and marketing copy to emphasize the dual focus on Etsy optimization and professional image upscaling capabilities.
 - **Complete Contact Form System**: Implemented full contact form functionality with database storage, API endpoints, server logging, and admin access via /api/contact-messages endpoint. Replaced simulation with real message storage.
 - **Updated Pricing Structure (August 16, 2025)**: Removed mockup generation from free plan due to high costs (~$3 per set). Mockups now require paid subscription (Pro/Business plans only).
