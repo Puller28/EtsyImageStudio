@@ -581,15 +581,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get current user
           const user = await storage.getUser(metadata.userId);
           if (user) {
-            // Handle subscription activation
-            if (subscription && subscription.subscription_code && metadata.planId) {
+            // Handle subscription activation - check for both recurring and one-time subscription payments
+            if (metadata.planId && (metadata.planId.includes('monthly') || metadata.planId.includes('yearly'))) {
+              let subscriptionId = reference; // Use payment reference as fallback
+              let endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+              
+              // If it's a recurring subscription with subscription_code, use that
+              if (subscription && subscription.subscription_code) {
+                subscriptionId = subscription.subscription_code;
+                endDate = subscription.next_payment_date ? new Date(subscription.next_payment_date) : endDate;
+              }
+              
               await SubscriptionService.activateSubscription(metadata.userId, {
                 planId: metadata.planId,
-                subscriptionId: subscription.subscription_code,
+                subscriptionId: subscriptionId,
                 startDate: new Date(),
-                endDate: subscription.next_payment_date ? new Date(subscription.next_payment_date) : undefined,
+                endDate: endDate,
               });
-              console.log(`✅ Webhook: Activated subscription ${metadata.planId} for user ${metadata.userId}`);
+              console.log(`✅ Webhook: Activated subscription ${metadata.planId} for user ${metadata.userId} (${subscription?.subscription_code ? 'recurring' : 'one-time'})`);
             }
             
             // Add credits to user account (with idempotency check)
