@@ -9,6 +9,7 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 - **Updated Pricing Structure (August 16, 2025)**: Removed mockup generation from free plan due to high costs (~$3 per set). Mockups now require paid subscription (Pro/Business plans only).
 - **Revised Subscription Plans**: Pro plan reduced from $29/500 credits to $19.95/300 credits for better conversion. Business plan adjusted to $49/800 credits.
+- **Realigned Credit Top-ups (August 16, 2025)**: Restructured one-time credit packages to encourage subscription adoption. New pricing: 50 credits (R114), 100 credits (R209), 200 credits (R380), 400 credits (R684). Top-ups now priced higher per credit than subscriptions to drive monthly plan conversion.
 - **Credit Transaction Audit Trail**: Implemented comprehensive transaction tracking with database table and user interface for transparency.
 
 ## System Architecture

@@ -23,42 +23,42 @@ if (process.env.NODE_ENV === 'production' && isTestMode) {
 
 const paystack = Paystack(process.env.PAYSTACK_SECRET_KEY);
 
-// One-time credit packages (top-ups)
+// One-time credit packages (top-ups) - Priced higher than subscriptions to encourage monthly plans
 export const creditPackages = [
   {
     id: 'credits_50',
     name: '50 Credits',
     credits: 50,
-    usdPrice: 5,
-    zarPrice: 9500, // R95.00
-    description: 'Perfect for getting started with AI art generation',
+    usdPrice: 6,
+    zarPrice: 11400, // R114.00 (R2.28 per credit)
+    description: 'Small top-up for quick projects',
     type: 'one-time'
   },
   {
     id: 'credits_100',
     name: '100 Credits',
     credits: 100,
-    usdPrice: 9,
-    zarPrice: 17000, // R170.00 (10% discount)
-    description: 'Great value for regular users',
+    usdPrice: 11,
+    zarPrice: 20900, // R209.00 (R2.09 per credit, 8% discount)
+    description: 'Perfect for additional credits',
     type: 'one-time'
   },
   {
-    id: 'credits_250',
-    name: '250 Credits',
-    credits: 250,
+    id: 'credits_200',
+    name: '200 Credits',
+    credits: 200,
     usdPrice: 20,
-    zarPrice: 38000, // R380.00 (20% discount)
-    description: 'Best value for power users',
+    zarPrice: 38000, // R380.00 (R1.90 per credit, 17% discount)
+    description: 'Great value for extra credits',
     type: 'one-time'
   },
   {
-    id: 'credits_500',
-    name: '500 Credits',
-    credits: 500,
-    usdPrice: 35,
-    zarPrice: 66500, // R665.00 (30% discount)
-    description: 'Maximum credits for professional use',
+    id: 'credits_400',
+    name: '400 Credits',
+    credits: 400,
+    usdPrice: 36,
+    zarPrice: 68400, // R684.00 (R1.71 per credit, 25% discount)
+    description: 'Maximum credits for heavy usage',
     type: 'one-time'
   }
 ];
