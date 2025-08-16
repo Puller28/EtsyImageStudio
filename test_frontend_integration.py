@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
 """
 Test the complete integration flow from frontend to local mockup generation
+
+This script tests the full integration without hardcoded credentials.
+
+Usage:
+1. Set TEST_EMAIL and TEST_PASSWORD environment variables
+2. Run: python test_frontend_integration.py
+
+Example:
+export TEST_EMAIL="test@example.com"
+export TEST_PASSWORD="your-test-password"
+python test_frontend_integration.py
 """
 
 import requests
 import json
 import base64
+import os
 from PIL import Image
 import io
 
@@ -23,12 +35,22 @@ def create_test_image():
     return buf.getvalue()
 
 def get_auth_token():
-    """Get a valid JWT token from the main app"""
+    """Get a valid JWT token from the main app using environment variables"""
+    
+    # Get credentials from environment variables
+    test_email = os.getenv("TEST_EMAIL")
+    test_password = os.getenv("TEST_PASSWORD")
+    
+    if not test_email or not test_password:
+        print("❌ TEST_EMAIL and TEST_PASSWORD environment variables are required")
+        print("💡 Set them with: export TEST_EMAIL='your@email.com' TEST_PASSWORD='your-password'")
+        return None
+    
     # First, try to register/login to get a token
     auth_url = "http://localhost:5000/api/auth/register"
     auth_data = {
-        "email": "test@example.com",
-        "password": "testpassword123",
+        "email": test_email,
+        "password": test_password,
         "name": "Test User"
     }
     
@@ -41,8 +63,8 @@ def get_auth_token():
             # Try login instead
             login_url = "http://localhost:5000/api/auth/login"
             login_data = {
-                "email": "test@example.com", 
-                "password": "testpassword123"
+                "email": test_email, 
+                "password": test_password
             }
             response = requests.post(login_url, json=login_data)
             if response.status_code == 200:
