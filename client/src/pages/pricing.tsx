@@ -139,7 +139,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
       }
       
       toast({
-        title: "Welcome to EtsyArt Pro!",
+        title: "Welcome to Etsy Art & Image Upscaler Pro!",
         description: "Your free credits are ready to use. Start creating amazing artwork!",
       });
       onSelectPlan?.(planName);

@@ -20,12 +20,12 @@ export default function HomePage() {
               AI-Powered Digital Art Tools
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-              Transform Your Digital Art with{" "}
-              <span className="text-primary">AI-Powered Processing</span>
+              Etsy Art & {" "}
+              <span className="text-primary">Image Upscaler Pro</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Professional image upscaling, print-ready formats, stunning mockups, and automated Etsy listings. 
-              Everything digital artists need to scale their business in one powerful platform.
+              The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling up to 4x, 
+              stunning mockups, print-ready formats, and automated Etsy listings - everything you need in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">

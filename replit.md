@@ -1,12 +1,14 @@
-# EtsyArt Pro
+# Etsy Art & Image Upscaler Pro
 
 ## Overview
-EtsyArt Pro is a comprehensive web application designed for Etsy AI art sellers to automate their digital art workflow. The platform streamlines the entire process from AI art generation to marketplace-ready assets. Key capabilities include AI image creation, image upscaling, print format resizing, mockup generation, and AI-powered Etsy SEO content creation. Users can generate AI artwork or upload existing images to receive a complete package of optimized images and marketing content ready for Etsy listing. The vision is to empower digital artists with automation, enabling them to scale their businesses and focus on creativity, tapping into the growing market for AI-generated art on e-commerce platforms.
+Etsy Art & Image Upscaler Pro is a comprehensive AI-powered web application designed for digital artists and Etsy sellers to automate their complete artwork workflow. The platform streamlines everything from AI art generation and professional image upscaling to marketplace-ready assets. Key capabilities include AI image creation, advanced upscaling up to 4x resolution, print format resizing, professional mockup generation, and AI-powered Etsy SEO content creation. Users can generate AI artwork or upload existing images to receive a complete package of optimized images and marketing content ready for Etsy listing. The vision is to empower digital artists with automation, enabling them to scale their businesses and focus on creativity, perfectly suited for deployment at imageupscaler.app.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **Website Rebranding (August 16, 2025)**: Rebranded from "EtsyArt Pro" to "Etsy Art & Image Upscaler Pro" for imageupscaler.app deployment. Updated all branding across navigation, titles, descriptions, and marketing copy to emphasize the dual focus on Etsy optimization and professional image upscaling capabilities.
+- **Complete Contact Form System**: Implemented full contact form functionality with database storage, API endpoints, server logging, and admin access via /api/contact-messages endpoint. Replaced simulation with real message storage.
 - **Updated Pricing Structure (August 16, 2025)**: Removed mockup generation from free plan due to high costs (~$3 per set). Mockups now require paid subscription (Pro/Business plans only).
 - **Revised Subscription Plans**: Pro plan reduced from $29/500 credits to $19.95/300 credits for better conversion. Business plan adjusted to $49/800 credits.
 - **Realigned Credit Top-ups (August 16, 2025)**: Restructured one-time credit packages to encourage subscription adoption. New pricing: 50 credits (R114), 100 credits (R209), 200 credits (R380), 400 credits (R684). Top-ups now priced higher per credit than subscriptions to drive monthly plan conversion.

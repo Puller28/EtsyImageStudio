@@ -1,6 +1,6 @@
 """
 Local Mockup API Integration
-Integrated OpenAI-based mockup generation for EtsyArt Pro
+Integrated OpenAI-based mockup generation for Etsy Art & Image Upscaler Pro
 """
 
 import io

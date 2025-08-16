@@ -124,10 +124,10 @@ export default function Auth({ onLogin }: AuthProps) {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            EtsyArt Pro
+            Etsy Art & Image Upscaler Pro
           </CardTitle>
           <CardDescription>
-            Professional artwork processing for Etsy sellers
+            Professional AI-powered image processing and artwork tools for digital artists and Etsy sellers
           </CardDescription>
         </CardHeader>
         

@@ -16,7 +16,7 @@ export function PublicNavigation() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Digital Art Helper</span>
+              <span className="text-xl font-bold text-foreground">Etsy Art & Image Upscaler Pro</span>
             </div>
           </Link>
 
