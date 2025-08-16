@@ -199,13 +199,20 @@ def generate_single_mockup(img_bytes: bytes, style: str) -> Dict[str, Any]:
         final_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         
         return {
+            "success": True,
             "style": style,
-            "api_size": api_size_str,
-            "image_b64": final_b64,
-            "canvas_size": [canvas.width, canvas.height],
-            "art_bbox": keep_bbox,
-            "local_generation": True,
-            "openai_model": OPENAI_MODEL
+            "mockup": {
+                "template": style,
+                "image": final_b64,
+                "dataUrl": f"data:image/jpeg;base64,{final_b64}",
+                "api_size": api_size_str,
+                "canvas_size": [canvas.width, canvas.height],
+                "art_bbox": keep_bbox
+            },
+            "metadata": {
+                "local_generation": True,
+                "openai_model": OPENAI_MODEL
+            }
         }
         
     except HTTPException:
