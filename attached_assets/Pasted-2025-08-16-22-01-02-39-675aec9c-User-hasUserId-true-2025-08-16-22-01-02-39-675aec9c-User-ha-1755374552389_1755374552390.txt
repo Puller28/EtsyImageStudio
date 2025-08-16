@@ -1,0 +1,92 @@
+2025-08-16 22:01:02.39
+675aec9c
+User
+hasUserId: true,
+2025-08-16 22:01:02.39
+675aec9c
+User
+hasUser: true,
+2025-08-16 22:01:02.39
+675aec9c
+User
+userId: '6c22af31-714d-4817-8cd0-c9c1646e054c',
+2025-08-16 22:01:02.39
+675aec9c
+User
+userEmail: 'llodewyks@dvt.co.za',
+2025-08-16 22:01:02.39
+675aec9c
+User
+isDemoUser: false
+2025-08-16 22:01:02.39
+675aec9c
+User
+}
+2025-08-16 22:01:05.41
+675aec9c
+User
+8:01:05 PM [express] POST /api/subscribe 200 in 3081ms :: {"authorization_url":"https://checkout.pay…
+2025-08-16 22:01:53.32
+675aec9c
+User
+8:01:53 PM [express] POST /api/webhook/paystack 200 in 2ms
+2025-08-16 22:01:53.32
+675aec9c
+User
+8:01:53 PM [express] POST /api/webhook/paystack 200 in 2ms
+2025-08-16 22:01:54.62
+675aec9c
+User
+🔍 Payment verification request for reference: lhjzoplu9b
+2025-08-16 22:01:54.62
+675aec9c
+User
+🔍 Verifying payment with reference: lhjzoplu9b
+2025-08-16 22:01:55.18
+675aec9c
+User
+🔍 Paystack API response: { success: true, status: 'success', hasMetadata: true }
+2025-08-16 22:01:55.18
+675aec9c
+User
+🔍 Paystack verification result: { success: true, hasData: true, error: undefined }
+2025-08-16 22:01:55.18
+675aec9c
+User
+🔍 Payment metadata: {
+2025-08-16 22:01:55.18
+675aec9c
+User
+planId: 'pro_monthly',
+2025-08-16 22:01:55.18
+675aec9c
+User
+credits: '300',
+2025-08-16 22:01:55.18
+675aec9c
+User
+userId: '6c22af31-714d-4817-8cd0-c9c1646e054c',
+2025-08-16 22:01:55.18
+675aec9c
+User
+referrer: 'https://imageupscaler.app/'
+2025-08-16 22:01:55.18
+675aec9c
+User
+}
+2025-08-16 22:01:55.82
+675aec9c
+User
+✅ Added 300 credits to user 6c22af31-714d-4817-8cd0-c9c1646e054c (first time processing lhjzoplu9b)
+2025-08-16 22:01:55.82
+675aec9c
+User
+8:01:55 PM [express] GET /api/verify-payment/lhjzoplu9b 200 in 1194ms :: {"success":true,"credits":3…
+2025-08-16 22:01:59.95
+675aec9c
+User
+8:01:59 PM [express] GET /api/user 200 in 64ms :: {"id":"6c22af31-714d-4817-8cd0-c9c1646e054c","emai…
+2025-08-16 22:02:00.36
+675aec9c
+User
+8:02:00 PM [express] GET /api/projects 304 in 457ms :: []

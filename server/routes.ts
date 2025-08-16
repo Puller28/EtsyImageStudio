@@ -628,6 +628,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Paystack webhook endpoint - matches production webhook URL configuration
   app.post("/api/webhook/paystack", async (req, res) => {
+    console.log(`🔔 WEBHOOK START: ${new Date().toISOString()}`);
+    console.log(`🔔 Request body keys:`, Object.keys(req.body || {}));
+    console.log(`🔔 Event type:`, req.body?.event);
+    
     try {
       console.log(`🔔 Webhook received: ${req.body?.event || 'unknown'} - ${new Date().toISOString()}`);
       
