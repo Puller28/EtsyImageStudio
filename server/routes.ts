@@ -1620,8 +1620,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType: req.file.mimetype,
       });
       formData.append("styles", req.body.style || "living_room");
-      formData.append("overlay_original", "1"); // Critical: preserves original artwork
-      formData.append("overlay_inset_px", "2"); // Prevents frame misalignment
+      formData.append("overlay_original", "0"); // OFF: let OpenAI preserve artwork through masking
+      formData.append("overlay_inset_px", "0"); // No inset needed when overlay_original=0
       formData.append("variants", "1"); // Single variant for fast response
       formData.append("return_format", "json"); // Request JSON instead of ZIP
 
@@ -1690,8 +1690,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use multiple styles for template mockups (living_room, bedroom, study, gallery, kitchen)
       const styles = req.body.template ? req.body.template : "living_room,bedroom,study,gallery,kitchen";
       formData.append("styles", styles);
-      formData.append("overlay_original", "1"); // Critical: preserves original artwork
-      formData.append("overlay_inset_px", "2"); // Prevents frame misalignment
+      formData.append("overlay_original", "0"); // OFF: let OpenAI preserve artwork through masking
+      formData.append("overlay_inset_px", "0"); // No inset needed when overlay_original=0
       formData.append("variants", "1"); // One variant per style
       formData.append("return_format", "json"); // Request JSON instead of ZIP
 
