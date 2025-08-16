@@ -1623,7 +1623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       formData.append("overlay_original", "1"); // Critical: preserves original artwork
       formData.append("overlay_inset_px", "2"); // Prevents frame misalignment
       formData.append("variants", "1"); // Single variant for fast response
-      formData.append("return_format", "json");
+      formData.append("return_format", "json"); // Request JSON instead of ZIP
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
       const response = await axios.post(`http://127.0.0.1:${fastApiPort}/outpaint/mockup`, formData, {
@@ -1693,7 +1693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       formData.append("overlay_original", "1"); // Critical: preserves original artwork
       formData.append("overlay_inset_px", "2"); // Prevents frame misalignment
       formData.append("variants", "1"); // One variant per style
-      formData.append("return_format", "json");
+      formData.append("return_format", "json"); // Request JSON instead of ZIP
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
       const response = await axios.post(`http://127.0.0.1:${fastApiPort}/outpaint/mockup`, formData, {
