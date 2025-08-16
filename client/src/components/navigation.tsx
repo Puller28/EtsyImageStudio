@@ -21,8 +21,8 @@ export default function Navigation({ user }: NavigationProps) {
 
   const handleLogout = () => {
     logout();
-    // Force a page reload to clear any cached state and redirect to auth
-    window.location.reload();
+    // Redirect to home page instead of reloading to prevent 404
+    window.location.href = '/';
   };
 
   return (
