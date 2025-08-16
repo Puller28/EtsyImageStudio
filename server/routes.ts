@@ -76,6 +76,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Proxy route for FastAPI template mockup generation
+  app.post('/api/generate-template-mockups', upload.single('file'), async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Create FormData to forward to FastAPI
+      const FormDataNode = (await import('form-data')).default;
+      const formData = new FormDataNode();
+      
+      // Forward the uploaded file
+      if (req.file) {
+        formData.append('file', req.file.buffer, {
+          filename: req.file.originalname || 'artwork.jpg',
+          contentType: req.file.mimetype || 'image/jpeg'
+        });
+      }
+      
+      // Forward other form fields
+      for (const [key, value] of Object.entries(req.body)) {
+        formData.append(key, value as string);
+      }
+
+      // Forward to FastAPI service
+      const response = await axios.post('http://127.0.0.1:8001/generate-template-mockups', formData, {
+        headers: {
+          'Authorization': authHeader,
+          ...formData.getHeaders()
+        },
+        timeout: 300000, // 5 minutes
+        validateStatus: () => true // Don't throw on non-2xx status codes
+      });
+
+      res.status(response.status).json(response.data);
+      
+    } catch (error) {
+      console.error('❌ Proxy error:', error);
+      res.status(500).json({ error: 'Template mockup service unavailable' });
+    }
+  });
+
   // Deduct credits from user account
   app.post("/api/deduct-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

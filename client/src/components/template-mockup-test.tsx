@@ -99,7 +99,7 @@ export function TemplateMockupTest() {
         tokenPreview: token.substring(0, 20) + "..." 
       });
       
-      const response = await fetch("http://127.0.0.1:8001/generate-template-mockups", {
+      const response = await fetch("/api/generate-template-mockups", {
         method: "POST",
         body: formData,
         headers: {
