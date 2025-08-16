@@ -2,7 +2,7 @@ import { type User, type InsertUser, type Project, type InsertProject, type Cred
 import { users, projects, processedPayments, creditTransactions, contactMessages } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -145,7 +145,7 @@ export class MemStorage implements IStorage {
     const project: Project = {
       ...insertProject,
       mockupTemplate: insertProject.mockupTemplate || null,
-      mockupImages: null, // Fix type issue
+      mockupImages: null,
       id,
       status: "uploading",
       resizedImages: null,
@@ -154,6 +154,7 @@ export class MemStorage implements IStorage {
       etsyListing: null,
       zipUrl: null,
       createdAt: new Date(),
+      upscaleOption: insertProject.upscaleOption || "2x",
     };
     this.projects.set(id, project);
     return project;
@@ -318,7 +319,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    return await db.select().from(projects).where(eq(projects.userId, userId));
+    return await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
