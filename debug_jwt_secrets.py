@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+"""
+JWT Debugging Script - Security-Focused Version
+
+This script helps debug JWT token authentication issues without hardcoding sensitive tokens.
+
+Usage:
+1. Set JWT_SECRET environment variable for your JWT secret
+2. Set TEST_JWT_TOKEN environment variable with the token you want to test
+3. Run: python debug_jwt_secrets.py
+
+Example:
+export JWT_SECRET="your-jwt-secret"
+export TEST_JWT_TOKEN="your-test-token-here"
+python debug_jwt_secrets.py
+"""
+
 import os
 import jwt as pyjwt
 
@@ -10,8 +26,14 @@ print(f"Express.js JWT Secret: {express_secret}")
 print(f"FastAPI JWT Secret: {fastapi_secret}")
 print(f"Secrets match: {express_secret == fastapi_secret}")
 
-# Test token from browser
-token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YjM3NWJlNy0yZTc3LTRlN2QtYjdlOS0yYjIxMTM1Nzg5ZjIiLCJpYXQiOjE3MjM3MDg1NDcsImV4cCI6MTcyNTA0OTc0N30.eJCwmXjLlYt_wEUshyA9J5sSxdZOhUMlAD8a8HwYhpw"
+# Test token from environment variable (for debugging purposes)
+# To use this script, set the TEST_JWT_TOKEN environment variable
+token = os.getenv("TEST_JWT_TOKEN")
+
+if not token:
+    print("❌ No TEST_JWT_TOKEN environment variable found")
+    print("💡 To test JWT decoding, set TEST_JWT_TOKEN environment variable with your token")
+    exit(1)
 
 # Try to decode with current secret
 try:
