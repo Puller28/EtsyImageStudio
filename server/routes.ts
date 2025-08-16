@@ -1301,7 +1301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...formData.getHeaders(),
           'Authorization': req.headers.authorization, // Pass through auth
         },
-        timeout: 60000, // 1 minute per single mockup
+        timeout: 300000, // 5 minutes per single mockup for OpenAI API
       });
 
       res.json(response.data);

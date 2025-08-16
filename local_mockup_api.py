@@ -140,7 +140,7 @@ def _openai_images_edit_multi(image_png: bytes, mask_png: bytes, prompt: str, n:
         "mask":  ("mask.png",   mask_png,  "image/png"),
     }
     try:
-        resp = requests.post(url, headers=headers, data=data, files=files, timeout=300)
+        resp = requests.post(url, headers=headers, data=data, files=files, timeout=180)
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Images API request failed: {e}")
     if resp.status_code != 200:
@@ -159,11 +159,11 @@ def generate_single_mockup(img_bytes: bytes, style: str) -> Dict[str, Any]:
         if style not in STYLE_PROMPTS:
             raise HTTPException(400, f"Unknown style '{style}'. Choose from {list(STYLE_PROMPTS.keys())}")
         
-        # Process image with simple resize
-        art = _ingest_simple_resize(img_bytes, True, DEFAULT_INGEST_LONG_EDGE)
+        # Process image with optimized resize for faster processing
+        art = _ingest_simple_resize(img_bytes, True, min(DEFAULT_INGEST_LONG_EDGE, 800))  # Smaller for speed
         
-        # Build canvas + mask (one geometry)
-        canvas, keep_bbox = _pad_canvas_keep_center(art, pad_ratio=0.42, target_side=DEFAULT_TARGET_PX)
+        # Build canvas + mask (one geometry) - reduced size for faster API calls
+        canvas, keep_bbox = _pad_canvas_keep_center(art, pad_ratio=0.42, target_side=min(DEFAULT_TARGET_PX, 1024))
         mask = _build_outpaint_mask(canvas.size, keep_bbox)
         
         # API-safe size

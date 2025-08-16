@@ -193,7 +193,9 @@ export function TemplateMockupTest() {
           headers: {
             'Authorization': `Bearer ${token}`
           },
-          body: formData
+          body: formData,
+          // Increase timeout for OpenAI API calls
+          signal: AbortSignal.timeout(300000) // 5 minutes
         });
 
         if (!response.ok) {
