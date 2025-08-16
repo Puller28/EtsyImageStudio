@@ -23,7 +23,10 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
   const { toast } = useToast();
 
   const handleGenerate = () => {
+    console.log("🎯 SEO Button clicked!", { artworkTitle, styleKeywords });
+    
     if (!artworkTitle.trim() || !styleKeywords.trim()) {
+      console.log("❌ Missing fields:", { artworkTitle: artworkTitle.trim(), styleKeywords: styleKeywords.trim() });
       toast({
         title: "Missing Information",
         description: "Please fill in both artwork title and style keywords.",
@@ -31,6 +34,8 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
       });
       return;
     }
+    
+    console.log("✅ Calling onGenerate with:", { artworkTitle, styleKeywords });
     onGenerate({ artworkTitle, styleKeywords });
   };
 

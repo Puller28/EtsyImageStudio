@@ -304,16 +304,27 @@ export default function Dashboard() {
   };
 
   const handleGenerateListing = async (data: { artworkTitle: string; styleKeywords: string }) => {
-    if (!currentProject) return;
+    console.log("📝 handleGenerateListing called:", { data, currentProject: currentProject?.id });
     
+    if (!currentProject) {
+      console.log("❌ No current project!");
+      return;
+    }
+    
+    console.log("🚀 Starting listing generation...");
     setIsGeneratingListing(true);
     try {
+      console.log("📡 Making API call...");
       await generateListingMutation.mutateAsync({
         projectId: currentProject.id,
         data
       });
+      console.log("✅ API call completed");
+    } catch (error) {
+      console.error("❌ API call failed:", error);
     } finally {
       setIsGeneratingListing(false);
+      console.log("🏁 Generation finished");
     }
   };
 
