@@ -654,17 +654,22 @@ async def generate_template_mockups(
                                   filename='artwork.jpg', 
                                   content_type='image/jpeg')
                 
+                # Updated API uses single endpoint with 'styles' parameter
+                endpoint = "/outpaint/mockup"
+                
                 if mode == "single_template":
-                    # Single mockup endpoint - use 'style' parameter instead of 'template'
-                    endpoint = "/outpaint/mockup_single"
-                    form_data.add_field('style', template)
-                    form_data.add_field('return_format', 'json')  # Get JSON response with image_b64
+                    # Single template: pass one style
+                    form_data.add_field('styles', template)
+                    form_data.add_field('variants', '1')
                 else:
-                    # Multiple mockups endpoint - use 'styles' parameter for all templates
-                    endpoint = "/outpaint/mockup"
+                    # Multiple templates: pass comma-separated styles
                     form_data.add_field('styles', ','.join(available_templates))
                     form_data.add_field('variants', '1')  # 1 variant per style
-                    form_data.add_field('return_format', 'json')
+                
+                # Common parameters
+                form_data.add_field('return_format', 'json')
+                form_data.add_field('target_px', '1536')
+                form_data.add_field('ingest_resize', '1')
                 
                 logger.info(f"🔗 Request URL: {RENDER_API_URL}{endpoint}")
                 logger.info(f"🔗 Form data fields: {[key for key in form_data._fields.keys()]}")
