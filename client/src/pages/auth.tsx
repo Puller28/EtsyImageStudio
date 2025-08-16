@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -33,6 +34,7 @@ interface AuthProps {
 export default function Auth({ onLogin }: AuthProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -68,6 +70,8 @@ export default function Auth({ onLogin }: AuthProps) {
           description: "You've been logged in successfully.",
         });
         onLogin(result);
+        // Redirect to dashboard after successful login
+        setLocation('/');
       } else {
         throw new Error('Login failed');
       }
@@ -98,6 +102,8 @@ export default function Auth({ onLogin }: AuthProps) {
           description: "Welcome to EtsyArt Pro! You've received 100 free credits.",
         });
         onLogin(result);
+        // Redirect to dashboard after successful registration
+        setLocation('/');
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Registration failed');
