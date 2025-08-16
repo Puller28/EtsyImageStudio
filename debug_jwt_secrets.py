@@ -2,7 +2,10 @@
 """
 JWT Debugging Script - Security-Focused Version
 
-This script helps debug JWT token authentication issues without hardcoding sensitive tokens.
+This script helps debug JWT token authentication issues while maintaining security best practices:
+- No hardcoded tokens or secrets
+- Always verifies token signatures (no unverified decoding)
+- Uses environment variables for sensitive data
 
 Usage:
 1. Set JWT_SECRET environment variable for your JWT secret
@@ -13,6 +16,11 @@ Example:
 export JWT_SECRET="your-jwt-secret"
 export TEST_JWT_TOKEN="your-test-token-here"
 python debug_jwt_secrets.py
+
+Security Notes:
+- All JWT tokens are verified with proper signature validation
+- Unverified token decoding has been removed to prevent security vulnerabilities
+- Environment variables are used to avoid exposing sensitive data in source code
 """
 
 import os
@@ -42,12 +50,9 @@ try:
 except Exception as e:
     print(f"❌ Token decode FAILED: {e}")
 
-# Try to decode without verification
-try:
-    unverified = pyjwt.decode(token, options={"verify_signature": False})
-    print(f"🔍 Unverified payload: {unverified}")
-except Exception as e:
-    print(f"❌ Unverified decode failed: {e}")
+# Note: We removed unverified decoding for security reasons
+# Unverified decoding bypasses signature validation and could allow
+# tampered tokens to be processed, which is a security vulnerability
 
 # Generate a new token with current secret
 try:
