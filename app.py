@@ -673,7 +673,7 @@ async def generate_template_mockups(
                     async with session.post(
                         f"{RENDER_API_URL}{endpoint}",
                         data=form_data,
-                        timeout=aiohttp.ClientTimeout(total=300)  # 5 minutes for mockup generation
+                        timeout=aiohttp.ClientTimeout(total=60)  # 1 minute timeout - external API may be slow
                     ) as response:
                         
                         if response.status == 200:
@@ -736,9 +736,9 @@ async def generate_template_mockups(
                                 raise HTTPException(503, "External API temporarily unavailable")
                             else:
                                 raise HTTPException(500, f"API error ({response.status}): {error_text[:100]}")
-            except aiohttp.ServerTimeoutError:
-                logger.error("⏰ Mockup service timeout")
-                raise HTTPException(504, "Template generation timeout")
+            except (aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+                logger.error("⏰ External mockup service timeout - service may be sleeping or overloaded")
+                raise HTTPException(504, "External mockup service is currently unavailable (timeout). This can happen when the service is sleeping or overloaded. Please try again in a few moments.")
                     
     except Exception as e:
         logger.error(f"❌ Template generation failed: {type(e).__name__}: {str(e)}")

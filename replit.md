@@ -36,7 +36,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **Supabase**: Hosts the PostgreSQL database for production data storage.
 - **Paystack**: Payment gateway for handling subscriptions and credit purchases.
 - **RunPod**: Serverless platform for ComfyUI 5.2.0 execution, used for complex AI workflows and mockup generation.
-- **Render-hosted Mockup API**: External API for template-based mockup generation.
+- **Render-hosted Mockup API**: External API for template-based mockup generation at `https://mockup-api-cv83.onrender.com`. Note: May experience downtime on free tier.
 
 ### Development Tools
 - **Vite**: Build tool for fast development and optimized production builds.
