@@ -667,6 +667,7 @@ async def generate_template_mockups(
                     form_data.add_field('return_format', 'json')
                 
                 logger.info(f"🔗 Request URL: {RENDER_API_URL}{endpoint}")
+                logger.info(f"🔗 Form data fields: {[key for key in form_data._fields.keys()]}")
                 logger.info(f"🎯 Template: {template}, Mode: {mode}")
                 
                 async with aiohttp.ClientSession() as session:
