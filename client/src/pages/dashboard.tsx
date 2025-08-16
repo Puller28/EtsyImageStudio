@@ -450,7 +450,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-900">Generate AI Art</h3>
-                          <p className="text-sm text-gray-500">Create artwork using Google's Imagen 3</p>
+                          <p className="text-sm text-gray-500">Create artwork using AI</p>
                         </div>
                       </div>
                     </button>
@@ -488,7 +488,7 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <h3 className="font-medium text-gray-900">Template Mockups</h3>
-                            <p className="text-sm text-gray-500">5 room templates via API</p>
+                            <p className="text-sm text-gray-500">Generate mockups for your art</p>
                           </div>
                         </div>
                       </button>

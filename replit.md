@@ -28,6 +28,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **Payment Processing**: Paystack integration for ZAR payments, credit package purchases, and subscription management.
 - **Local OpenAI Mockup Generation**: Fully integrated OpenAI API-based mockup generation replaces external services. Features include 5 room templates (living_room, bedroom, study, gallery, kitchen), JPEG compression for 10x smaller file sizes, and authentic artwork preservation without AI transformation.
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite` for preserving artwork in mockups.
+- **Streamlined Mockup Interface**: Sequential mockup generation is now the default with a simplified single "Generate" button. Template selection removed from dashboard and replaced with direct flow to new mockup generation system.
 
 ## External Dependencies
 
