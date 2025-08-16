@@ -518,9 +518,12 @@ async def generate_template_mockups(
     """
     
     # Deduct 5 credits for mockup generation
-    logger.info(f"💳 Deducting 5 credits for template mockup generation from user {user.get('id')}")
+    user_id = user.get('id')
+    if not user_id:
+        raise HTTPException(401, "Invalid user data")
+    logger.info(f"💳 Deducting 5 credits for template mockup generation from user {user_id}")
     try:
-        await deduct_credits(user.get('id'), 5, authorization)
+        await deduct_credits(user_id, 5, authorization)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -933,9 +936,12 @@ async def outpaint_mockup(
     """
     
     # Deduct 5 credits for outpaint mockup generation
-    logger.info(f"💳 Deducting 5 credits for outpaint mockup generation from user {user.get('id')}")
+    user_id = user.get('id')
+    if not user_id:
+        raise HTTPException(401, "Invalid user data")
+    logger.info(f"💳 Deducting 5 credits for outpaint mockup generation from user {user_id}")
     try:
-        await deduct_credits(user.get('id'), 5, authorization)
+        await deduct_credits(user_id, 5, authorization)
     except HTTPException as e:
         raise e
     except Exception as e:

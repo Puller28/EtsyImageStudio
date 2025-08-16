@@ -10,6 +10,21 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, Download, Loader2, Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { apiRequest } from "@/lib/queryClient";
+
+// Helper function to get auth token
+function getAuthToken(): string | null {
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      return parsed.token || parsed.state?.token;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 type GenerationMode = "single_template" | "all_templates";
 type Template = "living_room" | "bedroom" | "study" | "gallery" | "kitchen";
@@ -73,9 +88,18 @@ export function TemplateMockupTest() {
         setProgress(prev => Math.min(prev + 5, 90));
       }, 1000);
 
-      const response = await fetch("/api/generate-template-mockups", {
+      // Use authenticated request for FastAPI endpoint
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required. Please log in.");
+      }
+
+      const response = await fetch("http://127.0.0.1:8001/generate-template-mockups", {
         method: "POST",
         body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       clearInterval(progressInterval);
