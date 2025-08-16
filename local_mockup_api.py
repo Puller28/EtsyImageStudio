@@ -152,6 +152,68 @@ def _openai_images_edit_multi(image_png: bytes, mask_png: bytes, prompt: str, n:
         raise HTTPException(status_code=502, detail=f"Image API returned no data: {js}")
     return [it.get("b64_json") for it in items if it.get("b64_json")]
 
+def generate_single_mockup(img_bytes: bytes, style: str) -> Dict[str, Any]:
+    """Generate a single mockup for one style using integrated OpenAI API"""
+    try:
+        # Validate style
+        if style not in STYLE_PROMPTS:
+            raise HTTPException(400, f"Unknown style '{style}'. Choose from {list(STYLE_PROMPTS.keys())}")
+        
+        # Process image with simple resize
+        art = _ingest_simple_resize(img_bytes, True, DEFAULT_INGEST_LONG_EDGE)
+        
+        # Build canvas + mask (one geometry)
+        canvas, keep_bbox = _pad_canvas_keep_center(art, pad_ratio=0.42, target_side=DEFAULT_TARGET_PX)
+        mask = _build_outpaint_mask(canvas.size, keep_bbox)
+        
+        # API-safe size
+        api_w, api_h, api_size_str = _api_edit_size_for(canvas.size)
+        canvas_api = canvas.resize((api_w, api_h), Image.Resampling.LANCZOS)
+        mask_api = mask.resize((api_w, api_h), Image.Resampling.NEAREST)
+        
+        prompt = f"{PRESERVE_DIRECTIVE} {STYLE_PROMPTS[style]}"
+        
+        # Call OpenAI API for single style
+        b64_list = _openai_images_edit_multi(
+            _img_to_png_bytes(canvas_api), 
+            _img_to_png_bytes(mask_api),
+            prompt=prompt, 
+            n=1, 
+            size_str=api_size_str
+        )
+        
+        # Process result - resize back to original canvas size
+        b64 = b64_list[0]
+        img = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGBA")
+        if img.size != canvas.size:
+            img = img.resize(canvas.size, Image.Resampling.LANCZOS)
+        
+        # Save processed image as JPEG for smaller file size
+        buf = io.BytesIO()
+        # Convert RGBA to RGB for JPEG
+        if img.mode == "RGBA":
+            rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+            rgb_img.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+            img = rgb_img
+        img.save(buf, "JPEG", quality=85, optimize=True)
+        final_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+        
+        return {
+            "style": style,
+            "api_size": api_size_str,
+            "image_b64": final_b64,
+            "canvas_size": [canvas.width, canvas.height],
+            "art_bbox": keep_bbox,
+            "local_generation": True,
+            "openai_model": OPENAI_MODEL
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Single mockup generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Single mockup generation failed: {str(e)}")
+
 def generate_local_mockups(img_bytes: bytes, mode: str, template: str) -> Dict[str, Any]:
     """Generate mockups using integrated OpenAI API"""
     try:

@@ -150,6 +150,90 @@ export function TemplateMockupTest() {
     }
   };
 
+  const handleGenerateSequential = async () => {
+    if (!file) {
+      setError("Please select an image file");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setResults([]);
+    setProgress(0);
+
+    const token = getAuthToken();
+    console.log('🔍 Starting sequential mockup generation:', { hasToken: !!token, mode, template });
+
+    try {
+      let stylesToProcess: Template[] = [];
+      
+      if (mode === 'single_template') {
+        // Generate 5 variations of the single template
+        stylesToProcess = Array(5).fill(template) as Template[];
+      } else {
+        // Generate one mockup for each template
+        stylesToProcess = availableTemplates;
+      }
+
+      const totalSteps = stylesToProcess.length;
+      let completedResults: MockupResult[] = [];
+
+      // Process each style sequentially
+      for (let i = 0; i < stylesToProcess.length; i++) {
+        const currentStyle = stylesToProcess[i];
+        
+        console.log(`🔄 Processing style ${i + 1}/${totalSteps}: ${currentStyle}`);
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('style', currentStyle);
+
+        const response = await fetch('http://localhost:8001/generate-single-mockup', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Error on style ${currentStyle}:`, { status: response.status, text: errorText });
+          throw new Error(`Failed to generate ${currentStyle} mockup: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log(`✅ Generated mockup for ${currentStyle}:`, result.success);
+        
+        if (result.success && result.mockup) {
+          // Adjust variation number for single template mode
+          const variationNum = mode === 'single_template' ? i + 1 : 1;
+          const mockupResult: MockupResult = {
+            ...result.mockup,
+            variation: variationNum
+          };
+          
+          completedResults.push(mockupResult);
+          setResults([...completedResults]); // Show results as they come in
+        }
+
+        // Update progress
+        const progressPercent = ((i + 1) / totalSteps) * 100;
+        setProgress(progressPercent);
+      }
+
+      console.log(`🎉 Sequential generation complete! Generated ${completedResults.length} mockups`);
+      
+    } catch (err) {
+      console.error('❌ Sequential generation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error('❌ Error details:', errorMessage);
+      setError(`Mockup generation failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const downloadMockup = (mockup: MockupResult, index: number) => {
     const link = document.createElement("a");
     link.href = `data:image/jpeg;base64,${mockup.image}`;
@@ -232,22 +316,40 @@ export function TemplateMockupTest() {
 
           <Separator />
 
-          {/* Generate Button */}
-          <Button 
-            onClick={handleGenerate}
-            disabled={!file || loading}
-            className="w-full"
-            data-testid="button-generate-mockups"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Mockups...
-              </>
-            ) : (
-              `Generate ${mode === "single_template" ? "5 Variations" : "5 Templates"}`
-            )}
-          </Button>
+          {/* Generate Buttons */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleGenerate}
+              disabled={!file || loading}
+              className="flex-1"
+              data-testid="button-generate-mockups"
+              variant="outline"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                'Batch Generate'
+              )}
+            </Button>
+            <Button 
+              onClick={handleGenerateSequential}
+              disabled={!file || loading}
+              className="flex-1"
+              data-testid="button-generate-sequential"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                `Sequential (${mode === "single_template" ? "5 Variations" : "5 Templates"})`
+              )}
+            </Button>
+          </div>
 
           {/* Progress Bar */}
           {loading && (

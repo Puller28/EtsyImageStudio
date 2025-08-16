@@ -680,6 +680,65 @@ async def list_templates():
         "description": "Available room templates for mockup generation"
     }
 
+@app.post("/generate-single-mockup") 
+async def generate_single_mockup_endpoint(
+    file: UploadFile = File(...),
+    style: str = Form(...),
+    user: dict = Depends(get_current_user),
+    authorization: str = Header(None)
+):
+    """Generate a single mockup for one style - for sequential processing"""
+    
+    user_id = user.get('id')
+    if not user_id:
+        raise HTTPException(401, "Invalid user data")
+    
+    try:
+        # Read and validate image
+        contents = await file.read()
+        if len(contents) == 0:
+            raise HTTPException(status_code=400, detail="Empty file uploaded")
+        
+        # Log request details
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(contents))
+            logger.info(f"📋 Single mockup request: style={style}, image={img.size}")
+        except Exception:
+            logger.info(f"📋 Single mockup request: style={style}")
+        
+        # Generate single mockup using local OpenAI API
+        logger.info(f"🔧 Using integrated local single mockup generation")
+        from local_mockup_api import generate_single_mockup
+        result = generate_single_mockup(contents, style)
+        
+        # Convert to frontend format
+        mockup = {
+            "template": style,
+            "variation": 1,
+            "image": f"data:image/jpeg;base64,{result['image_b64']}",
+            "metadata": {"style": style}
+        }
+        
+        logger.info(f"✅ Generated single mockup for style '{style}' using OpenAI API")
+        
+        return {
+            "success": True,
+            "style": style,
+            "mockup": mockup,
+            "canvas_size": result["canvas_size"],
+            "art_bbox": result["art_bbox"],
+            "local_generation": True,
+            "openai_model": result["openai_model"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Single mockup generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Single mockup generation failed: {str(e)}")
+
 @app.post("/generate-template-mockups")
 async def generate_template_mockups(
     file: UploadFile = File(...),
@@ -804,7 +863,7 @@ async def generate_template_mockups(
             # Use local integrated OpenAI API instead of external service
             logger.info(f"🔧 Using integrated local mockup generation")
             try:
-                from local_mockup_api import generate_local_mockups
+                from local_mockup_api import generate_local_mockups, generate_single_mockup
                 result = generate_local_mockups(base64.b64decode(img_b64), mode, template)
                 
                 # Convert to legacy format for frontend compatibility
