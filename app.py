@@ -61,6 +61,151 @@ PRESERVE_DIRECTIVE = (
     "Do not overlap the kept region with frame or mat; leave a clean thin gap; nothing should cover the art."
 )
 
+# =========================
+# Helper Functions for OpenAI Outpainting
+# =========================
+
+def _img_to_png_bytes(img: Image.Image) -> bytes:
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()
+
+def _ingest_simple_resize(file_bytes: bytes, enable: bool, max_long_edge: int) -> Image.Image:
+    """
+    Proportional resize ONLY if long edge exceeds max_long_edge.
+    No padding/cropping; preserves aspect ratio exactly.
+    """
+    img = Image.open(io.BytesIO(file_bytes))
+    img = ImageOps.exif_transpose(img)
+    if not enable:
+        return img.convert("RGBA")
+    w, h = img.size
+    long_edge = max(w, h)
+    if long_edge > max_long_edge:
+        s = max_long_edge / float(long_edge)
+        img = img.resize((int(w * s), int(h * s)), Image.LANCZOS)
+    return img.convert("RGBA")
+
+def _pad_to_ratio(img: Image.Image, ratio_w: int, ratio_h: int, bg=(0, 0, 0, 0)):
+    """Pad to exact ratio without scaling (letterbox), return (canvas, bbox_of_img)."""
+    img = img.convert("RGBA")
+    w, h = img.size
+    target_ratio = ratio_w / ratio_h
+    src_ratio = w / h
+    if abs(src_ratio - target_ratio) < 1e-6:
+        canvas = Image.new("RGBA", (w, h), bg)
+        canvas.paste(img, (0, 0), img)
+        return canvas, (0, 0, w, h)
+
+    if src_ratio > target_ratio:
+        canvas_w = w
+        canvas_h = ceil(w / target_ratio)
+    else:
+        canvas_h = h
+        canvas_w = ceil(h * target_ratio)
+
+    canvas = Image.new("RGBA", (canvas_w, canvas_h), bg)
+    x0 = (canvas_w - w) // 2
+    y0 = (canvas_h - h) // 2
+    canvas.paste(img, (x0, y0), img)
+    return canvas, (x0, y0, x0 + w, y0 + h)
+
+def _pad_canvas_keep_center(img: Image.Image, pad_ratio: float, target_side: int):
+    """
+    Upscale to target_side (max edge) ONLY if image is smaller; never downscale.
+    Then add border by pad_ratio; returns (canvas_rgba, art_bbox_on_canvas).
+    """
+    img = img.convert("RGBA")
+    longest = max(img.size)
+    if longest < target_side:
+        scale = target_side / float(longest)
+        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
+
+    w, h = img.size
+    border = int(pad_ratio * max(w, h))
+    canvas_w, canvas_h = w + 2 * border, h + 2 * border
+
+    canvas = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    x0, y0 = border, border
+    canvas.paste(img, (x0, y0), img)
+    return canvas, (x0, y0, x0 + w, y0 + h)
+
+def _build_outpaint_mask(canvas_size: Tuple[int, int], keep_bbox: Tuple[int, int, int, int]) -> Image.Image:
+    """
+    OpenAI Images/edits semantics for gpt-image-1:
+      transparent (alpha=0)  -> EDIT
+      opaque     (alpha=255) -> KEEP
+    We KEEP the artwork rectangle; EDIT everything else.
+    """
+    W, H = canvas_size
+    x0, y0, x1, y1 = keep_bbox
+    alpha = Image.new("L", (W, H), 0)               # EDIT outside
+    keep  = Image.new("L", (x1 - x0, y1 - y0), 255) # KEEP inside
+    alpha.paste(keep, (x0, y0))
+    mask = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    mask.putalpha(alpha)
+    return mask
+
+def _overlay_original_art(result_rgba: Image.Image, art_rgba: Image.Image,
+                          bbox: Tuple[int, int, int, int], inset_px: int = 0) -> Image.Image:
+    """
+    Paste original art back into the final image.
+    If inset_px > 0, inset the destination rectangle to leave a thin margin (hides tiny misalignments).
+    """
+    x0, y0, x1, y1 = bbox
+    if inset_px > 0:
+        x0 += inset_px; y0 += inset_px; x1 -= inset_px; y1 -= inset_px
+        if x1 <= x0 or y1 <= y0:  # safety
+            x0, y0, x1, y1 = bbox
+    w, h = x1 - x0, y1 - y0
+    if art_rgba.size != (w, h):
+        art_rgba = art_rgba.resize((w, h), Image.LANCZOS)
+    out = result_rgba.copy()
+    out.paste(art_rgba, (x0, y0), art_rgba)
+    return out
+
+def _api_edit_size_for(canvas_size: Tuple[int, int]) -> Tuple[int, int, str]:
+    """
+    Pick OpenAI-supported edit size matching orientation:
+      - Portrait  -> 1024x1536
+      - Landscape -> 1536x1024
+      - Square    -> 1024x1024
+    """
+    W, H = canvas_size
+    if W == H:
+        return 1024, 1024, "1024x1024"
+    if H > W:
+        return 1024, 1536, "1024x1536"
+    return 1536, 1024, "1536x1024"
+
+def _openai_images_edit_multi(image_png: bytes, mask_png: bytes, prompt: str, n: int, size_str: str) -> List[str]:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set on server")
+    url = "https://api.openai.com/v1/images/edits"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    org_id = os.getenv("OPENAI_ORG_ID")
+    if org_id:
+        headers["OpenAI-Organization"] = org_id
+
+    data = {"model": OPENAI_MODEL, "prompt": prompt, "size": size_str, "n": str(max(1, min(int(n), 10)))}
+    files = {
+        "image": ("canvas.png", image_png, "image/png"),
+        "mask":  ("mask.png",   mask_png,  "image/png"),
+    }
+    try:
+        resp = requests.post(url, headers=headers, data=data, files=files, timeout=300)
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Images API request failed: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Image API error [{resp.status_code}]: {resp.text}")
+
+    js = resp.json()
+    items = js.get("data") or []
+    if not items:
+        raise HTTPException(status_code=502, detail=f"Image API returned no data: {js}")
+    return [it.get("b64_json") for it in items if it.get("b64_json")]
+
 PRINT_SIZES: Dict[str, Tuple[int, int]] = {
     "4x5":   (1600, 2000),
     "3x4":   (1536, 2048),
@@ -1071,37 +1216,25 @@ async def batch_generate(
 @app.post("/outpaint/mockup")
 async def outpaint_mockup(
     file: UploadFile = File(...),
-    target_px: int = Form(1280),
-    pad_ratio: float = Form(0.3),
-    normalize_ratio: str = Form("normalize_ratio"),
-    mat_pct: float = Form(0),
+    styles: str = Form(",".join(DEFAULT_STYLE_LIST)),
+    target_px: int = Form(DEFAULT_TARGET_PX),
+    pad_ratio: float = Form(0.42),
+    normalize_ratio: str = Form(""),
+    mat_pct: float = Form(0.0),
     variants: int = Form(5),
-    overlay_original: int = Form(0),
-    overlay_inset_px: int = Form(0),
+    overlay_original: int = Form(0),          # default OFF to avoid seams
+    overlay_inset_px: int = Form(0),          # if overlay=1, set 1–3 to hide frame misalignment
     make_print_previews: int = Form(0),
-    ingest_resize: int = Form(1),
-    ingest_max_long_edge: int = Form(1024),
-    return_format: str = Form("zip"),
+    # ingest proportional resize (simple & safe):
+    ingest_resize: int = Form(1),             # ON by default
+    ingest_max_long_edge: int = Form(DEFAULT_INGEST_LONG_EDGE),
+    return_format: str = Form("json"),        # json | png | zip
     filename: str = Form("mockup_bundle"),
     user: dict = Depends(get_current_user),
     authorization: str = Header(None)
 ):
     """
-    Generate outpainted mockups with default parameters optimized for artwork display
-    
-    Uses the following default parameters for best results:
-    - target_px: 1280 (final output resolution)
-    - pad_ratio: 0.3 (30% padding around artwork)
-    - normalize_ratio: "normalize_ratio" (maintain aspect ratios)
-    - mat_pct: 0 (no matting effect)
-    - variants: 5 (generate 5 different mockup variations)
-    - overlay_original: 0 (don't overlay original)
-    - overlay_inset_px: 0 (no inset overlay)
-    - make_print_previews: 0 (no print previews)
-    - ingest_resize: 1 (resize input if needed)
-    - ingest_max_long_edge: 1024 (max input size)
-    - return_format: "zip" (return as zip file)
-    - filename: "mockup_bundle" (default filename)
+    Multi-style / multi-variant endpoint (ONLY) - uses OpenAI Images API for artwork preservation
     """
     
     # Deduct 5 credits for outpaint mockup generation
@@ -1117,146 +1250,119 @@ async def outpaint_mockup(
         logger.error(f"Credit deduction failed: {str(e)}")
         raise HTTPException(500, "Credit deduction failed")
     
-    # Read and validate image
+    # Parse styles
+    style_list = [s.strip() for s in styles.split(",") if s.strip()]
+    invalid = [s for s in style_list if s not in STYLE_PROMPTS]
+    if invalid:
+        raise HTTPException(400, f"Unknown styles {invalid}. Choose from {list(STYLE_PROMPTS.keys())}")
+    if not style_list:
+        raise HTTPException(400, "No valid styles provided.")
+
     try:
-        await file.seek(0)
-        img_bytes = await file.read()
-        
-        # Validate image by opening it
-        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-        logger.info(f"📋 Outpaint mockup request: {img.size}, variants={variants}, target_px={target_px}")
-        logger.info(f"🔧 MOCK_MODE={MOCK_MODE}, MOCKUP_API_URL='{RENDER_API_URL}'")
+        raw = await file.read()
+        art = _ingest_simple_resize(raw, bool(ingest_resize), int(ingest_max_long_edge))
     except Exception as e:
-        raise HTTPException(400, f"Invalid image upload: {str(e)}")
-    
-    # Check file size and compress if needed
-    file_size_mb = len(img_bytes) / (1024 * 1024)
-    logger.info(f"📏 Image size: {file_size_mb:.2f}MB")
-    
-    if file_size_mb > 1.0:
-        logger.info("📦 Image > 1MB, compressing via image service...")
+        raise HTTPException(400, f"Could not read image: {e}")
+
+    if normalize_ratio:
         try:
-            # Use the fit_under_1mb endpoint to reduce file size
-            img_b64_large = base64.b64encode(img_bytes).decode('utf-8')
+            rw, rh = [int(x) for x in normalize_ratio.split(":")]
+            art, _ = _pad_to_ratio(art, rw, rh)
+        except Exception:
+            raise HTTPException(400, f"Invalid normalize_ratio '{normalize_ratio}'. Use '4:5', '3:4', '2:3'.")
+
+    if mat_pct and mat_pct > 0:
+        w, h = art.size
+        mx = int(w * mat_pct / 2.0); my = int(h * mat_pct / 2.0)
+        mat_canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        mat_canvas.paste(art, (mx, my), art)
+        art = mat_canvas
+
+    # Build canvas + mask (one geometry)
+    canvas, keep_bbox = _pad_canvas_keep_center(art, pad_ratio=pad_ratio, target_side=target_px)
+    mask = _build_outpaint_mask(canvas.size, keep_bbox)
+
+    # API-safe size
+    api_w, api_h, api_size_str = _api_edit_size_for(canvas.size)
+    canvas_api = canvas.resize((api_w, api_h), Image.LANCZOS)
+    mask_api   = mask.resize((api_w, api_h), Image.NEAREST)
+
+    one_style = len(style_list) == 1
+    n_per_style = max(1, min(int(variants), 10)) if one_style else 1
+
+    # Fast PNG path → first variant, first style
+    if return_format.lower() == "png":
+        style = style_list[0]
+        prompt = f"{PRESERVE_DIRECTIVE} {STYLE_PROMPTS[style]}"
+        b64_list = _openai_images_edit_multi(
+            _img_to_png_bytes(canvas_api), _img_to_png_bytes(mask_api),
+            prompt=prompt, n=n_per_style, size_str=api_size_str
+        )
+        out = Image.open(io.BytesIO(base64.b64decode(b64_list[0]))).convert("RGBA")
+        if out.size != canvas.size:
+            out = out.resize(canvas.size, Image.LANCZOS)
+        if overlay_original:
+            x0, y0, x1, y1 = keep_bbox
+            placed_art = canvas.crop((x0, y0, x1, y1))
+            out = _overlay_original_art(out, placed_art, keep_bbox, inset_px=max(0, int(overlay_inset_px)))
+        buf = io.BytesIO(); out.save(buf, "PNG")
+        suffix = "_v01" if n_per_style > 1 else ""
+        return Response(buf.getvalue(), media_type="image/png", 
+                       headers={"Content-Disposition": f"attachment; filename={filename}{suffix}.png"})
+
+    # Multi-style generation
+    all_imgs = {}
+    for style in style_list:
+        prompt = f"{PRESERVE_DIRECTIVE} {STYLE_PROMPTS[style]}"
+        b64_list = _openai_images_edit_multi(
+            _img_to_png_bytes(canvas_api), _img_to_png_bytes(mask_api),
+            prompt=prompt, n=n_per_style, size_str=api_size_str
+        )
+        
+        style_imgs = []
+        for idx, b64 in enumerate(b64_list):
+            out = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGBA")
+            if out.size != canvas.size:
+                out = out.resize(canvas.size, Image.LANCZOS)
+            if overlay_original:
+                x0, y0, x1, y1 = keep_bbox
+                placed_art = canvas.crop((x0, y0, x1, y1))
+                out = _overlay_original_art(out, placed_art, keep_bbox, inset_px=max(0, int(overlay_inset_px)))
             
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{RENDER_API_URL}/utils/fit_under_1mb",
-                    json={"image": img_b64_large, "format": "base64"},
-                    timeout=aiohttp.ClientTimeout(total=60)
-                ) as response:
-                    
-                    if response.status == 200:
-                        compress_result = await response.json()
-                        img_b64 = compress_result.get("image", img_b64_large)
-                        logger.info("✅ Image compressed successfully")
-                    else:
-                        logger.warning(f"⚠️ Compression failed ({response.status}), using original image")
-                        img_b64 = img_b64_large
-        except Exception as e:
-            logger.warning(f"⚠️ Compression error: {str(e)}, using original image")
-            img_b64 = base64.b64encode(img_bytes).decode('utf-8')
-    else:
-        img_b64 = base64.b64encode(img_bytes).decode('utf-8')
-    
-    # Mock mode for development/testing
-    if MOCK_MODE:
-        logger.info("🎭 MOCK MODE: Simulating outpaint mockup generation...")
-        await asyncio.sleep(2)  # Simulate processing time
-        
-        return {
-            "success": True,
-            "message": f"Mock outpaint mockup generation completed (variants={variants})",
-            "mock": True,
-            "parameters": {
-                "target_px": target_px,
-                "pad_ratio": pad_ratio,
-                "normalize_ratio": normalize_ratio,
-                "mat_pct": mat_pct,
-                "variants": variants,
-                "overlay_original": overlay_original,
-                "overlay_inset_px": overlay_inset_px,
-                "make_print_previews": make_print_previews,
-                "ingest_resize": ingest_resize,
-                "ingest_max_long_edge": ingest_max_long_edge,
-                "return_format": return_format,
-                "filename": filename
-            },
-            "download_url": "/mock-download-url",
-            "processing_time": "2.1s"
-        }
-    
-    # Real API call to outpaint service endpoint
-    try:
-        logger.info(f"🚀 Calling outpaint service with {variants} variants...")
-        
-        # Prepare form data for multipart upload
-        form_data = aiohttp.FormData()
-        
-        # Convert base64 back to bytes for file upload
-        if 'img_b64' in locals():
-            img_bytes_final = base64.b64decode(img_b64)
-        else:
-            img_bytes_final = img_bytes
+            # Convert to JPEG for smaller file sizes
+            jpg_buf = io.BytesIO()
+            out_rgb = out.convert("RGB")
+            out_rgb.save(jpg_buf, "JPEG", quality=90)
             
-        # Add file as multipart form field
-        form_data.add_field('file', io.BytesIO(img_bytes_final), 
-                           filename=file.filename or 'artwork.jpg',
-                           content_type='image/jpeg')
-        
-        # Add all other parameters as form fields
-        form_data.add_field('target_px', str(target_px))
-        form_data.add_field('pad_ratio', str(pad_ratio))
-        form_data.add_field('normalize_ratio', normalize_ratio)
-        form_data.add_field('mat_pct', str(mat_pct))
-        form_data.add_field('variants', str(variants))
-        form_data.add_field('overlay_original', str(overlay_original))
-        form_data.add_field('overlay_inset_px', str(overlay_inset_px))
-        form_data.add_field('make_print_previews', str(make_print_previews))
-        form_data.add_field('ingest_resize', str(ingest_resize))
-        form_data.add_field('ingest_max_long_edge', str(ingest_max_long_edge))
-        form_data.add_field('return_format', return_format)
-        form_data.add_field('filename', filename)
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{RENDER_API_URL}/outpaint/mockup",
-                data=form_data,
-                timeout=aiohttp.ClientTimeout(total=600)  # 10 minute timeout for outpainting
-            ) as response:
-                
-                if response.status == 200:
-                    result = await response.json()
-                    logger.info("✅ Outpaint mockup generation completed successfully")
-                    return {
-                        "success": True,
-                        "result": result,
-                        "parameters": {
-                            "target_px": target_px,
-                            "pad_ratio": pad_ratio,
-                            "normalize_ratio": normalize_ratio,
-                            "mat_pct": mat_pct,
-                            "variants": variants,
-                            "overlay_original": overlay_original,
-                            "overlay_inset_px": overlay_inset_px,
-                            "make_print_previews": make_print_previews,
-                            "ingest_resize": ingest_resize,
-                            "ingest_max_long_edge": ingest_max_long_edge,
-                            "return_format": return_format,
-                            "filename": filename
-                        }
-                    }
-                else:
-                    error_text = await response.text()
-                    logger.error(f"❌ Render API error ({response.status}): {error_text}")
-                    raise HTTPException(response.status, f"Outpaint API error: {error_text}")
+            suffix = f"_v{idx+1:02d}" if n_per_style > 1 else ""
+            style_imgs.append({
+                "filename": f"{filename}_{style}{suffix}.jpg",
+                "image_data": jpg_buf.getvalue()
+            })
+        all_imgs[style] = style_imgs
+
+    # ZIP or JSON return
+    if return_format.lower() == "zip":
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w") as zf:
+            for style, imgs in all_imgs.items():
+                for img_item in imgs:
+                    zf.writestr(img_item["filename"], img_item["image_data"])
+        return Response(zip_buf.getvalue(), media_type="application/zip",
+                       headers={"Content-Disposition": f"attachment; filename={filename}.zip"})
+
+    # JSON format with base64 images
+    json_result = {"styles": {}}
+    for style, imgs in all_imgs.items():
+        json_result["styles"][style] = []
+        for img_item in imgs:
+            b64_data = base64.b64encode(img_item["image_data"]).decode("utf-8")
+            json_result["styles"][style].append({
+                "filename": img_item["filename"],
+                "image_data": f"data:image/jpeg;base64,{b64_data}"
+            })
     
-    except asyncio.TimeoutError:
-        logger.error("⏰ Outpaint mockup generation timed out")
-        raise HTTPException(408, "Outpaint mockup generation timed out. Please try again.")
-    except Exception as e:
-        logger.error(f"❌ Outpaint mockup error: {str(e)}")
-        raise HTTPException(500, f"Outpaint mockup generation failed: {str(e)}")
+    return JSONResponse(json_result)
 
 # Helper functions for batch processing
 async def batch_submit_with_prompt(prompt: str, workflow: Dict[str, Any]) -> Dict[str, Any]:

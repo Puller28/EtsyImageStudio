@@ -1613,16 +1613,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Prepare form data for FastAPI
+      // Prepare form data for FastAPI with artwork preservation parameters
       const formData = new FormData();
       formData.append("file", req.file.buffer, {
         filename: req.file.originalname || "artwork.jpg",
         contentType: req.file.mimetype,
       });
-      formData.append("style", req.body.style || "living_room");
+      formData.append("styles", req.body.style || "living_room");
+      formData.append("overlay_original", "1"); // Critical: preserves original artwork
+      formData.append("overlay_inset_px", "2"); // Prevents frame misalignment
+      formData.append("variants", "1"); // Single variant for fast response
+      formData.append("return_format", "json");
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
-      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate-single-mockup`, formData, {
+      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/outpaint/mockup`, formData, {
         headers: {
           ...formData.getHeaders(),
           'Authorization': req.headers.authorization, // Pass through auth
@@ -1676,20 +1680,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Prepare form data for FastAPI
+      // Prepare form data for FastAPI with artwork preservation parameters
       const formData = new FormData();
       formData.append("file", req.file.buffer, {
         filename: req.file.originalname || "artwork.jpg",
         contentType: req.file.mimetype,
       });
-      formData.append("mode", req.body.mode || "single_template");
       
-      if (req.body.template) {
-        formData.append("template", req.body.template);
-      }
+      // Use multiple styles for template mockups (living_room, bedroom, study, gallery, kitchen)
+      const styles = req.body.template ? req.body.template : "living_room,bedroom,study,gallery,kitchen";
+      formData.append("styles", styles);
+      formData.append("overlay_original", "1"); // Critical: preserves original artwork
+      formData.append("overlay_inset_px", "2"); // Prevents frame misalignment
+      formData.append("variants", "1"); // One variant per style
+      formData.append("return_format", "json");
 
       const fastApiPort = process.env.FASTAPI_PORT || 8001;
-      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate-template-mockups`, formData, {
+      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/outpaint/mockup`, formData, {
         headers: {
           ...formData.getHeaders(),
           'Authorization': req.headers.authorization, // Pass through auth
