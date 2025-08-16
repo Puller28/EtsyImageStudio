@@ -7,6 +7,7 @@ Etsy Art & Image Upscaler Pro is a comprehensive AI-powered web application desi
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **Critical Mockup Quality Fix (August 16, 2025)**: Restored perfect artwork preservation in mockup generation by fixing Express endpoints to call correct FastAPI `/outpaint/mockup` endpoint with `overlay_original=1` and `overlay_inset_px=2` parameters. Replaced broken external API calls with original OpenAI-based system that preserves artwork pixels exactly as-is. Both single and template mockup generation now working with authentic artwork quality.
 - **Client-Side File Size Validation (August 16, 2025)**: Implemented 5MB file size limits on all image upload components with user-friendly error messages. Both drag-and-drop and file input uploads now prevent oversized files and show clear error messages with actual file size vs. limit.
 - **Production Deployment Configuration (August 16, 2025)**: Updated Paystack plan IDs to production codes for live deployment. Pro Plan: PLN_0yglvnu9bd129yz, Business Plan: PLN_5tvhdoebxsxhddg. Ready for live payment processing with production Paystack keys.
 - **Website Rebranding (August 16, 2025)**: Rebranded from "EtsyArt Pro" to "Etsy Art & Image Upscaler Pro" for imageupscaler.app deployment. Updated all branding across navigation, titles, descriptions, and marketing copy to emphasize the dual focus on Etsy optimization and professional image upscaling capabilities.
