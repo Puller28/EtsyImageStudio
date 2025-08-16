@@ -128,23 +128,31 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   console.log("🔍 Is Loading Subscription:", isLoadingSubscription);
 
   const handleSelectPlan = async (planName: string) => {
+    setSelectedPlan(planName);
+    
+    // For free plan, redirect to registration if not logged in
+    if (planName === "Free" || planName === "Starter") {
+      if (!currentUser) {
+        // Redirect to auth page for free plan signup
+        window.location.href = '/auth';
+        return;
+      }
+      
+      toast({
+        title: "Welcome to EtsyArt Pro!",
+        description: "Your free credits are ready to use. Start creating amazing artwork!",
+      });
+      onSelectPlan?.(planName);
+      return;
+    }
+
+    // For paid plans, require login
     if (!currentUser) {
       toast({
         title: "Login Required",
         description: "Please log in to select a plan.",
         variant: "destructive",
       });
-      return;
-    }
-
-    setSelectedPlan(planName);
-    
-    if (planName === "Starter") {
-      toast({
-        title: "Welcome to EtsyArt Pro!",
-        description: "Your free credits are ready to use. Start creating amazing artwork!",
-      });
-      onSelectPlan?.(planName);
       return;
     }
 
