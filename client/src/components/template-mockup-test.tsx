@@ -116,7 +116,27 @@ export function TemplateMockupTest() {
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`❌ Error on style ${currentStyle}:`, { status: response.status, text: errorText });
-          throw new Error(`Failed to generate ${currentStyle} mockup: ${response.status}`);
+          
+          // Parse error response for user-friendly messages
+          try {
+            const errorData = JSON.parse(errorText);
+            if (response.status === 403 && errorData.requiresUpgrade) {
+              throw new Error(errorData.message || "Mockup generation requires a paid plan. Upgrade to Pro or Business plan to generate AI mockups.");
+            } else if (response.status === 402) {
+              throw new Error(`Insufficient credits. Need ${errorData.creditsNeeded || 5} credits for mockup generation.`);
+            } else {
+              throw new Error(errorData.error || errorData.message || `Failed to generate ${currentStyle} mockup`);
+            }
+          } catch (parseError) {
+            // If JSON parsing fails, use generic error message
+            if (response.status === 403) {
+              throw new Error("Mockup generation requires a paid plan. Upgrade to Pro or Business plan to generate AI mockups.");
+            } else if (response.status === 402) {
+              throw new Error("Insufficient credits. Need 5 credits for mockup generation.");
+            } else {
+              throw new Error(`Failed to generate ${currentStyle} mockup. Please try again.`);
+            }
+          }
         }
 
         const result = await response.json();
