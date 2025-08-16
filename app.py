@@ -679,15 +679,20 @@ async def generate_template_mockups(
                         if response.status == 200:
                             result = await response.json()
                             logger.info(f"🎯 API result type: {type(result)}")
+                            logger.info(f"🎯 API result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
                             mockups = []
                             
                             # Handle both single and multi-mockup API responses
                             if mode == "single_template":
                                 # Single mockup returns direct image data
+                                image_data = result.get("image_b64", "")
+                                if not image_data:
+                                    logger.warning(f"⚠️ No image_b64 found in result. Available keys: {list(result.keys())}")
+                                
                                 mockup_data = {
                                     "template": template,
                                     "variation": 1,
-                                    "image": result.get("image_b64", ""),
+                                    "image": image_data,
                                     "metadata": {"style": f"{template}_api_generated"}
                                 }
                                 mockups = [mockup_data]
