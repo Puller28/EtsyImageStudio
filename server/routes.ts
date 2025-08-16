@@ -213,6 +213,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to manually activate subscription
+  app.post("/api/debug/activate-subscription", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { planId = "pro_monthly" } = req.body;
+      
+      const { SubscriptionService } = await import("./subscription");
+      await SubscriptionService.activateSubscription(req.userId, {
+        planId: planId,
+        subscriptionId: `manual-${Date.now()}`,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      });
+      
+      console.log(`🔧 DEBUG: Manually activated ${planId} subscription for user ${req.userId}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Manually activated ${planId} subscription`,
+        userId: req.userId 
+      });
+    } catch (error) {
+      console.error("Debug subscription activation error:", error);
+      res.status(500).json({ error: "Failed to activate subscription" });
+    }
+  });
+
   // Paystack connectivity test endpoint
   app.get("/api/debug/paystack-status", async (req, res) => {
     try {
