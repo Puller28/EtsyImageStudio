@@ -37,6 +37,19 @@ async function initializeDatabase() {
       )
     `);
     
+    // Create contact messages table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS contact_messages (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'unread',
+        created_at TIMESTAMP DEFAULT now()
+      )
+    `);
+    
     console.log('✅ Database tables initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);

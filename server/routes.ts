@@ -6,7 +6,7 @@ import axios from "axios";
 import { Readable } from "stream";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertProjectSchema, insertUserSchema } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -636,6 +636,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error cancelling subscription:", error);
       res.status(500).json({ error: "Failed to cancel subscription" });
+    }
+  });
+
+  // Contact form submission endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const contactData = insertContactMessageSchema.parse(req.body);
+      
+      // Store the message in the database
+      const contactMessage = await storage.createContactMessage(contactData);
+      
+      console.log(`📧 New contact message received from: ${contactData.email} - Subject: ${contactData.subject}`);
+      
+      // TODO: Add email notification service here if needed
+      // await sendEmailNotification(contactData);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: "Message sent successfully! We'll get back to you shortly.",
+        id: contactMessage.id 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid form data", 
+          details: error.errors 
+        });
+      }
+      
+      console.error("Contact form submission error:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // Get contact messages (admin only)
+  app.get("/api/contact-messages", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      // For now, allow any authenticated user to see messages
+      // In production, you might want to restrict this to admin users
+      const messages = await storage.getContactMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Failed to get contact messages:", error);
+      res.status(500).json({ error: "Failed to get messages" });
     }
   });
 

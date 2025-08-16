@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Project, type InsertProject, type CreditTransaction, type InsertCreditTransaction } from "@shared/schema";
-import { users, projects, processedPayments, creditTransactions } from "@shared/schema";
+import { type User, type InsertUser, type Project, type InsertProject, type CreditTransaction, type InsertCreditTransaction, type ContactMessage, type InsertContactMessage } from "@shared/schema";
+import { users, projects, processedPayments, creditTransactions, contactMessages } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -33,6 +33,11 @@ export interface IStorage {
   createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
   getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]>;
   updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }>;
+
+  // Contact message methods
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  getContactMessages(): Promise<ContactMessage[]>;
+  updateContactMessageStatus(id: string, status: string): Promise<void>;
 }
 
 
@@ -42,12 +47,14 @@ export class MemStorage implements IStorage {
   private projects: Map<string, Project>;
   private processedPayments: Set<string>;
   private creditTransactions: Map<string, CreditTransaction>;
+  private contactMessages: Map<string, ContactMessage>;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.processedPayments = new Set();
     this.creditTransactions = new Map();
+    this.contactMessages = new Map();
     
     // Add a demo user
     const demoUser: User = {
@@ -218,6 +225,30 @@ export class MemStorage implements IStorage {
     
     return { newBalance, transaction };
   }
+
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const id = randomUUID();
+    const contactMessage: ContactMessage = {
+      ...message,
+      id,
+      status: "unread",
+      createdAt: new Date(),
+    };
+    this.contactMessages.set(id, contactMessage);
+    return contactMessage;
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return Array.from(this.contactMessages.values());
+  }
+
+  async updateContactMessageStatus(id: string, status: string): Promise<void> {
+    const message = this.contactMessages.get(id);
+    if (message) {
+      message.status = status;
+      this.contactMessages.set(id, message);
+    }
+  }
 }
 
 // Database storage implementation
@@ -345,6 +376,21 @@ export class DatabaseStorage implements IStorage {
     
     return { newBalance, transaction };
   }
+
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const [contactMessage] = await db.insert(contactMessages).values(message).returning();
+    return contactMessage;
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return await db.select().from(contactMessages);
+  }
+
+  async updateContactMessageStatus(id: string, status: string): Promise<void> {
+    await db.update(contactMessages)
+      .set({ status })
+      .where(eq(contactMessages.id, id));
+  }
 }
 
 // Robust storage with automatic fallback to in-memory when database fails
@@ -445,6 +491,18 @@ class RobustStorage implements IStorage {
 
   async updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }> {
     return this.executeWithFallback(storage => storage.updateUserCreditsWithTransaction(userId, amount, transactionType, description, projectId));
+  }
+
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    return this.executeWithFallback(storage => storage.createContactMessage(message));
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return this.executeWithFallback(storage => storage.getContactMessages());
+  }
+
+  async updateContactMessageStatus(id: string, status: string): Promise<void> {
+    return this.executeWithFallback(storage => storage.updateContactMessageStatus(id, status));
   }
 }
 
