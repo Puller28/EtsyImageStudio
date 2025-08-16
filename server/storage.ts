@@ -56,12 +56,12 @@ export class MemStorage implements IStorage {
     this.creditTransactions = new Map();
     this.contactMessages = new Map();
     
-    // Add a demo user (password: "password123" - bcrypt hash)
+    // Add a demo user (uses secure environment-based password)
     const demoUser: User = {
       id: "demo-user-1",
       email: "sarah@example.com",
       name: "Sarah M.",
-      password: "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LFcxhNQx3yEqzl4E6", // "password123"
+      password: process.env.DEMO_USER_PASSWORD_HASH || "", // Secure hash from environment
       avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
       credits: 47,
       subscriptionStatus: "free",
