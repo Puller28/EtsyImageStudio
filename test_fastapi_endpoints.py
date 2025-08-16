@@ -1,105 +1,81 @@
 #!/usr/bin/env python3
-"""
-FastAPI Endpoint Testing Script
-Tests all endpoints to verify single server functionality
-"""
-
 import requests
 import json
 import time
-import sys
-import os
-from pathlib import Path
 
-def test_endpoint(url, method="GET", data=None, files=None, timeout=10):
-    """Test a single endpoint and return results"""
+def test_fastapi_health():
+    print("🔍 Testing FastAPI health...")
     try:
-        start_time = time.time()
-        if method == "GET":
-            response = requests.get(url, timeout=timeout)
-        elif method == "POST":
-            response = requests.post(url, data=data, files=files, timeout=timeout)
-        
-        response_time = time.time() - start_time
-        
-        return {
-            "success": True,
-            "status_code": response.status_code,
-            "response_time": round(response_time * 1000, 2),  # ms
-            "content": response.text[:500] if response.status_code != 200 else response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
-        }
+        response = requests.get("http://127.0.0.1:8001/health", timeout=5)
+        print(f"FastAPI Health Status: {response.status_code}")
+        if response.status_code == 200:
+            print(f"Response: {response.json()}")
+            return True
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "response_time": 0
-        }
+        print(f"FastAPI Health Error: {e}")
+    return False
 
-def main():
-    base_url = f"http://localhost:{os.getenv('PORT', '8000')}"
-    print(f"🧪 Testing FastAPI Single Server at {base_url}")
-    print("=" * 60)
+def get_valid_token():
+    print("🔍 Getting valid token from Express.js...")
+    try:
+        response = requests.get("http://localhost:5000/api/user", headers={
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YjM3NWJlNy0yZTc3LTRlN2QtYjdlOS0yYjIxMTM1Nzg5ZjIiLCJpYXQiOjE3MjM3MDg1NDcsImV4cCI6MTcyNTA0OTc0N30.eJCwmXjLlYt_wEUshyA9J5sSxdZOhUMlAD8a8HwYhpw"
+        })
+        print(f"Express.js token validation: {response.status_code}")
+        if response.status_code == 200:
+            return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YjM3NWJlNy0yZTc3LTRlN2QtYjdlOS0yYjIxMTM1Nzg5ZjIiLCJpYXQiOjE3MjM3MDg1NDcsImV4cCI6MTcyNTA0OTc0N30.eJCwmXjLlYt_wEUshyA9J5sSxdZOhUMlAD8a8HwYhpw"
+    except Exception as e:
+        print(f"Token validation error: {e}")
+    return None
+
+def test_template_mockup_auth(token):
+    print("🔍 Testing template mockup authentication...")
     
-    # Test health endpoint
-    print("\n1. Health Endpoint (/healthz)")
-    result = test_endpoint(f"{base_url}/healthz")
-    if result["success"]:
-        print(f"   ✅ Status: {result['status_code']} | Time: {result['response_time']}ms")
-        print(f"   📋 Response: {result['content']}")
-    else:
-        print(f"   ❌ Failed: {result['error']}")
+    files = {"file": ("test.jpg", b"fake image data", "image/jpeg")}
+    data = {"mode": "single_template", "template": "bedroom"}
+    headers = {"Authorization": f"Bearer {token}"}
     
-    # Test root endpoint
-    print("\n2. Root Endpoint (/)")
-    result = test_endpoint(f"{base_url}/")
-    if result["success"]:
-        print(f"   ✅ Status: {result['status_code']} | Time: {result['response_time']}ms")
-        print(f"   📋 Response: {result['content']}")
-    else:
-        print(f"   ❌ Failed: {result['error']}")
-    
-    # Test status endpoint
-    print("\n3. Status Endpoint (/status)")
-    result = test_endpoint(f"{base_url}/status")
-    if result["success"]:
-        print(f"   ✅ Status: {result['status_code']} | Time: {result['response_time']}ms")
-        if isinstance(result['content'], dict):
-            print(f"   📋 FastAPI Running: {result['content'].get('fastapi_running', 'Unknown')}")
-            print(f"   📋 Mock Mode: {result['content'].get('mock_mode', 'Unknown')}")
-            print(f"   📋 RunPod Status: {result['content'].get('runpod_status', 'Unknown')}")
-        else:
-            print(f"   📋 Response: {result['content']}")
-    else:
-        print(f"   ❌ Failed: {result['error']}")
-    
-    # Test generate endpoint (if we have a test image)
-    test_image = Path("coffee_fit_test2.jpg")
-    if test_image.exists():
-        print("\n4. Generate Endpoint (/generate)")
-        with open(test_image, 'rb') as f:
-            files = {'file': f}
-            data = {
-                'prompt': 'Modern bedroom with framed coffee artwork',
-                'poll_seconds': '3'
-            }
-            result = test_endpoint(f"{base_url}/generate", method="POST", data=data, files=files, timeout=30)
-        
-        if result["success"]:
-            print(f"   ✅ Status: {result['status_code']} | Time: {result['response_time']}ms")
-            try:
-                content = json.loads(result['content']) if isinstance(result['content'], str) else result['content']
-                print(f"   📋 Job ID: {content.get('job_id', 'Missing')}")
-                print(f"   📋 Result Status: {content.get('result', {}).get('status', 'Missing')}")
-            except:
-                print(f"   📋 Response: {result['content'][:200]}...")
-        else:
-            print(f"   ❌ Failed: {result['error']}")
-    else:
-        print("\n4. Generate Endpoint (/generate)")
-        print("   ⚠️  Skipped - No test image (coffee_fit_test2.jpg) found")
-    
-    print("\n" + "=" * 60)
-    print("✅ FastAPI Single Server Test Complete")
+    try:
+        response = requests.post(
+            "http://127.0.0.1:8001/generate-template-mockups",
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=10
+        )
+        print(f"Template mockup status: {response.status_code}")
+        print(f"Response: {response.text[:300]}...")
+        return response.status_code
+    except Exception as e:
+        print(f"Template mockup error: {e}")
+        return None
 
 if __name__ == "__main__":
-    main()
+    print("🚀 FastAPI Authentication Test Suite")
+    print("=" * 50)
+    
+    # Test 1: FastAPI Health
+    if not test_fastapi_health():
+        print("❌ FastAPI not responding")
+        exit(1)
+    
+    time.sleep(1)
+    
+    # Test 2: Get valid token
+    token = get_valid_token()
+    if not token:
+        print("❌ Could not get valid token")
+        exit(1)
+    
+    time.sleep(1)
+    
+    # Test 3: Test template mockup with auth
+    status = test_template_mockup_auth(token)
+    if status == 200:
+        print("✅ Template mockup authentication working!")
+    elif status == 401:
+        print("❌ Authentication failed")
+    elif status == 422:
+        print("⚠️ Authentication OK, validation error (expected with fake data)")
+    else:
+        print(f"❓ Unexpected status: {status}")

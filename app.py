@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # JWT Configuration (matching Express.js backend)
 JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production")
+logger.info(f"🔑 FastAPI JWT Secret: hasCustom={bool(os.getenv('JWT_SECRET'))}, length={len(JWT_SECRET)}")
 
 app = FastAPI()
 app.add_middleware(
@@ -50,7 +51,11 @@ async def get_current_user(authorization: str = Header(None)):
     logger.info(f"🔍 Extracted token: {token[:20]}...")
     
     try:
-        # Decode JWT token
+        # First try to decode without verification to see the payload
+        unverified_payload = pyjwt.decode(token, options={"verify_signature": False})
+        logger.info(f"🔍 Unverified JWT payload: {unverified_payload}")
+        
+        # Now decode with verification
         payload = pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = payload.get("userId")
         logger.info(f"🔍 JWT payload: userId={user_id}")

@@ -48,6 +48,7 @@ function Router() {
           <Route path="/settings" component={Settings} />
           <Route path="/buy-credits" component={BuyCredits} />
           <Route path="/template-mockups" component={TemplateMockupPage} />
+          <Route path="/template-mockup" component={TemplateMockupPage} />
           <Route path="/payment-callback/:reference" component={PaymentCallback} />
           <Route path="/payment-callback" component={PaymentCallback} />
         </>
