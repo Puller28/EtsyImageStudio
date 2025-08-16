@@ -1,14 +1,18 @@
-import os, io, base64, time, asyncio, logging
-from typing import Dict, Any, List, Optional, Literal
+import os, io, base64, time, asyncio, logging, zipfile
+from math import ceil
+from typing import Dict, Any, List, Optional, Literal, Tuple
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Depends
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import requests
 import aiohttp
 import jwt as pyjwt
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps, ImageFile
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Allow loading of truncated images
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 load_dotenv()
 
@@ -17,6 +21,53 @@ API_KEY = os.getenv("RUNPOD_API_KEY")
 ENDPOINT_BASE = os.getenv("RUNPOD_ENDPOINT_BASE")
 RENDER_API_URL = os.getenv("RENDER_API_URL", "https://mockup-api-cv83.onrender.com")
 MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"  # Try real API first
+
+# =========================
+# Mockup Generation Config
+# =========================
+
+DEFAULT_TARGET_PX = int(os.getenv("TARGET_PX", "2048"))
+DEFAULT_INGEST_LONG_EDGE = int(os.getenv("INGEST_LONG_EDGE", "2048"))
+OPENAI_MODEL = os.getenv("OPENAI_IMAGES_MODEL", "gpt-image-1")
+
+STYLE_PROMPTS: Dict[str, str] = {
+    "living_room": (
+        "Create a realistic interior mockup AROUND the existing artwork. "
+        "Paint a modern living room: matte neutral wall with subtle texture, focused ceiling spotlight, "
+        "thin black metal frame with correct perspective and natural shadows. Minimalist, photorealistic, no text."
+    ),
+    "bedroom": (
+        "Around the existing artwork, paint a cozy bedroom: warm neutral wall, soft daylight, "
+        "light wood frame around the artwork, gentle shadows. Photorealistic, no text or logos."
+    ),
+    "study": (
+        "Around the existing artwork, paint a refined study/home office: desaturated wall paint, "
+        "subtle bookshelf blur and desk hints, muted daylight, thin dark metal frame, soft realistic shadows. No text."
+    ),
+    "gallery": (
+        "Paint a clean gallery wall around the existing artwork: white wall with subtle microtexture, "
+        "museum track lighting from above, thin black metal frame, natural falloff shadows. No text."
+    ),
+    "kitchen": (
+        "Around the existing artwork, paint a tasteful kitchen nook: light painted wall, subtle tile/counter hints, "
+        "soft daylight, thin black frame, realistic shadows. No text."
+    ),
+}
+DEFAULT_STYLE_LIST = ["living_room", "bedroom", "study", "gallery", "kitchen"]
+
+PRESERVE_DIRECTIVE = (
+    "IMPORTANT: Preserve the existing artwork pixels exactly as-is within the KEEP region of the mask. "
+    "Do not modify, blur, repaint, or regenerate any artwork pixels. "
+    "Do not overlap the kept region with frame or mat; leave a clean thin gap; nothing should cover the art."
+)
+
+PRINT_SIZES: Dict[str, Tuple[int, int]] = {
+    "4x5":   (1600, 2000),
+    "3x4":   (1536, 2048),
+    "2x3":   (1600, 2400),
+    "11x14": (1650, 2100),
+    "A4":    (1654, 2339),
+}
 
 # Build URLs only if endpoint is configured
 # ENDPOINT_BASE should be the full endpoint URL without /run or /status suffixes
@@ -113,6 +164,112 @@ async def deduct_credits(user_id: str, credits: int, authorization: str):
     except Exception as e:
         logger.error(f"Credit deduction error: {str(e)}")
         raise HTTPException(500, "Credit deduction failed")
+
+# =========================
+# Mockup Helper Functions
+# =========================
+
+def _img_to_png_bytes(img: Image.Image) -> bytes:
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()
+
+def _resize_fit(img: Image.Image, target: Tuple[int, int]) -> Image.Image:
+    return ImageOps.contain(img, target, Image.LANCZOS)
+
+def _ingest_simple_resize(file_bytes: bytes, enable: bool, max_long_edge: int) -> Image.Image:
+    """
+    Proportional resize ONLY if long edge exceeds max_long_edge.
+    No padding/cropping; preserves aspect ratio exactly.
+    """
+    img = Image.open(io.BytesIO(file_bytes))
+    img = ImageOps.exif_transpose(img)
+    if not enable:
+        return img.convert("RGBA")
+    w, h = img.size
+    long_edge = max(w, h)
+    if long_edge > max_long_edge:
+        s = max_long_edge / float(long_edge)
+        img = img.resize((int(w * s), int(h * s)), Image.LANCZOS)
+    return img.convert("RGBA")
+
+def _pad_canvas_keep_center(img: Image.Image, pad_ratio: float, target_side: int):
+    """
+    Upscale to target_side (max edge) ONLY if image is smaller; never downscale.
+    Then add border by pad_ratio; returns (canvas_rgba, art_bbox_on_canvas).
+    """
+    img = img.convert("RGBA")
+    longest = max(img.size)
+    if longest < target_side:
+        scale = target_side / float(longest)
+        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
+
+    w, h = img.size
+    border = int(pad_ratio * max(w, h))
+    canvas_w, canvas_h = w + 2 * border, h + 2 * border
+
+    canvas = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    x0, y0 = border, border
+    canvas.paste(img, (x0, y0), img)
+    return canvas, (x0, y0, x0 + w, y0 + h)
+
+def _build_outpaint_mask(canvas_size: Tuple[int, int], keep_bbox: Tuple[int, int, int, int]) -> Image.Image:
+    """
+    OpenAI Images/edits semantics for gpt-image-1:
+      transparent (alpha=0)  -> EDIT
+      opaque     (alpha=255) -> KEEP
+    We KEEP the artwork rectangle; EDIT everything else.
+    """
+    W, H = canvas_size
+    x0, y0, x1, y1 = keep_bbox
+    alpha = Image.new("L", (W, H), 0)               # EDIT outside
+    keep  = Image.new("L", (x1 - x0, y1 - y0), 255) # KEEP inside
+    alpha.paste(keep, (x0, y0))
+    mask = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    mask.putalpha(alpha)
+    return mask
+
+def _api_edit_size_for(canvas_size: Tuple[int, int]) -> Tuple[int, int, str]:
+    """
+    Pick OpenAI-supported edit size matching orientation:
+      - Portrait  -> 1024x1536
+      - Landscape -> 1536x1024
+      - Square    -> 1024x1024
+    """
+    W, H = canvas_size
+    if W == H:
+        return 1024, 1024, "1024x1024"
+    if H > W:
+        return 1024, 1536, "1024x1536"
+    return 1536, 1024, "1536x1024"
+
+def _openai_images_edit_multi(image_png: bytes, mask_png: bytes, prompt: str, n: int, size_str: str) -> List[str]:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set on server")
+    url = "https://api.openai.com/v1/images/edits"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    org_id = os.getenv("OPENAI_ORG_ID")
+    if org_id:
+        headers["OpenAI-Organization"] = org_id
+
+    data = {"model": OPENAI_MODEL, "prompt": prompt, "size": size_str, "n": str(max(1, min(int(n), 10)))}
+    files = {
+        "image": ("canvas.png", image_png, "image/png"),
+        "mask":  ("mask.png",   mask_png,  "image/png"),
+    }
+    try:
+        resp = requests.post(url, headers=headers, data=data, files=files, timeout=300)
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Images API request failed: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Image API error [{resp.status_code}]: {resp.text}")
+
+    js = resp.json()
+    items = js.get("data") or []
+    if not items:
+        raise HTTPException(status_code=502, detail=f"Image API returned no data: {js}")
+    return [it.get("b64_json") for it in items if it.get("b64_json")]
 
 # ---------- helpers ----------
 
@@ -644,107 +801,39 @@ async def generate_template_mockups(
                 "count": len(mockups)
             }
         else:
-            # Real API call to mockup service (when not in mock mode)
-            logger.info(f"🌐 Calling mockup service: {RENDER_API_URL}")
+            # Use local integrated OpenAI API instead of external service
+            logger.info(f"🔧 Using integrated local mockup generation")
             try:
-                # Choose the correct endpoint and prepare form data
-                form_data = aiohttp.FormData()
-                img_bytes_final = base64.b64decode(img_b64)
-                form_data.add_field('file', img_bytes_final, 
-                                  filename='artwork.jpg', 
-                                  content_type='image/jpeg')
+                from local_mockup_api import generate_local_mockups
+                result = generate_local_mockups(base64.b64decode(img_b64), mode, template)
                 
-                # Updated API uses single endpoint with 'styles' parameter
-                endpoint = "/outpaint/mockup"
+                # Convert to legacy format for frontend compatibility
+                mockups = []
+                if "results" in result:
+                    for item in result["results"]:
+                        style = item.get("style", "unknown")
+                        image_data = item.get("image_b64", "")
+                        mockups.append({
+                            "template": style,
+                            "variation": 1,
+                            "image": image_data,
+                            "metadata": {"style": f"{style}_local_generated"}
+                        })
                 
-                if mode == "single_template":
-                    # Single template: pass one style
-                    form_data.add_field('styles', template)
-                    form_data.add_field('variants', '1')
-                else:
-                    # Multiple templates: pass comma-separated styles
-                    form_data.add_field('styles', ','.join(available_templates))
-                    form_data.add_field('variants', '1')  # 1 variant per style
+                logger.info(f"✅ Generated {len(mockups)} mockups locally using OpenAI API")
                 
-                # Common parameters
-                form_data.add_field('return_format', 'json')
-                form_data.add_field('target_px', '1536')
-                form_data.add_field('ingest_resize', '1')
-                
-                logger.info(f"🔗 Request URL: {RENDER_API_URL}{endpoint}")
-                logger.info(f"🔗 Form data fields: {len(form_data._fields)} fields prepared")
-                logger.info(f"🎯 Template: {template}, Mode: {mode}")
-                
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        f"{RENDER_API_URL}{endpoint}",
-                        data=form_data,
-                        timeout=aiohttp.ClientTimeout(total=60)  # 1 minute timeout - external API may be slow
-                    ) as response:
-                        
-                        if response.status == 200:
-                            result = await response.json()
-                            logger.info(f"🎯 API result type: {type(result)}")
-                            logger.info(f"🎯 API result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
-                            mockups = []
-                            
-                            # Handle both single and multi-mockup API responses
-                            if mode == "single_template":
-                                # Single mockup returns direct image data
-                                image_data = result.get("image_b64", "")
-                                if not image_data:
-                                    logger.warning(f"⚠️ No image_b64 found in result. Available keys: {list(result.keys())}")
-                                
-                                mockup_data = {
-                                    "template": template,
-                                    "variation": 1,
-                                    "image": image_data,
-                                    "metadata": {"style": f"{template}_api_generated"}
-                                }
-                                mockups = [mockup_data]
-                            else:
-                                # Multi-mockup returns array of results
-                                if isinstance(result, list):
-                                    for i, item in enumerate(result):
-                                        mockups.append({
-                                            "template": available_templates[i] if i < len(available_templates) else f"template_{i}",
-                                            "variation": 1,
-                                            "image": item.get("image_b64", ""),
-                                            "metadata": {"style": f"api_generated_{i}"}
-                                        })
-                                else:
-                                    # Fallback for unexpected response format
-                                    mockups = [{
-                                        "template": "unknown",
-                                        "variation": 1,
-                                        "image": result.get("image_b64", ""),
-                                        "metadata": {"style": "api_generated"}
-                                    }]
-                            
-                            logger.info(f"✅ Template mockups generated successfully: {len(mockups)} images")
-                            return {
-                                "success": True,
-                                "mode": mode,
-                                "template": template,
-                                "mockups": mockups,
-                                "count": len(mockups)
-                            }
-                        else:
-                            error_text = await response.text()
-                            logger.error(f"❌ Mockup service error {response.status}: {error_text[:200]}")
-                            
-                            # Check for specific API issues  
-                            if response.status == 422:
-                                raise HTTPException(400, "Invalid request parameters or image format")
-                            elif response.status == 413:
-                                raise HTTPException(400, "Image file too large, try with smaller image")
-                            elif response.status >= 500:
-                                raise HTTPException(503, "External API temporarily unavailable")
-                            else:
-                                raise HTTPException(500, f"API error ({response.status}): {error_text[:100]}")
-            except (aiohttp.ServerTimeoutError, asyncio.TimeoutError):
-                logger.error("⏰ External mockup service timeout - service may be sleeping or overloaded")
-                raise HTTPException(504, "External mockup service is currently unavailable (timeout). This can happen when the service is sleeping or overloaded. Please try again in a few moments.")
+                return {
+                    "success": True,
+                    "mode": mode,
+                    "template": template,
+                    "mockups": mockups,
+                    "count": len(mockups),
+                    "local_generation": True
+                }
+            except Exception as e:
+                logger.error(f"❌ Local generation failed: {str(e)}")
+                # Return error instead of fallback
+                raise HTTPException(500, f"Mockup generation failed: {str(e)}")
                     
     except Exception as e:
         logger.error(f"❌ Template generation failed: {type(e).__name__}: {str(e)}")
