@@ -164,6 +164,8 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", currentProject?.id] });
+      // Invalidate user query to update credit balance in header
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Listing Generated",
         description: "Your Etsy listing content has been generated successfully.",
@@ -188,6 +190,8 @@ export default function Dashboard() {
     },
     onSuccess: (result) => {
       setStandaloneListingResult(result);
+      // Invalidate user query to update credit balance in header
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Listing Generated",
         description: "Your Etsy listing content has been generated successfully.",
