@@ -615,6 +615,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Paystack webhook endpoint verification (GET)
+  app.get("/api/webhook/paystack", (req, res) => {
+    res.status(200).json({ 
+      message: "Paystack webhook endpoint is active",
+      url: "https://imageupscaler.app/api/webhook/paystack",
+      methods: ["POST"],
+      events: ["charge.success", "subscription.disable"],
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Paystack webhook endpoint - matches production webhook URL configuration
   app.post("/api/webhook/paystack", async (req, res) => {
     try {
