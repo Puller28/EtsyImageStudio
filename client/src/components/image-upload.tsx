@@ -20,13 +20,13 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
     }
   }, [onImageUpload]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,
     accept: {
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png']
     },
-    maxSize: 50 * 1024 * 1024, // 50MB
+    maxSize: 5 * 1024 * 1024, // 5MB
     multiple: false
   });
 
@@ -39,22 +39,44 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
         </h3>
         
         {!uploadedImage ? (
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 ${
-              isDragActive ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary"
-            }`}
-          >
-            <input {...getInputProps()} />
-            <div className="space-y-2">
-              <CloudUpload className="w-12 h-12 text-gray-400 mx-auto" />
-              <p className="text-lg font-medium text-gray-900">
-                {isDragActive ? "Drop your artwork here" : "Drop your AI artwork here"}
-              </p>
-              <p className="text-sm text-gray-500">or click to browse files</p>
-              <p className="text-xs text-gray-400">JPG, PNG up to 50MB</p>
+          <>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 ${
+                isDragActive ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary"
+              }`}
+            >
+              <input {...getInputProps()} />
+              <div className="space-y-2">
+                <CloudUpload className="w-12 h-12 text-gray-400 mx-auto" />
+                <p className="text-lg font-medium text-gray-900">
+                  {isDragActive ? "Drop your artwork here" : "Drop your AI artwork here"}
+                </p>
+                <p className="text-sm text-gray-500">or click to browse files</p>
+                <p className="text-xs text-gray-400">JPG, PNG up to 5MB</p>
+              </div>
             </div>
-          </div>
+            
+            {/* Error messages for rejected files */}
+            {fileRejections.length > 0 && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="text-sm text-red-600">
+                  {fileRejections.map(({ file, errors }) => (
+                    <div key={file.name}>
+                      <p className="font-medium">{file.name}</p>
+                      {errors.map((error) => (
+                        <p key={error.code} className="text-xs">
+                          {error.code === 'file-too-large' 
+                            ? `File is too large. Maximum size allowed is 5MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
+                            : error.message}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="space-y-4">
             {/* Large Preview */}

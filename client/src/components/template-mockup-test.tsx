@@ -58,6 +58,13 @@ export function TemplateMockupTest() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Check file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (selectedFile.size > maxSize) {
+        setError(`File is too large. Maximum size allowed is 5MB. Your file is ${(selectedFile.size / (1024 * 1024)).toFixed(1)}MB.`);
+        return;
+      }
+      
       setFile(selectedFile);
       setError("");
     }
@@ -204,9 +211,10 @@ export function TemplateMockupTest() {
               disabled={loading}
               data-testid="input-artwork-file"
             />
+            <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
             {file && (
               <Badge variant="secondary" className="mt-2">
-                Selected: {file.name}
+                Selected: {file.name} ({(file.size / (1024 * 1024)).toFixed(1)}MB)
               </Badge>
             )}
           </div>
