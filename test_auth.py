@@ -1,11 +1,32 @@
 #!/usr/bin/env python3
+"""
+Authentication Test Script - Security-Focused Version
+
+This script tests FastAPI authentication without hardcoding sensitive tokens.
+
+Usage:
+1. Set TEST_JWT_TOKEN environment variable with your token
+2. Run: python test_auth.py
+
+Example:
+export TEST_JWT_TOKEN="your-test-token-here"
+python test_auth.py
+"""
+
 import requests
 import json
+import os
 
-print("🔍 Using token from browser localStorage...")
+print("🔍 Loading token from environment variable...")
 
-# Use token from browser (observed from logs)
-token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YjM3NWJlNy0yZTc3LTRlN2QtYjdlOS0yYjIxMTM1Nzg5ZjIiLCJpYXQiOjE3MjM3MDg1NDcsImV4cCI6MTcyNTA0OTc0N30.eJCwmXjLlYt_wEUshyA9J5sSxdZOhUMlAD8a8HwYhpw"
+# Use token from secure environment variable
+token = os.getenv("TEST_JWT_TOKEN")
+
+if not token:
+    print("❌ No TEST_JWT_TOKEN environment variable found")
+    print("💡 To test authentication, set TEST_JWT_TOKEN environment variable")
+    print("Example: export TEST_JWT_TOKEN='your-token-here'")
+    exit(1)
 
 print(f"Token: {token[:30]}...")
 
