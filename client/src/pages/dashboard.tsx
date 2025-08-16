@@ -10,7 +10,7 @@ import WorkflowProgress from "@/components/workflow-progress";
 import ImageUpload from "@/components/image-upload";
 import AIArtGenerator from "@/components/ai-art-generator";
 import ProcessingControls from "@/components/processing-controls";
-import MockupTemplates from "@/components/mockup-templates";
+
 import EtsyListingGenerator from "@/components/etsy-listing-generator";
 import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
@@ -28,7 +28,7 @@ interface UploadedImage {
 
 export default function Dashboard() {
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | undefined>();
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("living-room");
+
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
@@ -252,7 +252,7 @@ export default function Dashboard() {
     formData.append("artworkTitle", uploadedImage.file.name.replace(/\.[^/.]+$/, ""));
     formData.append("styleKeywords", "digital art");
     formData.append("upscaleOption", options.upscaleOption);
-    formData.append("mockupTemplate", selectedTemplate);
+
 
     console.log("🟠 About to call createProjectMutation.mutate with FormData");
     createProjectMutation.mutate(formData);
@@ -379,11 +379,6 @@ export default function Dashboard() {
       status: projectStatus?.resizedImages && projectStatus.resizedImages.length > 0 ? "completed" : "pending"
     },
     {
-      id: "mockup",
-      label: "Generate 5 professional mockups",
-      status: projectStatus?.mockupImageUrl ? "completed" : "pending"
-    },
-    {
       id: "package",
       label: "Package assets",
       status: projectStatus?.zipUrl ? "completed" : "pending"
@@ -401,11 +396,6 @@ export default function Dashboard() {
       id: "formats",
       label: "5 print-ready formats",
       status: projectStatus?.resizedImages && projectStatus.resizedImages.length > 0 ? "completed" : "pending"
-    },
-    {
-      id: "mockup",
-      label: "5 professional mockups",
-      status: projectStatus?.mockupImageUrl ? "completed" : "pending"
     },
     {
       id: "listing",
@@ -555,10 +545,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            <MockupTemplates
-              onSelectTemplate={setSelectedTemplate}
-              selectedTemplate={selectedTemplate}
-            />
+
           </div>
 
           {/* Right Column */}

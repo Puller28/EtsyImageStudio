@@ -702,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const { artworkTitle, styleKeywords, upscaleOption, mockupTemplate } = req.body;
+      const { artworkTitle, styleKeywords, upscaleOption } = req.body;
       
       // Check user credits before project creation
       const user = await storage.getUser(req.userId);
@@ -719,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: artworkTitle || "Untitled Artwork",
         originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
         upscaleOption: upscaleOption || "2x",
-        mockupTemplate: mockupTemplate || "living-room",
+
         artworkTitle: artworkTitle || "Untitled Artwork",
         styleKeywords: styleKeywords || "digital art"
       });
@@ -799,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateProject(project.id, {
         status: "completed",
         zipUrl: "data:application/zip;base64,UEsDBAoAAAAAAItJJVkAAAAAAAAAAAAAAAAJAAAAbW9ja3VwLmpwZw==",
-        mockupImageUrl: project.upscaledImageUrl || project.originalImageUrl,
+
         resizedImages: [project.originalImageUrl, project.originalImageUrl, project.originalImageUrl, project.originalImageUrl, project.originalImageUrl]
       });
 
@@ -863,15 +863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Add mockup images
-      if (project.mockupImages) {
-        Object.entries(project.mockupImages).forEach(([key, url], index) => {
-          if (url && typeof url === 'string' && url.startsWith('data:image/')) {
-            const base64Data = url.split(',')[1];
-            zip.file(`mockups/mockup-${index + 1}.jpg`, base64Data, { base64: true });
-          }
-        });
-      }
+
 
       // Add Etsy listing content if available
       if (project.etsyListing) {
@@ -1574,36 +1566,9 @@ async function processProjectAsync(project: any) {
     
     console.log('✅ Created', resizedImages.length, 'print formats');
     
-    // Step 3: Generate mockups
-    console.log('Step 3: Generating mockups...');
-    const mockupTemplate = project.mockupTemplate || 'living-room';
-    
-    const mockupImages: { [key: string]: string } = {};
-    
-    try {
-      // Generate mockups for the selected template category
-      const mockupBuffers = await generateMockupsForCategory(upscaledBuffer, mockupTemplate);
-      
-      for (const [mockupId, buffer] of Object.entries(mockupBuffers)) {
-        mockupImages[mockupId] = `data:image/jpeg;base64,${buffer.toString('base64')}`;
-      }
-      
-      console.log('✅ Generated', Object.keys(mockupImages).length, 'mockups');
-    } catch (error) {
-      console.error('❌ Mockup generation failed:', error);
-      // Use upscaled image as fallback for mockups
-      const templates = getTemplatesForCategory(mockupTemplate);
-      for (let i = 0; i < Math.min(5, templates.length); i++) {
-        const template = templates[i];
-        mockupImages[template.id] = upscaledImageUrl;
-      }
-    }
-    
     // Update project with processed assets
     await storage.updateProject(project.id, {
       upscaledImageUrl,
-      mockupImageUrl: Object.values(mockupImages)[0] || upscaledImageUrl,
-      mockupImages,
       resizedImages,
       zipUrl: `/api/projects/${project.id}/download-zip`,
       status: "completed"
