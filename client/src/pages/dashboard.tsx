@@ -169,6 +169,14 @@ export default function Dashboard() {
         description: "Your Etsy listing content has been generated successfully.",
       });
     },
+    onError: (error: any) => {
+      console.error("Listing generation error:", error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate Etsy listing. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Update current step based on project status
