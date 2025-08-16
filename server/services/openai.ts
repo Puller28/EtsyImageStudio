@@ -1,8 +1,21 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// Debug environment variables
+console.log('🔐 OpenAI Environment Debug:', {
+  hasOPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+  OPENAI_API_KEY_length: process.env.OPENAI_API_KEY?.length,
+  OPENAI_API_KEY_preview: process.env.OPENAI_API_KEY?.substring(0, 10) + '...',
+  allEnvKeys: Object.keys(process.env).filter(key => key.includes('OPENAI')),
+});
+
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey || apiKey === "default_key") {
+  throw new Error(`OpenAI API key not found in environment. Available keys: ${Object.keys(process.env).filter(key => key.includes('OPENAI')).join(', ')}`);
+}
+
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
+  apiKey: apiKey
 });
 
 export async function generateEtsyListing(artworkTitle: string, styleKeywords: string): Promise<{
