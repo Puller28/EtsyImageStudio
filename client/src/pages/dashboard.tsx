@@ -616,7 +616,16 @@ export default function Dashboard() {
                 status: p.status,
                 thumbnailUrl: p.originalImageUrl
               }))}
-              onViewProject={(id) => console.log("View project:", id)}
+              onViewProject={(id) => {
+                console.log("🔍 Selecting project:", id);
+                const selectedProject = projects.find(p => p.id === id);
+                if (selectedProject) {
+                  setCurrentProject(selectedProject);
+                  console.log("✅ Current project set:", selectedProject.id);
+                } else {
+                  console.error("❌ Project not found:", id);
+                }
+              }}
             />
           )}
         </div>
