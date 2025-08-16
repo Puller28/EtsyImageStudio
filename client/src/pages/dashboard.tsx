@@ -156,7 +156,7 @@ export default function Dashboard() {
 
   // Removed complex mutation system in favor of direct fetch calls
 
-  // Generate listing mutation
+  // Generate listing mutation for projects
   const generateListingMutation = useMutation({
     mutationFn: async ({ projectId, data }: { projectId: string; data: any }) => {
       const response = await apiRequest("POST", `/api/projects/${projectId}/generate-listing`, data);
@@ -171,6 +171,30 @@ export default function Dashboard() {
     },
     onError: (error: any) => {
       console.error("Listing generation error:", error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate Etsy listing. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Standalone listing generation mutation
+  const [standaloneListingResult, setStandaloneListingResult] = useState<any>(null);
+  const standaloneListingMutation = useMutation({
+    mutationFn: async (data: { artworkTitle: string; styleKeywords: string }) => {
+      const response = await apiRequest("POST", "/api/generate-listing", data);
+      return response.json();
+    },
+    onSuccess: (result) => {
+      setStandaloneListingResult(result);
+      toast({
+        title: "Listing Generated",
+        description: "Your Etsy listing content has been generated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Standalone listing generation error:", error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate Etsy listing. Please try again.",
@@ -306,19 +330,21 @@ export default function Dashboard() {
   const handleGenerateListing = async (data: { artworkTitle: string; styleKeywords: string }) => {
     console.log("📝 handleGenerateListing called:", { data, currentProject: currentProject?.id });
     
-    if (!currentProject) {
-      console.log("❌ No current project!");
-      return;
-    }
-    
     console.log("🚀 Starting listing generation...");
     setIsGeneratingListing(true);
     try {
       console.log("📡 Making API call...");
-      await generateListingMutation.mutateAsync({
-        projectId: currentProject.id,
-        data
-      });
+      
+      // Use current project if available, otherwise use standalone endpoint
+      if (currentProject) {
+        await generateListingMutation.mutateAsync({
+          projectId: currentProject.id,
+          data
+        });
+      } else {
+        await standaloneListingMutation.mutateAsync(data);
+      }
+      
       console.log("✅ API call completed");
     } catch (error) {
       console.error("❌ API call failed:", error);
@@ -571,7 +597,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <EtsyListingGenerator
               onGenerate={handleGenerateListing}
-              generatedListing={projectStatus?.etsyListing || undefined}
+              generatedListing={currentProject ? (projectStatus?.etsyListing || undefined) : standaloneListingResult}
               isGenerating={isGeneratingListing}
             />
 

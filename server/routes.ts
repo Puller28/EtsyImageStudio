@@ -788,7 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate Etsy listing
+  // Generate Etsy listing for project
   app.post("/api/projects/:id/generate-listing", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.userId!;
@@ -829,6 +829,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(listing);
     } catch (error) {
       console.error("Failed to generate listing:", error);
+      res.status(500).json({ error: "Failed to generate listing" });
+    }
+  });
+
+  // Generate standalone Etsy listing (independent of any project)
+  app.post("/api/generate-listing", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.userId!;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Check if user has enough credits
+      const user = await storage.getUser(userId);
+      if (!user || user.credits < 1) {
+        return res.status(402).json({ error: "Insufficient credits. Need 1 credit for Etsy listing generation." });
+      }
+
+      // Deduct 1 credit and create transaction
+      await storage.updateUserCreditsWithTransaction(
+        userId, 
+        -1, 
+        "deduction", 
+        "Standalone Etsy Listing Generation"
+      );
+
+      const { artworkTitle, styleKeywords } = req.body;
+      const listing = await generateEtsyListing(artworkTitle, styleKeywords);
+      
+      res.json(listing);
+    } catch (error) {
+      console.error("Failed to generate standalone listing:", error);
       res.status(500).json({ error: "Failed to generate listing" });
     }
   });
