@@ -1280,6 +1280,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Single mockup generation endpoint for sequential processing
+  app.post("/api/generate-single-mockup", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Prepare form data for FastAPI
+      const formData = new FormData();
+      formData.append("file", req.file.buffer, {
+        filename: req.file.originalname || "artwork.jpg",
+        contentType: req.file.mimetype,
+      });
+      formData.append("style", req.body.style || "living_room");
+
+      const fastApiPort = process.env.FASTAPI_PORT || 8001;
+      const response = await axios.post(`http://127.0.0.1:${fastApiPort}/generate-single-mockup`, formData, {
+        headers: {
+          ...formData.getHeaders(),
+          'Authorization': req.headers.authorization, // Pass through auth
+        },
+        timeout: 60000, // 1 minute per single mockup
+      });
+
+      res.json(response.data);
+    } catch (error) {
+      console.error("Single mockup generation error:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        res.status(error.response.status).json({ error: error.response.data });
+      } else {
+        res.status(500).json({ 
+          error: error instanceof Error ? error.message : "Single mockup generation failed" 
+        });
+      }
+    }
+  });
+
   app.post("/api/generate-template-mockups", upload.single("file"), async (req, res) => {
     try {
       if (!req.file) {

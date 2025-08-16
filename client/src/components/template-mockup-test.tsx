@@ -188,7 +188,7 @@ export function TemplateMockupTest() {
         formData.append('file', file);
         formData.append('style', currentStyle);
 
-        const response = await fetch('http://localhost:8001/generate-single-mockup', {
+        const response = await fetch('/api/generate-single-mockup', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

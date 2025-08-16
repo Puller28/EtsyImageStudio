@@ -175,7 +175,7 @@ def _img_to_png_bytes(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 def _resize_fit(img: Image.Image, target: Tuple[int, int]) -> Image.Image:
-    return ImageOps.contain(img, target, Image.LANCZOS)
+    return ImageOps.contain(img, target, Image.Resampling.LANCZOS)
 
 def _ingest_simple_resize(file_bytes: bytes, enable: bool, max_long_edge: int) -> Image.Image:
     """
@@ -190,7 +190,7 @@ def _ingest_simple_resize(file_bytes: bytes, enable: bool, max_long_edge: int) -
     long_edge = max(w, h)
     if long_edge > max_long_edge:
         s = max_long_edge / float(long_edge)
-        img = img.resize((int(w * s), int(h * s)), Image.LANCZOS)
+        img = img.resize((int(w * s), int(h * s)), Image.Resampling.LANCZOS)
     return img.convert("RGBA")
 
 def _pad_canvas_keep_center(img: Image.Image, pad_ratio: float, target_side: int):
@@ -202,7 +202,7 @@ def _pad_canvas_keep_center(img: Image.Image, pad_ratio: float, target_side: int
     longest = max(img.size)
     if longest < target_side:
         scale = target_side / float(longest)
-        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
+        img = img.resize((int(img.width * scale), int(img.height * scale)), Image.Resampling.LANCZOS)
 
     w, h = img.size
     border = int(pad_ratio * max(w, h))

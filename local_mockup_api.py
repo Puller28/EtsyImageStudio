@@ -211,7 +211,7 @@ def generate_single_mockup(img_bytes: bytes, style: str) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Single mockup generation failed: {e}")
+        print(f"❌ Single mockup generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Single mockup generation failed: {str(e)}")
 
 def generate_local_mockups(img_bytes: bytes, mode: str, template: str) -> Dict[str, Any]:
