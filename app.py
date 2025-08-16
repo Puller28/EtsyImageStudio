@@ -144,14 +144,14 @@ async def get_current_user(authorization: str = Header(None)):
         logger.error(f"❌ Auth error: {str(e)}")
         raise HTTPException(401, "Authentication failed")
 
-async def deduct_credits(user_id: str, credits: int, authorization: str):
+async def deduct_credits(user_id: str, credits: int, authorization: str, description: str = "Credit deduction"):
     """Deduct credits from user account via Express.js backend"""
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost:5000/api/deduct-credits",
                 headers={"Authorization": authorization, "Content-Type": "application/json"},
-                json={"credits": credits}
+                json={"credits": credits, "description": description}
             ) as response:
                 if response.status == 200:
                     result = await response.json()
@@ -746,7 +746,7 @@ async def generate_template_mockups(
         raise HTTPException(401, "Invalid user data")
     logger.info(f"💳 Deducting 5 credits for template mockup generation from user {user_id}")
     try:
-        await deduct_credits(user_id, 5, authorization)
+        await deduct_credits(user_id, 5, authorization, "Template Mockup Generation")
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -1107,7 +1107,7 @@ async def outpaint_mockup(
         raise HTTPException(401, "Invalid user data")
     logger.info(f"💳 Deducting 5 credits for outpaint mockup generation from user {user_id}")
     try:
-        await deduct_credits(user_id, 5, authorization)
+        await deduct_credits(user_id, 5, authorization, "Outpainted Mockup Generation")
     except HTTPException as e:
         raise e
     except Exception as e:

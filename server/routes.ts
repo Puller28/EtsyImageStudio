@@ -746,10 +746,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const project = await storage.createProject(projectData);
       
-      // Deduct credits based on upscale option (2x = 1 credit, 4x = 2 credits)
-      const newCredits = Math.max(0, user.credits - creditsRequired);
-      await storage.updateUserCredits(req.userId, newCredits);
-      console.log(`💳 Deducted ${creditsRequired} credits for ${upscaleOption} upscaling from user ${req.userId}. New balance: ${newCredits}`);
+      // Deduct credits based on upscale option with transaction record
+      await storage.updateUserCreditsWithTransaction(req.userId, -creditsRequired, 'Image Upscaling', `${upscaleOption} image upscaling`);
+      console.log(`💳 Deducted ${creditsRequired} credits for ${upscaleOption} upscaling from user ${req.userId}`);
       
       res.json(project);
     } catch (error) {
@@ -910,11 +909,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate and download ZIP file with actual assets
-  app.get("/api/projects/:id/download-zip", async (req, res) => {
+  app.get("/api/projects/:id/download-zip", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project || project.status !== "completed") {
         return res.status(404).json({ error: "Project not ready for download" });
+      }
+
+      // Track download activity (informational only - no credits deducted)
+      if (req.userId) {
+        try {
+          await storage.updateUserCreditsWithTransaction(req.userId, 0, 'Project Download', `Downloaded ${project.title || 'project'}`);
+        } catch (error) {
+          console.warn('Failed to record download transaction:', error);
+        }
       }
 
       const JSZip = (await import('jszip')).default;
@@ -998,10 +1006,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('AI art generation completed successfully');
       
-      // Deduct 2 credits for AI art generation
-      const newCredits = Math.max(0, user.credits - 2);
-      await storage.updateUserCredits(req.userId!, newCredits);
-      console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId} new balance: ${newCredits}`);
+      // Deduct 2 credits for AI art generation with transaction record
+      await storage.updateUserCreditsWithTransaction(req.userId!, -2, 'AI Art Generation', 'Generated AI artwork');
+      console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId}`);
       
       res.json({ 
         image: base64Image,
