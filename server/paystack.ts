@@ -113,9 +113,9 @@ export const subscriptionPlans = [
     features: [
       '800 credits per month',
       'All Pro plan features', 
-      'Bulk mockup generation',
-      'Advanced AI features',
-      'Priority support'
+      'More credits for heavy usage',
+      'Suitable for agencies & teams',
+      'Best value per credit'
     ],
     paystackPlanCode: 'PLN_rlfsy9bnb8vqwsf'
   }
