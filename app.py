@@ -963,7 +963,7 @@ async def outpaint_mockup(
             async with session.post(
                 f"{RENDER_API_URL}/outpaint/mockup",
                 data=form_data,
-                timeout=aiohttp.ClientTimeout(total=300)  # 5 minute timeout for outpainting
+                timeout=aiohttp.ClientTimeout(total=600)  # 10 minute timeout for outpainting
             ) as response:
                 
                 if response.status == 200:
