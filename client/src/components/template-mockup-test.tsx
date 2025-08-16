@@ -63,92 +63,7 @@ export function TemplateMockupTest() {
     }
   };
 
-  const handleGenerate = async () => {
-    if (!file) {
-      setError("Please select an image file");
-      return;
-    }
 
-    setLoading(true);
-    setError("");
-    setResults([]);
-    setProgress(0);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("mode", mode);
-      
-      if (mode === "single_template") {
-        formData.append("template", template);
-      }
-
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 5, 90));
-      }, 1000);
-
-      // Use authenticated request for FastAPI endpoint
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error("Authentication required. Please log in.");
-      }
-
-      console.log("🔍 Sending authenticated request to FastAPI:", { 
-        hasToken: !!token, 
-        tokenPreview: token.substring(0, 20) + "..." 
-      });
-      
-      const response = await fetch("/api/generate-template-mockups", {
-        method: "POST",
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      // Handle 401 by attempting to refresh authentication
-      if (response.status === 401) {
-        console.log("🔄 Got 401, clearing old token and requesting fresh login...");
-        localStorage.removeItem('auth-storage');
-        localStorage.removeItem('auth-storage-backup');
-        throw new Error("Authentication expired. Please log in again.");
-      }
-
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ FastAPI Error Response:", { status: response.status, text: errorText });
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText || 'Unknown error' };
-        }
-        throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${errorText}`);
-      }
-
-      const data: ApiResponse = await response.json();
-      
-      if (data.success && data.mockups) {
-        setResults(data.mockups);
-        setError("");
-      } else {
-        throw new Error("No mockups generated");
-      }
-
-    } catch (err) {
-      console.error("❌ Generation error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Template mockup generation failed";
-      console.error("❌ Error details:", errorMessage);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-      setProgress(0);
-    }
-  };
 
   const handleGenerateSequential = async () => {
     if (!file) {
@@ -318,40 +233,22 @@ export function TemplateMockupTest() {
 
           <Separator />
 
-          {/* Generate Buttons */}
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleGenerate}
-              disabled={!file || loading}
-              className="flex-1"
-              data-testid="button-generate-mockups"
-              variant="outline"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                'Batch Generate'
-              )}
-            </Button>
-            <Button 
-              onClick={handleGenerateSequential}
-              disabled={!file || loading}
-              className="flex-1"
-              data-testid="button-generate-sequential"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                `Sequential (${mode === "single_template" ? "5 Variations" : "5 Templates"})`
-              )}
-            </Button>
-          </div>
+          {/* Generate Button */}
+          <Button 
+            onClick={handleGenerateSequential}
+            disabled={!file || loading}
+            className="w-full"
+            data-testid="button-generate-mockups"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Generate ${mode === "single_template" ? "5 Variations" : "5 Templates"}`
+            )}
+          </Button>
 
           {/* Progress Bar */}
           {loading && (
