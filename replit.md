@@ -7,7 +7,7 @@ Etsy Art & Image Upscaler Pro is a comprehensive AI-powered web application desi
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
-- **Critical Mockup Quality Fix (August 16, 2025)**: Restored perfect artwork preservation in mockup generation by fixing Express endpoints to call correct FastAPI `/outpaint/mockup` endpoint with `overlay_original=1` and `overlay_inset_px=2` parameters. Replaced broken external API calls with original OpenAI-based system that preserves artwork pixels exactly as-is. Both single and template mockup generation now working with authentic artwork quality.
+- **Critical Mockup Quality Fix (August 17, 2025)**: Reverted to proven working Render API (`https://mockup-api-cv83.onrender.com`) for perfect artwork preservation. OpenAI's image editing API was modifying faces/artwork even with masking, so we restored the external API that was confirmed to preserve artwork pixels exactly as-is. Both single and template mockup generation now use proven working API for authentic artwork quality.
 - **Client-Side File Size Validation (August 16, 2025)**: Implemented 5MB file size limits on all image upload components with user-friendly error messages. Both drag-and-drop and file input uploads now prevent oversized files and show clear error messages with actual file size vs. limit.
 - **Production Deployment Configuration (August 16, 2025)**: Updated Paystack plan IDs to production codes for live deployment. Pro Plan: PLN_0yglvnu9bd129yz, Business Plan: PLN_5tvhdoebxsxhddg. Ready for live payment processing with production Paystack keys.
 - **Website Rebranding (August 16, 2025)**: Rebranded from "EtsyArt Pro" to "Etsy Art & Image Upscaler Pro" for imageupscaler.app deployment. Updated all branding across navigation, titles, descriptions, and marketing copy to emphasize the dual focus on Etsy optimization and professional image upscaling capabilities.
@@ -38,7 +38,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **AI Content Generation**: OpenAI GPT-4o for automated Etsy listing content.
 - **Payment Processing**: Paystack integration for ZAR payments, credit package purchases, and subscription management.
 - **Credit Transaction Tracking**: Comprehensive audit trail system for all credit usage with detailed transaction history, types, and balances.
-- **Local OpenAI Mockup Generation**: Fully integrated OpenAI API-based mockup generation replaces external services. Features include 5 room templates (living_room, bedroom, study, gallery, kitchen), JPEG compression for 10x smaller file sizes, and authentic artwork preservation without AI transformation.
+- **Proven Render API Mockup Generation**: Reverted to external Render-hosted API for perfect artwork preservation after discovering OpenAI's API modifies faces/artwork despite masking. Features include 5 room templates (living_room, bedroom, study, gallery, kitchen) with pixel-perfect artwork preservation.
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite` for preserving artwork in mockups.
 - **Streamlined Mockup Interface**: Sequential mockup generation is now the default with a simplified single "Generate" button. Template selection removed from dashboard and replaced with direct flow to new mockup generation system.
 
