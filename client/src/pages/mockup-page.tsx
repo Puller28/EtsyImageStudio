@@ -5,6 +5,11 @@ import { Upload, ArrowLeft } from "lucide-react";
 import ImageUpload from "@/components/image-upload";
 import { TemplateSelector } from "@/components/template-selector";
 import { MockupResults } from "@/components/mockup-results";
+import Navigation from "@/components/navigation";
+import { Footer } from "@/components/footer";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import type { User } from "@shared/schema";
 
 interface GeneratedMockup {
   template: {
@@ -20,6 +25,23 @@ export function MockupPage() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [generatedMockups, setGeneratedMockups] = useState<GeneratedMockup[]>([]);
   const [currentStep, setCurrentStep] = useState<"upload" | "select" | "results">("upload");
+  
+  const { user: authUser } = useAuth();
+  
+  // Fetch user data
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
+  // Use auth user data as fallback if API user data is not available
+  const currentUser = user || authUser;
+
+  // Convert user data to Navigation component format
+  const navUser = currentUser ? {
+    name: currentUser.name,
+    avatar: currentUser.avatar || undefined,
+    credits: currentUser.credits
+  } : undefined;
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
@@ -46,7 +68,10 @@ export function MockupPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navigation user={navUser} />
+      <main className="flex-1 container mx-auto py-8">
+        <div className="max-w-4xl mx-auto space-y-6">
       {currentStep !== "upload" && (
         <div className="flex items-center space-x-4">
           <Button 
@@ -112,6 +137,9 @@ export function MockupPage() {
           onReset={handleReset}
         />
       )}
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }
