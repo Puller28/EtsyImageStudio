@@ -1740,8 +1740,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check mockup set limit for free users (5 sets max = 25 mockups)
       if (isFreeUser) {
         // Count existing mockup projects for free users
-        const existingProjects = await storage.getProjects();
-        const userMockupProjects = existingProjects.filter(p => p.userId === userId && p.type === 'mockup');
+        const userProjects = await storage.getProjectsByUserId(userId);
+        const userMockupProjects = userProjects.filter((p: any) => p.type === 'mockup');
         if (userMockupProjects.length >= 5) {
           return res.status(403).json({
             error: 'Mockup limit reached',
