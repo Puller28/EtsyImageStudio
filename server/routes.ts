@@ -1774,7 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log(`Calling external API for ${template.room}/${template.id} with exact manifest parameters...`);
 
-            const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup/apply", formData, {
+            const response = await axios.post("http://127.0.0.1:8000/mockup/apply", formData, {
               headers: {
                 ...formData.getHeaders(),
               },
