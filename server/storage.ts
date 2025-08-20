@@ -339,8 +339,14 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔍 Getting projects for user: ${userId}`);
     
     try {
-      // Use raw SQL for maximum performance - the ORM is causing massive delays
-      const result = await db.execute(sql`
+      // Use direct postgres-js client for maximum performance and reliability
+      const { db: pgClient } = await import("./db");
+      
+      // Get the underlying postgres client from drizzle
+      const rawClient = (pgClient as any)._.session.client;
+      
+      // Execute raw SQL directly via postgres-js for best performance
+      const result = await rawClient`
         SELECT id, user_id as "userId", title, original_image_url as "originalImageUrl", 
                upscaled_image_url as "upscaledImageUrl", mockup_image_url as "mockupImageUrl",
                mockup_images as "mockupImages", resized_images as "resizedImages",
@@ -351,51 +357,75 @@ export class DatabaseStorage implements IStorage {
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC 
-        LIMIT 50
-      `);
-      const duration = Date.now() - startTime;
-      console.log(`✅ Raw SQL projects query completed in ${duration}ms, found ${result.length} projects`);
+        LIMIT 20
+      `;
       
-      // Transform the raw results to match our Project interface
+      const duration = Date.now() - startTime;
+      console.log(`✅ Direct postgres query completed in ${duration}ms, found ${result.length} projects`);
+      
+      // Transform results to match Project interface
       return result.map((row: any) => ({
-        ...row,
-        createdAt: new Date(row.createdAt),
-        mockupImages: row.mockupImages || [],
+        id: row.id,
+        userId: row.userId,
+        title: row.title || 'Untitled Project',
+        originalImageUrl: row.originalImageUrl || '',
+        upscaledImageUrl: row.upscaledImageUrl,
+        mockupImageUrl: row.mockupImageUrl,
+        mockupImages: row.mockupImages || {},
         resizedImages: row.resizedImages || [],
+        etsyListing: row.etsyListing,
+        mockupTemplate: row.mockupTemplate,
+        upscaleOption: row.upscaleOption,
+        status: row.status || 'completed',
+        zipUrl: row.zipUrl,
+        createdAt: new Date(row.createdAt),
+        thumbnailUrl: row.thumbnailUrl || row.originalImageUrl,
+        aiPrompt: row.aiPrompt,
         metadata: row.metadata || {}
       }));
+      
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`❌ Raw SQL projects query failed after ${duration}ms:`, error);
+      console.error(`❌ Direct postgres query failed after ${duration}ms:`, error);
       
-      // Fallback to simplified ORM query with just essential fields
+      // Final fallback: return minimal essential data only
       try {
-        console.log(`🔄 Attempting simplified ORM fallback query...`);
-        const fallbackResult = await db.select({
+        console.log(`🔄 Attempting minimal Drizzle fallback...`);
+        const minimal = await db.select({
           id: projects.id,
           userId: projects.userId,
           title: projects.title,
           status: projects.status,
           createdAt: projects.createdAt,
-          thumbnailUrl: projects.thumbnailUrl,
           originalImageUrl: projects.originalImageUrl,
-          upscaledImageUrl: projects.upscaledImageUrl,
-          mockupImageUrl: projects.mockupImageUrl,
-          mockupImages: projects.mockupImages,
-          resizedImages: projects.resizedImages,
-          etsyListing: projects.etsyListing,
-          mockupTemplate: projects.mockupTemplate,
-          upscaleOption: projects.upscaleOption,
-          zipUrl: projects.zipUrl,
-          aiPrompt: projects.aiPrompt,
-          metadata: projects.metadata
-        }).from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(20);
+          thumbnailUrl: projects.thumbnailUrl
+        }).from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(5);
         
         const fallbackDuration = Date.now() - startTime;
-        console.log(`✅ Fallback query completed in ${fallbackDuration}ms, found ${fallbackResult.length} projects`);
-        return fallbackResult;
-      } catch (fallbackError) {
-        console.error(`❌ Fallback query also failed:`, fallbackError);
+        console.log(`✅ Minimal fallback completed in ${fallbackDuration}ms, found ${minimal.length} projects`);
+        
+        // Convert to full Project objects with defaults
+        return minimal.map(p => ({
+          id: p.id,
+          userId: p.userId,
+          title: p.title || 'Untitled Project',
+          originalImageUrl: p.originalImageUrl || '',
+          upscaledImageUrl: null,
+          mockupImageUrl: null,
+          mockupImages: {},
+          resizedImages: [],
+          etsyListing: null,
+          mockupTemplate: null,
+          upscaleOption: "2x",
+          status: p.status || 'completed',
+          zipUrl: null,
+          createdAt: p.createdAt || new Date(),
+          thumbnailUrl: p.thumbnailUrl || p.originalImageUrl,
+          aiPrompt: null,
+          metadata: {}
+        }));
+      } catch (finalError) {
+        console.error(`❌ All queries failed:`, finalError);
         return [];
       }
     }
