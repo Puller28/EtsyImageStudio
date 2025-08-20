@@ -884,43 +884,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Use direct SQL with 30-second timeout as final fix
-      console.log(`🔍 Attempting direct SQL query with 30s timeout...`);
+      // Use simplified direct query approach
+      console.log(`🔍 Attempting simplified projects query...`);
       
       try {
-        // Use raw SQL for maximum performance
-        const rawQuery = `
-          SELECT id, title, original_image_url, thumbnail_url, status, created_at
-          FROM projects 
-          WHERE user_id = $1 
-          ORDER BY created_at DESC 
-          LIMIT 20
-        `;
-        
-        const queryTimeout = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('SQL query timeout after 30 seconds')), 30000)
+        // Directly use storage method with extended timeout handling
+        const extendedTimeout = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Extended query timeout after 30 seconds')), 30000)
         );
         
-        // Execute raw SQL directly
-        const sql = db.$client;
-        const sqlResult = await Promise.race([
-          sql.unsafe(rawQuery, [req.userId]),
-          queryTimeout
-        ]);
+        // Use the basic Drizzle query but with extended timeout
+        const basicQuery = db.select({
+          id: projects.id,
+          title: projects.title,
+          originalImageUrl: projects.originalImageUrl,
+          thumbnailUrl: projects.thumbnailUrl,
+          status: projects.status,
+          createdAt: projects.createdAt,
+          userId: projects.userId
+        })
+        .from(projects)
+        .where(eq(projects.userId, req.userId))
+        .orderBy(desc(projects.createdAt))
+        .limit(10);
         
-        // Map raw results to Project structure
-        const projectsResult: Project[] = sqlResult.map((row: any) => ({
-          id: row.id,
-          userId: req.userId as string,
-          title: row.title || 'Untitled Project',
-          originalImageUrl: row.original_image_url || '',
-          upscaledImageUrl: row.original_image_url || '',
-          mockupImageUrl: row.original_image_url || '',
-          thumbnailUrl: row.thumbnail_url || row.original_image_url || '',
-          status: row.status || 'completed',
-          createdAt: new Date(row.created_at),
-          mockupImages: {} as Record<string, string>,
-          resizedImages: {} as Record<string, string>,
+        const result = await Promise.race([basicQuery, extendedTimeout]);
+        
+        // Map to proper Project structure
+        const projectsResult: any[] = result.map(p => ({
+          id: p.id,
+          userId: p.userId,
+          title: p.title || 'Untitled Project',
+          originalImageUrl: p.originalImageUrl || '',
+          upscaledImageUrl: p.originalImageUrl || null,
+          mockupImageUrl: p.originalImageUrl || null,
+          thumbnailUrl: p.thumbnailUrl || p.originalImageUrl || '',
+          status: p.status || 'completed',
+          createdAt: p.createdAt,
+          mockupImages: {},
+          resizedImages: [],
           etsyListing: null,
           mockupTemplate: null,
           upscaleOption: null,
@@ -930,17 +932,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
         
         const duration = Date.now() - startTime;
-        console.log(`✅ Direct SQL query completed in ${duration}ms, found ${projectsResult.length} projects`);
+        console.log(`✅ Extended query completed in ${duration}ms, found ${projectsResult.length} projects`);
         
         res.json(projectsResult);
         
       } catch (error) {
-        console.warn(`⚠️ Direct SQL query failed (${error instanceof Error ? error.message : 'Unknown error'}), falling back to empty result`);
+        console.warn(`⚠️ Extended query failed (${error instanceof Error ? error.message : 'Unknown error'}), returning empty result`);
         
         const duration = Date.now() - startTime;
         console.log(`⚠️ Total query attempt duration: ${duration}ms`);
         
-        // Return empty array to prevent UI errors
         res.json([]);
       }
     } catch (error) {
