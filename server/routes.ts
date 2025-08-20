@@ -1751,9 +1751,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               filename: req.file.originalname || "artwork.jpg",
               contentType: req.file.mimetype,
             });
-            formData.append("style", template.room);
+            // Map our room names to the external API's expected style names
+            const styleMapping: { [key: string]: string } = {
+              'bedroom': 'bedroom',
+              'living_room': 'living_room', 
+              'study': 'study',
+              'gallery': 'gallery',
+              'kids_room': 'kids_room'
+            };
+            
+            const apiStyle = styleMapping[template.room] || template.room;
+            formData.append("style", apiStyle);
 
-            console.log(`Calling external API for ${template.room}/${template.id}...`);
+            console.log(`Calling external API for ${template.room}/${template.id} with style: ${apiStyle}...`);
             const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup", formData, {
               headers: {
                 ...formData.getHeaders(),
