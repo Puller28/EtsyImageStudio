@@ -338,34 +338,37 @@ export class DatabaseStorage implements IStorage {
     const startTime = Date.now();
     console.log(`🔍 Getting projects for user: ${userId}`);
     
-    // Bypass timeout protection and try the most basic query possible
     try {
-      console.log(`🔄 Attempting ultra-minimal query...`);
+      console.log(`🔄 Using direct postgres-js client...`);
       
-      // Use the absolute most basic query with minimal fields
-      const basicProjects = await db.select({
-        id: projects.id,
-        userId: projects.userId,
-        title: projects.title,
-        originalImageUrl: projects.originalImageUrl,
-        thumbnailUrl: projects.thumbnailUrl,
-        status: projects.status,
-        createdAt: projects.createdAt
-      })
-      .from(projects)
-      .where(eq(projects.userId, userId))
-      .orderBy(desc(projects.createdAt))
-      .limit(10);
+      // Import and use the direct postgres client
+      const { sql } = await import("./direct-db");
+      
+      // Execute raw SQL with postgres-js directly (no Drizzle)
+      const result = await sql`
+        SELECT 
+          id, 
+          user_id as "userId", 
+          title, 
+          original_image_url as "originalImageUrl",
+          thumbnail_url as "thumbnailUrl",
+          status,
+          created_at as "createdAt"
+        FROM projects 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC 
+        LIMIT 10
+      `;
       
       const duration = Date.now() - startTime;
-      console.log(`✅ Ultra-minimal query completed in ${duration}ms, found ${basicProjects.length} projects`);
+      console.log(`✅ Direct postgres-js query completed in ${duration}ms, found ${result.length} projects`);
       
-      // Return with sensible defaults for missing fields
-      return basicProjects.map(p => ({
-        id: p.id,
-        userId: p.userId,
-        title: p.title || 'Untitled Project',
-        originalImageUrl: p.originalImageUrl || '',
+      // Transform to Project interface
+      return result.map((row: any) => ({
+        id: row.id,
+        userId: row.userId,
+        title: row.title || 'Untitled Project',
+        originalImageUrl: row.originalImageUrl || '',
         upscaledImageUrl: null,
         mockupImageUrl: null,
         mockupImages: {},
@@ -373,17 +376,17 @@ export class DatabaseStorage implements IStorage {
         etsyListing: null,
         mockupTemplate: null,
         upscaleOption: "2x",
-        status: p.status || 'completed',
+        status: row.status || 'completed',
         zipUrl: null,
-        createdAt: p.createdAt || new Date(),
-        thumbnailUrl: p.thumbnailUrl || p.originalImageUrl || '',
+        createdAt: new Date(row.createdAt),
+        thumbnailUrl: row.thumbnailUrl || row.originalImageUrl || '',
         aiPrompt: null,
         metadata: {}
       }));
       
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`❌ Even minimal query failed after ${duration}ms:`, error);
+      console.error(`❌ Direct postgres-js query failed after ${duration}ms:`, error);
       return [];
     }
   }
