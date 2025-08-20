@@ -1774,7 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Process artwork with template dimensions
             let artworkImage = sharp(req.file.buffer);
             
-            // For templates with corner coordinates, calculate placement area
+            // For templates with corner coordinates, apply proper inset boundaries and margin padding
             if (manifest.corners && manifest.corners.length === 4) {
               const corners = manifest.corners;
               const minX = Math.min(...corners.map((c: number[]) => c[0]));
@@ -1785,18 +1785,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const frameWidth = maxX - minX;
               const frameHeight = maxY - minY;
               
-              // Resize artwork to fill the frame area
-              artworkImage = artworkImage.resize(frameWidth, frameHeight, {
+              // Apply margin padding (margin_px=0 means no additional margin)
+              const marginPx = 0; // As per your working manual test
+              const paddedWidth = frameWidth - (marginPx * 2);
+              const paddedHeight = frameHeight - (marginPx * 2);
+              
+              // Calculate inset boundaries - reduce frame by small amount for better fit
+              const insetPercent = 0.02; // 2% inset for proper boundaries
+              const insetWidth = paddedWidth * (1 - insetPercent);
+              const insetHeight = paddedHeight * (1 - insetPercent);
+              
+              console.log(`Frame: ${frameWidth}x${frameHeight}, Inset: ${Math.round(insetWidth)}x${Math.round(insetHeight)}`);
+              
+              // Resize artwork to fill with cover mode (matching your manual test)
+              artworkImage = artworkImage.resize(Math.round(insetWidth), Math.round(insetHeight), {
                 fit: 'cover',
                 position: 'center'
               });
               
-              // Composite onto background
+              // Calculate centered position within the frame
+              const offsetX = minX + marginPx + (paddedWidth - insetWidth) / 2;
+              const offsetY = minY + marginPx + (paddedHeight - insetHeight) / 2;
+              
+              // Apply feathering/blur if specified (feather_px=-1 means use manifest default)
+              const featherPx = manifest.feather_px || 0;
+              if (featherPx > 0) {
+                artworkImage = artworkImage.blur(featherPx * 0.5); // Convert to Sharp blur sigma
+              }
+              
+              // Apply opacity (opacity=-1 means use manifest default)
+              const opacity = manifest.opacity !== undefined ? manifest.opacity : 1.0;
+              if (opacity < 1.0) {
+                artworkImage = artworkImage.composite([{
+                  input: Buffer.alloc(4, Math.round(255 * (1 - opacity))), // Semi-transparent overlay
+                  raw: { width: 1, height: 1, channels: 4 },
+                  tile: true,
+                  blend: 'multiply'
+                }]);
+              }
+              
+              // Composite onto background with proper positioning
               const result = await backgroundImage
                 .composite([{
                   input: await artworkImage.png().toBuffer(),
-                  left: Math.round(minX),
-                  top: Math.round(minY)
+                  left: Math.round(offsetX),
+                  top: Math.round(offsetY)
                 }])
                 .png()
                 .toBuffer();
@@ -1811,7 +1844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 image_data: `data:image/png;base64,${base64Result}`
               });
               
-              console.log(`✅ Generated local mockup for ${template.room}/${template.id}`);
+              console.log(`✅ Generated local mockup for ${template.room}/${template.id} with proper inset boundaries and margin padding`);
             } else {
               console.log(`No corners found for ${template.room}/${template.id}, skipping`);
             }
