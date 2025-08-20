@@ -874,7 +874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user projects - Direct database access to bypass timeout issues
+  // Get user projects - Fast optimized query
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     const startTime = Date.now();
     try {
@@ -884,66 +884,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Use simplified direct query approach
-      console.log(`🔍 Attempting simplified projects query...`);
+      // Use the optimized storage method which now uses raw SQL
+      const projects = await storage.getProjectsByUserId(req.userId);
       
-      try {
-        // Directly use storage method with extended timeout handling
-        const extendedTimeout = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Extended query timeout after 30 seconds')), 30000)
-        );
-        
-        // Use the basic Drizzle query but with extended timeout
-        const basicQuery = db.select({
-          id: projects.id,
-          title: projects.title,
-          originalImageUrl: projects.originalImageUrl,
-          thumbnailUrl: projects.thumbnailUrl,
-          status: projects.status,
-          createdAt: projects.createdAt,
-          userId: projects.userId
-        })
-        .from(projects)
-        .where(eq(projects.userId, req.userId))
-        .orderBy(desc(projects.createdAt))
-        .limit(10);
-        
-        const result = await Promise.race([basicQuery, extendedTimeout]);
-        
-        // Map to proper Project structure
-        const projectsResult: any[] = result.map(p => ({
-          id: p.id,
-          userId: p.userId,
-          title: p.title || 'Untitled Project',
-          originalImageUrl: p.originalImageUrl || '',
-          upscaledImageUrl: p.originalImageUrl || null,
-          mockupImageUrl: p.originalImageUrl || null,
-          thumbnailUrl: p.thumbnailUrl || p.originalImageUrl || '',
-          status: p.status || 'completed',
-          createdAt: p.createdAt,
-          mockupImages: {},
-          resizedImages: [],
-          etsyListing: null,
-          mockupTemplate: null,
-          upscaleOption: null,
-          zipUrl: null,
-          aiPrompt: null,
-          metadata: null
-        }));
-        
-        const duration = Date.now() - startTime;
-        console.log(`✅ Extended query completed in ${duration}ms, found ${projectsResult.length} projects`);
-        
-        res.json(projectsResult);
-        
-      } catch (error) {
-        console.warn(`⚠️ Extended query failed (${error instanceof Error ? error.message : 'Unknown error'}), returning empty result`);
-        
-        const duration = Date.now() - startTime;
-        console.log(`⚠️ Total query attempt duration: ${duration}ms`);
-        
-        res.json([]);
-      }
+      const duration = Date.now() - startTime;
+      console.log(`✅ Projects API completed in ${duration}ms, found ${projects.length} projects`);
+      
+      res.json(projects);
+      
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);

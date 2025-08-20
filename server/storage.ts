@@ -340,7 +340,7 @@ export class DatabaseStorage implements IStorage {
     
     try {
       // Use raw SQL for maximum performance - the ORM is causing massive delays
-      const query = `
+      const result = await db.execute(sql`
         SELECT id, user_id as "userId", title, original_image_url as "originalImageUrl", 
                upscaled_image_url as "upscaledImageUrl", mockup_image_url as "mockupImageUrl",
                mockup_images as "mockupImages", resized_images as "resizedImages",
@@ -349,12 +349,10 @@ export class DatabaseStorage implements IStorage {
                created_at as "createdAt", thumbnail_url as "thumbnailUrl",
                ai_prompt as "aiPrompt", metadata
         FROM projects 
-        WHERE user_id = $1 
+        WHERE user_id = ${userId}
         ORDER BY created_at DESC 
         LIMIT 50
-      `;
-      
-      const result = await db.execute(sql.raw(query, [userId]));
+      `);
       const duration = Date.now() - startTime;
       console.log(`✅ Raw SQL projects query completed in ${duration}ms, found ${result.length} projects`);
       
