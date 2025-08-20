@@ -1739,49 +1739,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
 
-      // Generate mockup for each selected template using local OpenCV API
+      // Generate mockup for each selected template
       for (const template of selectedTemplates) {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Use the local template API with OpenCV perspective transformation
-          const formData = new FormData();
-          formData.append("file", req.file.buffer, {
-            filename: req.file.originalname || "artwork.jpg",
-            contentType: req.file.mimetype,
-          });
-          formData.append("room", template.room);
-          formData.append("template_id", template.id);
+          // Try local template API first, then fallback to proven external API
+          let mockupGenerated = false;
           
-          // Use exact same parameters as your working manual test
-          formData.append("fit", "cover");
-          formData.append("margin_px", "0");
-          formData.append("feather_px", "-1");  // Use manifest feather
-          formData.append("opacity", "-1");    // Use manifest opacity
-          formData.append("return_format", "json");
-
-          const response = await axios.post("http://127.0.0.1:8000/mockup/apply", formData, {
-            headers: {
-              ...formData.getHeaders(),
-            },
-            timeout: 30000,
-          });
-
-          if (response.data && response.data.image_b64) {
-            mockups.push({
-              template: {
-                room: template.room,
-                id: template.id,
-                name: template.name || `${template.room}_${template.id}`
-              },
-              image_data: `data:image/png;base64,${response.data.image_b64}`
+          try {
+            // Use the local template API with exact same parameters as manual test
+            const localFormData = new FormData();
+            localFormData.append("file", req.file.buffer, {
+              filename: req.file.originalname || "artwork.jpg",
+              contentType: req.file.mimetype,
             });
+            localFormData.append("room", template.room);
+            localFormData.append("template_id", template.id);
+            localFormData.append("fit", "cover");
+            localFormData.append("margin_px", "0");
+            localFormData.append("feather_px", "-1");
+            localFormData.append("opacity", "-1");
+            localFormData.append("return_format", "json");
+
+            const localResponse = await axios.post("http://127.0.0.1:8000/mockup/apply", localFormData, {
+              headers: {
+                ...localFormData.getHeaders(),
+              },
+              timeout: 15000,
+            });
+
+            if (localResponse.data && localResponse.data.image_b64) {
+              mockups.push({
+                template: {
+                  room: template.room,
+                  id: template.id,
+                  name: template.name || `${template.room}_${template.id}`
+                },
+                image_data: `data:image/png;base64,${localResponse.data.image_b64}`
+              });
+              mockupGenerated = true;
+              console.log(`✅ Generated mockup via local API for ${template.room}/${template.id}`);
+            }
+          } catch (localError) {
+            console.log(`Local API failed for ${template.room}/${template.id}, trying external API...`);
+          }
+
+          // Fallback to proven external API if local failed
+          if (!mockupGenerated) {
+            try {
+              const externalFormData = new FormData();
+              externalFormData.append("file", req.file.buffer, {
+                filename: req.file.originalname || "artwork.jpg",
+                contentType: req.file.mimetype,
+              });
+              externalFormData.append("style", template.room);
+
+              const externalResponse = await axios.post("https://mockup-api-cv83.onrender.com/mockup", externalFormData, {
+                headers: {
+                  ...externalFormData.getHeaders(),
+                },
+                timeout: 60000,
+              });
+
+              if (externalResponse.data && externalResponse.data.mockup_url) {
+                const imageResponse = await axios.get(externalResponse.data.mockup_url, { responseType: 'arraybuffer' });
+                const base64Image = Buffer.from(imageResponse.data).toString('base64');
+                mockups.push({
+                  template: {
+                    room: template.room,
+                    id: template.id,
+                    name: template.name || `${template.room}_${template.id}`
+                  },
+                  image_data: `data:image/png;base64,${base64Image}`
+                });
+                console.log(`✅ Generated mockup via external API for ${template.room}/${template.id}`);
+              }
+            } catch (externalError) {
+              console.error(`Both APIs failed for ${template.room}/${template.id}`);
+            }
           }
           
-          console.log(`✅ Generated mockup for ${template.room}/${template.id}`);
         } catch (templateError) {
           console.error(`Error generating template ${template.room}/${template.id}:`, templateError);
-          console.error('Template API error details:', templateError.response?.data);
         }
       }
 
