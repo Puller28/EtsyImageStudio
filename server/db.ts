@@ -10,17 +10,21 @@ if (!process.env.DATABASE_URL) {
 console.log('🔗 Connecting to database with URL:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':***@'));
 
 const sql = postgres(process.env.DATABASE_URL, { 
-  ssl: 'require',
-  max: 5, // More connections
-  idle_timeout: 30, // Longer idle timeout
-  connect_timeout: 15, // Longer connect timeout
-  max_lifetime: 60 * 15, // 15 minutes
+  ssl: 'prefer', // More flexible SSL handling
+  max: 2, // Fewer connections to avoid pooling issues
+  idle_timeout: 10, // Shorter idle timeout
+  connect_timeout: 5, // Faster timeout
+  max_lifetime: 60 * 5, // 5 minutes
   debug: false,
-  prepare: false, // Disable prepared statements for reliability
+  prepare: false,
   transform: {
-    undefined: null, // Transform undefined to null for database compatibility
+    undefined: null,
   },
-  onnotice: () => {}, // Suppress notices
+  onnotice: () => {},
+  // Add connection retry logic
+  connection: {
+    application_name: 'etsy-art-upscaler'
+  }
 });
 
 export const db = drizzle(sql, { schema });

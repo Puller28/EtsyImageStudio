@@ -87,8 +87,8 @@ export class MemStorage implements IStorage {
       const usersPromise = sql`SELECT * FROM users LIMIT 50`;
       const users = await Promise.race([
         usersPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('User load timeout')), 5000))
-      ]);
+        new Promise((_, reject) => setTimeout(() => reject(new Error('User load timeout')), 3000))
+      ]) as any[];
       console.log(`📥 Loaded ${users.length} users into memory`);
       
       users.forEach((user: any) => {
@@ -112,8 +112,8 @@ export class MemStorage implements IStorage {
       const projectsPromise = sql`SELECT * FROM projects ORDER BY created_at DESC LIMIT 100`;
       const projects = await Promise.race([
         projectsPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Project load timeout')), 5000))
-      ]);
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Project load timeout')), 3000))
+      ]) as any[];
       console.log(`📥 Loaded ${projects.length} projects into memory`);
       
       projects.forEach((project: any) => {
@@ -551,10 +551,9 @@ class RobustStorage implements IStorage {
     this.primaryStorage = process.env.DATABASE_URL ? new DatabaseStorage() : this.fallbackStorage;
     
     if (process.env.DATABASE_URL) {
-      console.log('🔄 Attempting to use PostgreSQL database with timeout protection');
-      // Force fallback mode due to severe connection latency issues
-      console.log('⚠️ Forcing in-memory storage due to database connection performance issues');
-      this.useFallback = true;
+      console.log('🔄 Attempting to use optimized PostgreSQL database connection');
+      // Test connection with proper timeout
+      this.testConnection();
     } else {
       console.log('⚠️ No DATABASE_URL found, using in-memory storage');
       this.useFallback = true;
