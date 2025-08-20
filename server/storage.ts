@@ -73,6 +73,76 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     this.users.set(demoUser.id, demoUser);
+    
+    // Load real data from database in background
+    this.loadRealDataAsync();
+  }
+
+  private async loadRealDataAsync() {
+    try {
+      console.log('🔄 Loading real user data into memory storage...');
+      const { sql } = await import("./direct-db");
+      
+      // Load users with timeout
+      const usersPromise = sql`SELECT * FROM users LIMIT 50`;
+      const users = await Promise.race([
+        usersPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('User load timeout')), 5000))
+      ]);
+      console.log(`📥 Loaded ${users.length} users into memory`);
+      
+      users.forEach((user: any) => {
+        this.users.set(user.id, {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          password: user.password,
+          avatar: user.avatar,
+          credits: user.credits || 0,
+          subscriptionStatus: user.subscription_status || 'free',
+          subscriptionPlan: user.subscription_plan,
+          subscriptionId: user.subscription_id,
+          subscriptionStartDate: user.subscription_start_date,
+          subscriptionEndDate: user.subscription_end_date,
+          createdAt: new Date(user.created_at)
+        });
+      });
+      
+      // Load projects with timeout
+      const projectsPromise = sql`SELECT * FROM projects ORDER BY created_at DESC LIMIT 100`;
+      const projects = await Promise.race([
+        projectsPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Project load timeout')), 5000))
+      ]);
+      console.log(`📥 Loaded ${projects.length} projects into memory`);
+      
+      projects.forEach((project: any) => {
+        this.projects.set(project.id, {
+          id: project.id,
+          userId: project.user_id,
+          title: project.title || 'Untitled Project',
+          originalImageUrl: project.original_image_url || '',
+          upscaledImageUrl: project.upscaled_image_url,
+          mockupImageUrl: project.mockup_image_url,
+          mockupImages: project.mockup_images || {},
+          resizedImages: project.resized_images || [],
+          etsyListing: project.etsy_listing,
+          mockupTemplate: project.mockup_template,
+          upscaleOption: project.upscale_option || '2x',
+          status: project.status || 'completed',
+          zipUrl: project.zip_url,
+          createdAt: new Date(project.created_at),
+          thumbnailUrl: project.thumbnail_url || project.original_image_url,
+          aiPrompt: project.ai_prompt,
+          metadata: project.metadata || {}
+        });
+      });
+      
+      console.log('✅ Real data loaded successfully into memory storage');
+      
+    } catch (error) {
+      console.warn('⚠️ Failed to load real data, using demo data only:', error);
+    }
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -482,8 +552,9 @@ class RobustStorage implements IStorage {
     
     if (process.env.DATABASE_URL) {
       console.log('🔄 Attempting to use PostgreSQL database with timeout protection');
-      // Test database connection immediately
-      this.testConnection();
+      // Force fallback mode due to severe connection latency issues
+      console.log('⚠️ Forcing in-memory storage due to database connection performance issues');
+      this.useFallback = true;
     } else {
       console.log('⚠️ No DATABASE_URL found, using in-memory storage');
       this.useFallback = true;
