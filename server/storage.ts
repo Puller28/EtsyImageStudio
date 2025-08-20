@@ -9,7 +9,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(userId: string, updates: Partial<InsertUser>): Promise<User>;
+  updateUser(userId: string, updates: Partial<User>): Promise<User>;
   updateUserCredits(userId: string, credits: number): Promise<void>;
   updateUserSubscription(userId: string, subscriptionData: {
     subscriptionStatus: string;
@@ -33,6 +33,7 @@ export interface IStorage {
   createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
   getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]>;
   updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }>;
+  logCreditTransaction(transaction: { userId: string; type: string; amount: number; description: string; balanceAfter: number }): Promise<CreditTransaction>;
 
   // Contact message methods
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
@@ -63,9 +64,9 @@ export class MemStorage implements IStorage {
       name: "Sarah M.",
       password: process.env.DEMO_USER_PASSWORD_HASH || "", // Secure hash from environment
       avatar: "https://pixabay.com/get/ge5dfc7fb2d8c4be2d5a50f55c24114e5603b48aa392e8aac639cb21db396cb687be010f4599d05cb3f833a8e1e63a09b21980dd1e45f7123b97f17284bac3411_1280.jpg",
-      credits: 47,
-      subscriptionStatus: "free",
-      subscriptionPlan: null,
+      credits: 100,
+      subscriptionStatus: "active",
+      subscriptionPlan: "pro",
       subscriptionId: null,
       subscriptionStartDate: null,
       subscriptionEndDate: null,
@@ -108,7 +109,7 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User> {
+  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
     const user = this.users.get(userId);
     if (!user) {
       throw new Error("User not found");
@@ -246,6 +247,17 @@ export class MemStorage implements IStorage {
       this.contactMessages.set(id, message);
     }
   }
+
+  async logCreditTransaction(transaction: { userId: string; type: string; amount: number; description: string; balanceAfter: number }): Promise<CreditTransaction> {
+    return this.createCreditTransaction({
+      userId: transaction.userId,
+      amount: transaction.type === 'debit' ? -Math.abs(transaction.amount) : Math.abs(transaction.amount),
+      transactionType: transaction.type,
+      description: transaction.description,
+      balanceAfter: transaction.balanceAfter,
+      projectId: null,
+    });
+  }
 }
 
 // Database storage implementation
@@ -268,7 +280,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User> {
+  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
     const [user] = await db.update(users)
       .set(updates)
       .where(eq(users.id, userId))
@@ -388,6 +400,17 @@ export class DatabaseStorage implements IStorage {
       .set({ status })
       .where(eq(contactMessages.id, id));
   }
+
+  async logCreditTransaction(transaction: { userId: string; type: string; amount: number; description: string; balanceAfter: number }): Promise<CreditTransaction> {
+    return this.createCreditTransaction({
+      userId: transaction.userId,
+      amount: transaction.type === 'debit' ? -Math.abs(transaction.amount) : Math.abs(transaction.amount),
+      transactionType: transaction.type,
+      description: transaction.description,
+      balanceAfter: transaction.balanceAfter,
+      projectId: null,
+    });
+  }
 }
 
 // Robust storage with automatic fallback to in-memory when database fails
@@ -436,7 +459,7 @@ class RobustStorage implements IStorage {
     return this.executeWithFallback(storage => storage.createUser(user));
   }
 
-  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User> {
+  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
     return this.executeWithFallback(storage => storage.updateUser(userId, updates));
   }
 
@@ -500,6 +523,10 @@ class RobustStorage implements IStorage {
 
   async updateContactMessageStatus(id: string, status: string): Promise<void> {
     return this.executeWithFallback(storage => storage.updateContactMessageStatus(id, status));
+  }
+
+  async logCreditTransaction(transaction: { userId: string; type: string; amount: number; description: string; balanceAfter: number }): Promise<CreditTransaction> {
+    return this.executeWithFallback(storage => storage.logCreditTransaction(transaction));
   }
 }
 
