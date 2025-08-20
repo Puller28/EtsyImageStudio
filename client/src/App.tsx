@@ -20,6 +20,7 @@ import HomePage from "@/pages/home";
 import FeaturesPage from "@/pages/features";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
+import ProjectsPage from "@/pages/projects";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { initGA, identifyUser, trackUserPlan } from "./lib/analytics";
@@ -67,6 +68,7 @@ function Router() {
       {isAuthenticated ? (
         <>
           <Route path="/" component={Dashboard} />
+          <Route path="/projects" component={ProjectsPage} />
           <Route path="/settings" component={Settings} />
           <Route path="/buy-credits" component={BuyCredits} />
           <Route path="/template-mockups" component={MockupPage} />
@@ -80,6 +82,7 @@ function Router() {
         <>
           <Route path="/" component={HomePage} />
           {/* Redirect protected routes to auth for unauthenticated users */}
+          <Route path="/projects" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/settings" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/buy-credits" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/template-mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />

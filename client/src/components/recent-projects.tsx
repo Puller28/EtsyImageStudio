@@ -1,5 +1,6 @@
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 interface Project {
   id: string;
@@ -53,9 +54,11 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
             <History className="inline w-5 h-5 text-primary mr-2" />
             Recent Projects
           </h3>
-          <Button variant="link" className="text-primary hover:text-indigo-700">
-            View all
-          </Button>
+          <Link href="/projects">
+            <Button variant="link" className="text-primary hover:text-indigo-700">
+              View all
+            </Button>
+          </Link>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
