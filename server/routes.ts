@@ -1795,7 +1795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const insetWidth = paddedWidth * (1 - insetPercent);
               const insetHeight = paddedHeight * (1 - insetPercent);
               
-              console.log(`Frame: ${frameWidth}x${frameHeight}, Inset: ${Math.round(insetWidth)}x${Math.round(insetHeight)}`);
+              console.log(`Frame: ${frameWidth}x${frameHeight}, Inset: ${Math.round(insetWidth)}x${Math.round(insetHeight)}, Parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
               
               // Resize artwork to fill with cover mode (matching your manual test)
               artworkImage = artworkImage.resize(Math.round(insetWidth), Math.round(insetHeight), {
@@ -1807,17 +1807,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const offsetX = minX + marginPx + (paddedWidth - insetWidth) / 2;
               const offsetY = minY + marginPx + (paddedHeight - insetHeight) / 2;
               
-              // Apply feathering/blur if specified (feather_px=-1 means use manifest default)
-              const featherPx = manifest.feather_px || 0;
-              if (featherPx > 0) {
-                artworkImage = artworkImage.blur(featherPx * 0.5); // Convert to Sharp blur sigma
+              // Apply feathering/blur (feather_px=-1 means use manifest default, matching your parameters)
+              const featherPx = -1; // Exactly matching your manual test parameter
+              const actualFeatherPx = featherPx === -1 ? (manifest.feather_px || 0) : featherPx;
+              if (actualFeatherPx > 0) {
+                artworkImage = artworkImage.blur(actualFeatherPx * 0.5); // Convert to Sharp blur sigma
               }
               
-              // Apply opacity (opacity=-1 means use manifest default)
-              const opacity = manifest.opacity !== undefined ? manifest.opacity : 1.0;
-              if (opacity < 1.0) {
+              // Apply opacity (opacity=-1 means use manifest default, matching your parameters)  
+              const opacity = -1; // Exactly matching your manual test parameter
+              const actualOpacity = opacity === -1 ? (manifest.blend?.opacity || 1.0) : opacity;
+              if (actualOpacity < 1.0) {
                 artworkImage = artworkImage.composite([{
-                  input: Buffer.alloc(4, Math.round(255 * (1 - opacity))), // Semi-transparent overlay
+                  input: Buffer.alloc(4, Math.round(255 * (1 - actualOpacity))), // Semi-transparent overlay
                   raw: { width: 1, height: 1, channels: 4 },
                   tile: true,
                   blend: 'multiply'
