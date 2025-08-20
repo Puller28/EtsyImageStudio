@@ -97,8 +97,8 @@ export const subscriptionPlans = [
       '300 credits per month',
       'All Free plan features',
       'Automated mockup generation',
-      'Premium room templates',
-      'Priority processing'
+      'Higher resolution exports',
+      'Advanced AI art styles'
     ],
     paystackPlanCode: 'PLN_0yglvnu9bd129yz'
   },
@@ -115,8 +115,8 @@ export const subscriptionPlans = [
       '800 credits per month',
       'All Pro plan features',
       'Automated mockup generation', 
-      'More credits for heavy usage',
-      'Suitable for agencies & teams',
+      'Commercial usage rights',
+      'Bulk processing capabilities',
       'Best value per credit'
     ],
     paystackPlanCode: 'PLN_5tvhdoebxsxhddg'
