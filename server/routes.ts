@@ -1723,9 +1723,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Free users get unlimited mockups (limited only by credits), paid users get premium service
+      // All users pay 1 credit per mockup regardless of plan
       const isFreeUser = !user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active';
-      const creditCost = isFreeUser ? 0.5 : 3; // Free users pay 0.5 credits per mockup, paid users pay 3 for premium service
+      const creditCost = 1; // 1 credit per mockup for all users
       const maxTemplates = 5; // All users can select up to 5 templates
 
       // Check template limit (same for all users)
@@ -2024,8 +2024,8 @@ else:
         remaining_credits: user.credits - actualCreditsUsed,
         plan_type: isFreeUser ? 'free' : 'paid',
         note: isFreeUser 
-          ? "Free users get unlimited mockups at 0.5 credits each (up to 200 mockups with 100 monthly credits). Upgrade to Pro for premium templates!"
-          : "Generated with premium template-based system for perfect artwork preservation"
+          ? "All users pay 1 credit per mockup (100 mockups with 100 monthly credits). Upgrade to Pro for more credits and premium features!"
+          : "Generated with template-based system for perfect artwork preservation"
       });
 
     } catch (error) {
