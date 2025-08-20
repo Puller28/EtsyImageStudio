@@ -42,8 +42,18 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateSelectorProps) {
   const [selectedTemplates, setSelectedTemplates] = useState<Template[]>([]);
+  const [stuckStateTimer, setStuckStateTimer] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (stuckStateTimer) {
+        clearTimeout(stuckStateTimer);
+      }
+    };
+  }, [stuckStateTimer]);
 
   // Fetch available templates
   const { data: templatesData, isLoading: templatesLoading, error: templatesError } = useQuery({
@@ -93,26 +103,60 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
         throw new Error(errorData.message || errorData.error || 'Failed to generate mockups');
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      console.log('✅ Mockup generation response:', responseData);
+      return responseData;
     },
     onSuccess: (data: any) => {
-      toast({
-        title: "Mockups Generated Successfully",
-        description: `Created ${data.mockups?.length || 0} mockups using ${data.credits_used || 3} credits`,
-      });
-      onMockupsGenerated(data.mockups || []);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      try {
+        console.log('🎉 Mockup generation successful:', data);
+        toast({
+          title: "Mockups Generated Successfully",
+          description: `Created ${data.mockups?.length || 0} mockups using ${data.credits_used || 3} credits`,
+        });
+        
+        if (data.mockups && Array.isArray(data.mockups)) {
+          onMockupsGenerated(data.mockups);
+        } else {
+          console.warn('⚠️ No mockups in response:', data);
+          onMockupsGenerated([]);
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      } catch (error) {
+        console.error('❌ Error in onSuccess callback:', error);
+        toast({
+          title: "Processing Error",
+          description: "Mockups generated but failed to display. Please refresh the page.",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: any) => {
+      console.error('❌ Mockup generation error:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate mockups",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Force reset mutation state to prevent stuck loading
+      console.log('🔄 Mutation settled - resetting state');
+      if (stuckStateTimer) {
+        clearTimeout(stuckStateTimer);
+        setStuckStateTimer(null);
+      }
     },
   });
 
@@ -153,7 +197,40 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
       return;
     }
 
+    // Clear any existing stuck state timer
+    if (stuckStateTimer) {
+      clearTimeout(stuckStateTimer);
+    }
+
+    // Set a timer to detect stuck state (10 minutes)
+    const timer = setTimeout(() => {
+      if (generateMockups.isPending) {
+        console.warn('⚠️ Mutation appears stuck, attempting to reset');
+        toast({
+          title: "Generation Taking Longer Than Expected",
+          description: "The generation is still processing. Please wait or refresh the page if needed.",
+          variant: "default",
+        });
+      }
+    }, 10 * 60 * 1000); // 10 minutes
+
+    setStuckStateTimer(timer);
     generateMockups.mutate({ file: uploadedFile, templates: selectedTemplates });
+  };
+
+  const handleForceReset = () => {
+    if (stuckStateTimer) {
+      clearTimeout(stuckStateTimer);
+      setStuckStateTimer(null);
+    }
+    
+    // Force reset the mutation
+    generateMockups.reset();
+    
+    toast({
+      title: "Generation Reset",
+      description: "You can now try generating mockups again.",
+    });
   };
 
   if (templatesLoading) {
@@ -196,23 +273,35 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
               {selectedTemplates.length}/5 templates selected
             </Badge>
             {uploadedFile && (
-              <Button 
-                onClick={handleGenerate}
-                disabled={selectedTemplates.length === 0 || generateMockups.isPending}
-                data-testid="button-generate-mockups"
-              >
-                {generateMockups.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Generate Mockups (3 credits)
-                  </>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleGenerate}
+                  disabled={selectedTemplates.length === 0 || generateMockups.isPending}
+                  data-testid="button-generate-mockups"
+                >
+                  {generateMockups.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Generate Mockups (3 credits)
+                    </>
+                  )}
+                </Button>
+                {generateMockups.isPending && (
+                  <Button 
+                    variant="outline"
+                    onClick={handleForceReset}
+                    data-testid="button-reset-generation"
+                    size="sm"
+                  >
+                    Reset
+                  </Button>
                 )}
-              </Button>
+              </div>
             )}
           </div>
 
