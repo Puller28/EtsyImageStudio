@@ -16,6 +16,10 @@ interface Template {
   manifest_present: boolean;
   bg_present: boolean;
   bg?: string;
+  preview_url?: string;
+  corners?: number[][];
+  width?: number;
+  height?: number;
 }
 
 interface TemplatesByRoom {
@@ -211,22 +215,44 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
                             onClick={() => handleTemplateToggle(template, !isSelected)}
                           >
                             <CardContent className="p-4">
-                              <div className="flex items-start space-x-3">
-                                <Checkbox 
-                                  checked={isSelected}
-                                  onCheckedChange={() => {}} // Handled by card click
-                                  className="mt-1"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-2">
-                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium text-sm">
-                                      {template.id}
-                                    </span>
+                              <div className="space-y-3">
+                                {/* Template Preview Image */}
+                                <div className="relative aspect-[3/4] w-full bg-gray-100 rounded-md overflow-hidden">
+                                  <img 
+                                    src={template.preview_url || `/api/templates/preview/${template.room}/${template.id}`}
+                                    alt={template.name || template.id}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // Fallback to placeholder
+                                      e.currentTarget.src = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"><rect width="200" height="300" fill="#f3f4f6"/><text x="100" y="150" text-anchor="middle" font-family="Arial" font-size="14" fill="#6b7280">${template.name || template.id}</text></svg>`)}`;
+                                    }}
+                                  />
+                                  {isSelected && (
+                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                      <div className="bg-primary text-primary-foreground rounded-full p-2">
+                                        <ImageIcon className="h-4 w-4" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Template Info */}
+                                <div className="flex items-start space-x-3">
+                                  <Checkbox 
+                                    checked={isSelected}
+                                    onCheckedChange={() => {}} // Handled by card click
+                                    className="mt-1"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="font-medium text-sm">
+                                        {template.name || template.id}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {roomName.replace('_', ' ')} • Ready to use
+                                    </p>
                                   </div>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {roomName.replace('_', ' ')} • Ready to use
-                                  </p>
                                 </div>
                               </div>
                             </CardContent>

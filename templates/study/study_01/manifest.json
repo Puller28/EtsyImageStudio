@@ -1,18 +1,15 @@
 {
-  "name": "Modern Study",
-  "description": "Clean workspace with natural lighting",
-  "background": "bg.png", 
+  "id": "study_01",
+  "background": "study_01_bg.png",
   "width": 1024,
   "height": 1024,
   "corners": [
-    [300, 180],
-    [724, 180],
-    [724, 620],
-    [300, 620]
+    [342, 106],
+    [680, 106],
+    [680, 445],
+    [341, 446]
   ],
-  "feather_px": 2.0,
-  "blend": {
-    "mode": "normal", 
-    "opacity": 1.0
-  }
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 5.0,
+  "pad_inset_px": 5.0
 }

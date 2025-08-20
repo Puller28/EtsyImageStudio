@@ -1,0 +1,15 @@
+{
+  "id": "bedroom_02",
+  "background": "bedroom_02_bg.png",
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [324, 122],
+    [663, 136],
+    [663, 510],
+    [324, 514]
+  ],
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 1.0,
+  "pad_inset_px": 0
+}

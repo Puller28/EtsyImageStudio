@@ -1,0 +1,15 @@
+{
+  "id": "gallery_01",
+  "background": "gallery_01_bg.png",
+  "width": 4096,
+  "height": 4096,
+  "corners": [
+    [1402, 1219],
+    [2712, 1219],
+    [2712, 2784],
+    [1402, 2784]
+  ],
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 5.0,
+  "pad_inset_px": 5.0
+}

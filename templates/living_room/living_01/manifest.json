@@ -1,18 +1,15 @@
 {
-  "name": "Modern Living Room",
-  "description": "Contemporary living room with neutral tones",
-  "background": "bg.png",
+  "id": "living_01",
+  "background": "living_01_bg.png",
   "width": 1024,
-  "height": 1024,
+  "height": 1536,
   "corners": [
-    [250, 200],
-    [774, 200], 
-    [774, 650],
-    [250, 650]
+    [322, 304],
+    [704, 304],
+    [704, 749],
+    [322, 749]
   ],
-  "feather_px": 2.0,
-  "blend": {
-    "mode": "normal",
-    "opacity": 1.0
-  }
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 1.0,
+  "pad_inset_px": 0
 }

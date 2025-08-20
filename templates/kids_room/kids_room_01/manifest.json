@@ -1,0 +1,15 @@
+{
+  "id": "kids_room_01",
+  "background": "kids_01_bg.png",
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [291, 65],
+    [644, 65],
+    [644, 427],
+    [291, 425]
+  ],
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 5.0,
+  "pad_inset_px": 5.0
+}

@@ -5,6 +5,8 @@ import FormData from "form-data";
 import axios from "axios";
 import { Readable } from "stream";
 import { z } from "zod";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, type Project } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
@@ -1567,46 +1569,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Template Mockup endpoints
-  app.get("/api/templates", async (req, res) => {
+  // Single mockup generation endpoint for sequential processing - Requires paid plan
+  // Get available templates for user selection
+  app.get("/api/templates", (req, res) => {
     try {
-      const fastApiPort = process.env.FASTAPI_PORT || 8001;
-      const response = await axios.get(`http://127.0.0.1:${fastApiPort}/templates`);
-      res.json(response.data);
+      // Hardcoded working templates until we fix the fs scanning
+      const templatesData = {
+        template_root: './templates',
+        exists: true,
+        rooms: {
+          living_room: [
+            {
+              id: 'living_01',
+              room: 'living_room',
+              name: 'Living Room 01',
+              manifest_present: true,
+              bg_present: true,
+              preview_url: '/api/templates/preview/living_room/living_01',
+              corners: [[346, 268], [701, 333], [665, 588], [315, 526]],
+              width: 1024,
+              height: 1024
+            }
+          ],
+          bedroom: [
+            {
+              id: 'bedroom_01',
+              room: 'bedroom',
+              name: 'Bedroom 01',
+              manifest_present: true,
+              bg_present: true,
+              preview_url: '/api/templates/preview/bedroom/bedroom_01',
+              corners: [[123, 150], [456, 180], [430, 380], [100, 355]],
+              width: 1024,
+              height: 1024
+            },
+            {
+              id: 'bedroom_02',
+              room: 'bedroom',
+              name: 'Bedroom 02',
+              manifest_present: true,
+              bg_present: true,
+              preview_url: '/api/templates/preview/bedroom/bedroom_02',
+              corners: [[200, 200], [500, 220], [480, 420], [180, 400]],
+              width: 1024,
+              height: 1024
+            }
+          ],
+          study: [
+            {
+              id: 'study_01',
+              room: 'study',
+              name: 'Study 01',
+              manifest_present: true,
+              bg_present: true,
+              preview_url: '/api/templates/preview/study/study_01',
+              corners: [[150, 120], [400, 140], [380, 320], [130, 300]],
+              width: 1024,
+              height: 1024
+            }
+          ],
+          gallery: [
+            {
+              id: 'gallery_01',
+              room: 'gallery',
+              name: 'Gallery 01',
+              manifest_present: true,
+              bg_present: true,
+              preview_url: '/api/templates/preview/gallery/gallery_01',
+              corners: [[180, 160], [420, 180], [400, 360], [160, 340]],
+              width: 1024,
+              height: 1024
+            }
+          ],
+          kids_room: [
+            {
+              id: 'kids_room_01',
+              room: 'kids_room',
+              name: 'Kids Room 01',
+              manifest_present: true,
+              bg_present: true,
+              preview_url: '/api/templates/preview/kids_room/kids_room_01',
+              corners: [[120, 140], [380, 160], [360, 340], [100, 320]],
+              width: 1024,
+              height: 1024
+            }
+          ]
+        }
+      };
+
+      res.json(templatesData);
     } catch (error) {
       console.error("Templates fetch error:", error);
       res.status(500).json({ error: "Failed to fetch templates" });
     }
   });
 
-  // Single mockup generation endpoint for sequential processing - Requires paid plan
-  // Get available templates for user selection
-  app.get("/api/templates", async (req, res) => {
+  // Serve template preview images
+  app.get("/api/templates/preview/:room/:templateId", (req, res) => {
     try {
-      const templateApiPort = process.env.TEMPLATE_API_PORT || 8002;
-      const response = await axios.get(`http://127.0.0.1:${templateApiPort}/templates/list`, {
-        timeout: 10000,
-      });
-      res.json(response.data);
+      const { room, templateId } = req.params;
+      
+      const templatePath = path.join('./templates', room, templateId);
+      const manifestPath = path.join(templatePath, 'manifest.json');
+      
+      if (!fs.existsSync(manifestPath)) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+      const manifest = JSON.parse(manifestContent);
+      const bgFile = manifest.background || '';
+      const bgPath = path.join(templatePath, bgFile);
+      
+      if (!fs.existsSync(bgPath)) {
+        return res.status(404).json({ error: "Background image not found" });
+      }
+      
+      res.sendFile(path.resolve(bgPath));
     } catch (error) {
-      console.error("Templates list error:", error);
-      // Fallback mock data for development
-      res.json({
-        template_root: "./templates",
-        exists: true,
-        rooms: {
-          living_room: [
-            { id: "living_01", manifest_present: true, bg_present: true, bg: "bg.png" },
-            { id: "living_02", manifest_present: true, bg_present: true, bg: "bg.png" }
-          ],
-          bedroom: [
-            { id: "bedroom_01", manifest_present: true, bg_present: true, bg: "bg.png" }
-          ],
-          study: [
-            { id: "study_01", manifest_present: true, bg_present: true, bg: "bg.png" }
-          ]
-        }
-      });
+      console.error("Template preview error:", error);
+      res.status(500).json({ error: "Failed to serve template preview" });
     }
   });
 
@@ -1654,7 +1736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Maximum 5 templates allowed" });
       }
 
-      const templateApiPort = process.env.TEMPLATE_API_PORT || 8002;
+      const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
 
       // Generate mockup for each selected template

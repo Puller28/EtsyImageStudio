@@ -1,18 +1,15 @@
 {
-  "name": "Cozy Bedroom",
-  "description": "Warm bedroom with wooden accents",
-  "background": "bg.png",
+  "id": "bedroom_01",
+  "background": "bedroom_01_bg.png",
   "width": 1024,
-  "height": 1024,
+  "height": 1536,
   "corners": [
-    [200, 150],
-    [800, 150],
-    [800, 750], 
-    [200, 750]
+    [296, 301],
+    [594, 328],
+    [594, 733],
+    [296, 736]
   ],
-  "feather_px": 2.0,
-  "blend": {
-    "mode": "normal",
-    "opacity": 1.0
-  }
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 1.0,
+  "pad_inset_px": 0
 }

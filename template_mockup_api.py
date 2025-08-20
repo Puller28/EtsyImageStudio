@@ -14,7 +14,7 @@ import cv2  # requires opencv-python-headless
 from PIL import Image, ImageFilter, ImageOps
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # ----------------------------
@@ -182,7 +182,9 @@ def templates_list():
                 "id": tdir.name,
                 "manifest_present": manifest.exists(),
                 "bg_present": bool(bg),
-                "bg": bg.name if bg else None
+                "bg": bg.name if bg else None,
+                "name": f"{room_dir.name.replace('_', ' ').title()} {tdir.name.split('_')[-1]}",
+                "preview_url": f"/templates/preview/{room_dir.name}/{tdir.name}"
             })
         out["rooms"][room_dir.name] = items
     return out
@@ -204,6 +206,31 @@ def templates_tree():
                     sha = _file_sha1(f)
                     lines.append(f"      • {f.name} ({size}B) sha1:{sha}")
     return Response("\n".join(lines), media_type="text/plain")
+
+@app.get("/templates/preview/{room}/{template_id}")
+def get_template_preview(room: str, template_id: str):
+    """Serve template preview images."""
+    try:
+        template_dir = TEMPLATE_ROOT / room / template_id
+        if not template_dir.exists():
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        # Look for background image
+        bg_file = None
+        for ext in ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG']:
+            for candidate in template_dir.glob(f"*bg*{ext}"):
+                bg_file = candidate
+                break
+            if bg_file:
+                break
+        
+        if not bg_file:
+            raise HTTPException(status_code=404, detail="Background image not found")
+        
+        return FileResponse(str(bg_file))
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ----------------------------
 # Main: /mockup/apply
