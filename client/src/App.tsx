@@ -48,8 +48,8 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/settings" component={Settings} />
           <Route path="/buy-credits" component={BuyCredits} />
-          <Route path="/template-mockups" component={TemplateMockupPage} />
-          <Route path="/template-mockup" component={TemplateMockupPage} />
+          <Route path="/template-mockups" component={MockupPage} />
+          <Route path="/template-mockup" component={MockupPage} />
           <Route path="/mockup" component={MockupPage} />
           <Route path="/mockups" component={MockupPage} />
           <Route path="/payment-callback/:reference" component={PaymentCallback} />

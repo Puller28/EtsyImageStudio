@@ -45,7 +45,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **Credit Transaction Tracking**: Comprehensive audit trail system for all credit usage with detailed transaction history, types, and balances.
 - **Template-Based Mockup Generation**: Hybrid system using local template API with corner-point mapping for precise artwork placement, falling back to Render API for reliability. Users select up to 5 templates from categorized rooms, and artwork is inserted using homography transformation for professional results. Credit cost reduced to 3 credits per mockup set for better affordability.
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite` for preserving artwork in mockups.
-- **Streamlined Mockup Interface**: Sequential mockup generation is now the default with a simplified single "Generate" button. Template selection removed from dashboard and replaced with direct flow to new mockup generation system.
+- **Streamlined Mockup Interface**: Sequential mockup generation is now the default with a simplified single "Generate" button. Template selection removed from dashboard and replaced with direct flow to new mockup generation system. Navigation updated to point to unified "/mockups" page instead of separate template mockup page.
 
 ## External Dependencies
 

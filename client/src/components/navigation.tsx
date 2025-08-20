@@ -48,10 +48,10 @@ export default function Navigation({ user }: NavigationProps) {
             }`}>
               Dashboard
             </Link>
-            <Link href="/template-mockups" className={`text-sm font-medium transition-colors ${
-              location === '/template-mockups' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
+            <Link href="/mockups" className={`text-sm font-medium transition-colors ${
+              location === '/mockups' || location === '/template-mockups' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
             }`}>
-              Template Mockups
+              Mockups
             </Link>
             <Link href="/pricing" className={`text-sm font-medium transition-colors ${
               location === '/pricing' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
