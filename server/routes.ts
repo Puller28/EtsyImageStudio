@@ -1739,109 +1739,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
 
-      // Generate mockup for each selected template using simple approach
+      // Generate mockup for each selected template using local OpenCV API
       for (const template of selectedTemplates) {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Create a simple mockup by combining template background with uploaded artwork
-          const templatePath = path.join('./templates', template.room, template.id);
-          const manifestPath = path.join(templatePath, 'manifest.json');
+          // Use the local template API with OpenCV perspective transformation
+          const formData = new FormData();
+          formData.append("file", req.file.buffer, {
+            filename: req.file.originalname || "artwork.jpg",
+            contentType: req.file.mimetype,
+          });
+          formData.append("room", template.room);
+          formData.append("template_id", template.id);
           
-          if (!fs.existsSync(manifestPath)) {
-            console.error(`Template manifest not found: ${manifestPath}`);
-            continue;
-          }
-          
-          const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-          const manifest = JSON.parse(manifestContent);
-          const bgFile = manifest.background || '';
-          const bgPath = path.join(templatePath, bgFile);
-          
-          if (!fs.existsSync(bgPath)) {
-            console.error(`Template background not found: ${bgPath}`);
-            continue;
-          }
-          
-          // Create mockup with artwork overlay using Sharp
-          const sharp = (await import('sharp')).default;
-          
-          // Load template background
-          let backgroundImage = sharp(bgPath);
-          const bgMetadata = await backgroundImage.metadata();
-          
-          // Load and process artwork
-          let artworkImage = sharp(req.file.buffer);
-          const artworkMetadata = await artworkImage.metadata();
-          
-          // Calculate artwork dimensions with proper perspective transformation
-          const corners = manifest.corners;
-          if (corners && corners.length === 4) {
-            // Apply margin inset (like the working API)
-            const marginPx = manifest.pad_inset_px || 0;
-            
-            // Calculate bounding box with margin inset
-            const minX = Math.min(...corners.map(c => c[0])) + marginPx;
-            const maxX = Math.max(...corners.map(c => c[0])) - marginPx;
-            const minY = Math.min(...corners.map(c => c[1])) + marginPx;
-            const maxY = Math.max(...corners.map(c => c[1])) - marginPx;
-            
-            const targetWidth = maxX - minX;
-            const targetHeight = maxY - minY;
-            
-            // Resize artwork to cover the inset bounds
-            artworkImage = artworkImage.resize(targetWidth, targetHeight, {
-              fit: 'cover',
-              background: { r: 0, g: 0, b: 0, alpha: 0 }
-            });
-            
-            // Position the artwork at the inset coordinates
-            const left = minX;
-            const top = minY;
-            
-            // Apply feather/blend settings from manifest
-            const blendMode = manifest.blend?.mode || 'normal';
-            const opacity = manifest.blend?.opacity || 1.0;
-            
-            // Composite artwork onto background with proper blend settings
-            const compositeBuffer = await backgroundImage
-              .composite([{
-                input: await artworkImage.png().toBuffer(),
-                left: Math.round(left),
-                top: Math.round(top),
-                blend: blendMode === 'normal' ? 'over' : blendMode
-              }])
-              .png()
-              .toBuffer();
-            
-            const base64Composite = compositeBuffer.toString('base64');
-            
+          // Use exact same parameters as your working manual test
+          formData.append("fit", "cover");
+          formData.append("margin_px", "0");
+          formData.append("feather_px", "-1");  // Use manifest feather
+          formData.append("opacity", "-1");    // Use manifest opacity
+          formData.append("return_format", "json");
+
+          const response = await axios.post("http://127.0.0.1:8000/mockup/apply", formData, {
+            headers: {
+              ...formData.getHeaders(),
+            },
+            timeout: 30000,
+          });
+
+          if (response.data && response.data.image_b64) {
             mockups.push({
               template: {
                 room: template.room,
                 id: template.id,
                 name: template.name || `${template.room}_${template.id}`
               },
-              image_data: `data:image/png;base64,${base64Composite}`
-            });
-          } else {
-            // Fallback: just return background if corners are invalid
-            const backgroundBuffer = fs.readFileSync(bgPath);
-            const base64Background = backgroundBuffer.toString('base64');
-            
-            mockups.push({
-              template: {
-                room: template.room,
-                id: template.id,
-                name: template.name || `${template.room}_${template.id}`
-              },
-              image_data: `data:image/png;base64,${base64Background}`
+              image_data: `data:image/png;base64,${response.data.image_b64}`
             });
           }
           
           console.log(`✅ Generated mockup for ${template.room}/${template.id}`);
         } catch (templateError) {
           console.error(`Error generating template ${template.room}/${template.id}:`, templateError);
+          console.error('Template API error details:', templateError.response?.data);
         }
       }
 
