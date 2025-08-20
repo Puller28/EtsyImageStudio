@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { analytics } from "@/lib/analytics";
 
 interface EtsyListing {
   title: string;
@@ -27,6 +28,7 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
     
     if (!artworkTitle.trim() || !styleKeywords.trim()) {
       console.log("❌ Missing fields:", { artworkTitle: artworkTitle.trim(), styleKeywords: styleKeywords.trim() });
+      analytics.errorEncounter('missing_etsy_fields', 'etsy_listing_generation', 'User attempted to generate without required fields');
       toast({
         title: "Missing Information",
         description: "Please fill in both artwork title and style keywords.",
@@ -34,6 +36,10 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
       });
       return;
     }
+    
+    // Track Etsy listing generation
+    analytics.etsyListingGenerate(2); // 2 credits used
+    analytics.funnelStep('etsy_listing_generation', 3);
     
     console.log("✅ Calling onGenerate with:", { artworkTitle, styleKeywords });
     onGenerate({ artworkTitle, styleKeywords });

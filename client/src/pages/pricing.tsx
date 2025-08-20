@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { analytics } from "@/lib/analytics";
 
 interface SubscriptionPlan {
   id: string;
@@ -130,9 +131,14 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
   const handleSelectPlan = async (planName: string) => {
     setSelectedPlan(planName);
     
+    // Track plan selection interest
+    analytics.featureExplore(`plan_${planName.toLowerCase()}`);
+    
     // For free plan, redirect to registration if not logged in
     if (planName === "Free" || planName === "Starter") {
       if (!currentUser) {
+        // Track free plan signup intent
+        analytics.funnelStep('free_plan_interest', 1);
         // Redirect to auth page for free plan signup
         window.location.href = '/auth';
         return;
@@ -185,6 +191,10 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     try {
       console.log("🛒 Starting subscription for plan:", subscriptionPlan.name, "ID:", subscriptionPlan.id);
       
+      // Track subscription checkout start
+      analytics.subscriptionStart(subscriptionPlan.id, subscriptionPlan.zarPrice);
+      analytics.funnelStep('subscription_checkout', 4);
+      
       // Use apiRequest instead of direct fetch to ensure Authorization header is included
       const response = await apiRequest("POST", "/api/subscribe", {
         planId: subscriptionPlan.id,
@@ -227,6 +237,13 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
     try {
       console.log("🛒 Starting credit purchase for package:", packageId);
+      
+      // Find package details for tracking
+      const creditPackage = allPlans?.creditPackages.find(pkg => pkg.id === packageId);
+      if (creditPackage) {
+        analytics.creditPurchase(creditPackage.zarPrice, creditPackage.credits, 'paystack');
+        analytics.funnelStep('credit_purchase_checkout', 5);
+      }
       
       const response = await apiRequest("POST", "/api/purchase-credits", {
         packageId: packageId,

@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { User, Project } from "@shared/schema";
+import { analytics } from "@/lib/analytics";
 
 import Navigation from "@/components/navigation";
 import WorkflowProgress from "@/components/workflow-progress";

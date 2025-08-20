@@ -21,9 +21,30 @@ import FeaturesPage from "@/pages/features";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+import { initGA, identifyUser, trackUserPlan } from "./lib/analytics";
+import { useAnalytics } from "./hooks/use-analytics";
 
 function Router() {
   const { isAuthenticated, login, user } = useAuth();
+  
+  // Initialize analytics tracking
+  useAnalytics();
+
+  // Track user authentication and plan status
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      identifyUser(user.id, {
+        plan_type: user.subscriptionPlan || 'free',
+        subscription_status: user.subscriptionStatus || 'inactive'
+      });
+      
+      trackUserPlan(
+        user.subscriptionPlan || 'free', 
+        user.credits || 0
+      );
+    }
+  }, [isAuthenticated, user]);
 
   // Debug authentication state
   console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user, currentPath: window.location.pathname });
@@ -76,6 +97,16 @@ function Router() {
 }
 
 function App() {
+  // Initialize Google Analytics when app loads
+  useEffect(() => {
+    // Verify required environment variable is present
+    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+    } else {
+      initGA();
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

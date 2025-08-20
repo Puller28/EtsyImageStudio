@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Wand2, Sparkles, Palette } from "lucide-react";
+import { analytics } from "@/lib/analytics";
 
 interface AIArtGeneratorProps {
   onArtworkGenerated: (imageData: string, prompt: string) => void;
@@ -59,8 +60,13 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
         description: "Please enter a description for your artwork.",
         variant: "destructive",
       });
+      analytics.errorEncounter('empty_prompt', 'ai_art_generation', 'User attempted to generate art without prompt');
       return;
     }
+
+    // Track AI art generation
+    analytics.aiArtGenerate(prompt, 2); // 2 credits used
+    analytics.funnelStep('ai_art_generation', 1);
 
     generateArtMutation.mutate({
       prompt,

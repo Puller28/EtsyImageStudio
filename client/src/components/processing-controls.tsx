@@ -3,6 +3,7 @@ import { Play, Check, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { analytics } from "@/lib/analytics";
 
 interface ProcessingControlsProps {
   onStartProcessing: (options: { upscaleOption: "2x" | "4x" }) => void;
@@ -71,7 +72,14 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
         </div>
 
         <Button
-          onClick={() => onStartProcessing({ upscaleOption })}
+          onClick={() => {
+            // Track image processing start
+            const creditsUsed = upscaleOption === "2x" ? 1 : 2;
+            analytics.imageProcess(upscaleOption, creditsUsed);
+            analytics.funnelStep('image_processing_start', 2);
+            
+            onStartProcessing({ upscaleOption });
+          }}
           disabled={disabled}
           className="w-full"
           size="lg"

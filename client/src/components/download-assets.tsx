@@ -1,5 +1,6 @@
 import { Download, FileArchive, Check, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { analytics } from "@/lib/analytics";
 
 interface DownloadItem {
   id: string;
@@ -48,7 +49,12 @@ export default function DownloadAssets({ items, onDownload, downloadReady, isPac
         </div>
         
         <Button
-          onClick={onDownload}
+          onClick={() => {
+            // Track download initiation
+            analytics.zipDownload(items.length);
+            analytics.download('zip_package', 'zip');
+            onDownload();
+          }}
           disabled={!downloadReady || isPackaging}
           className="w-full bg-green-600 hover:bg-green-700"
           size="lg"

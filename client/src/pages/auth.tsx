@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { insertUserSchema } from "@shared/schema";
+import { analytics } from "@/lib/analytics";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -65,6 +66,10 @@ export default function Auth({ onLogin }: AuthProps) {
 
       if (response.ok) {
         const result = await response.json();
+        // Track successful login
+        analytics.login('email');
+        analytics.funnelStep('user_login', 1);
+        
         toast({
           title: "Welcome back!",
           description: "You've been logged in successfully.",
@@ -97,6 +102,10 @@ export default function Auth({ onLogin }: AuthProps) {
 
       if (response.ok) {
         const result = await response.json();
+        // Track successful signup
+        analytics.signup('email');
+        analytics.funnelStep('user_registration', 1);
+        
         toast({
           title: "Account Created!",
           description: "Welcome to EtsyArt Pro! You've received 100 free credits.",

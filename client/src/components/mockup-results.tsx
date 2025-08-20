@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Download, Eye } from "lucide-react";
 import JSZip from "jszip";
+import { analytics } from "@/lib/analytics";
 
 interface GeneratedMockup {
   template: {
@@ -23,6 +24,9 @@ export function MockupResults({ mockups, onReset }: MockupResultsProps) {
   const [selectedMockup, setSelectedMockup] = useState<GeneratedMockup | null>(null);
 
   const downloadSingle = (mockup: GeneratedMockup) => {
+    // Track individual mockup download
+    analytics.download('mockup_single', 'png');
+    
     const link = document.createElement("a");
     link.href = mockup.image_data;
     link.download = `${mockup.template.name}_mockup.png`;
@@ -32,6 +36,10 @@ export function MockupResults({ mockups, onReset }: MockupResultsProps) {
   };
 
   const downloadAll = async () => {
+    // Track bulk mockup download
+    analytics.zipDownload(mockups.length);
+    analytics.download('mockup_bulk', 'zip');
+    
     const zip = new JSZip();
     
     for (const mockup of mockups) {

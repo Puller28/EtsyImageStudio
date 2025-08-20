@@ -10,6 +10,7 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
+import { analytics } from "@/lib/analytics";
 
 interface GeneratedMockup {
   template: {
@@ -44,6 +45,10 @@ export function MockupPage() {
   } : undefined;
 
   const handleFileUpload = (file: File) => {
+    // Track image upload
+    analytics.imageUpload(file.size, file.type);
+    analytics.funnelStep('mockup_image_upload', 1);
+    
     setUploadedFile(file);
     const url = URL.createObjectURL(file);
     setUploadedImageUrl(url);
@@ -51,6 +56,10 @@ export function MockupPage() {
   };
 
   const handleMockupsGenerated = (mockups: GeneratedMockup[]) => {
+    // Track successful mockup generation
+    analytics.mockupComplete(mockups.length, 0); // Processing time will be tracked in component
+    analytics.funnelStep('mockup_generation_complete', 3);
+    
     setGeneratedMockups(mockups);
     setCurrentStep("results");
   };

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Image as ImageIcon, Download, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { analytics } from "@/lib/analytics";
 
 interface Template {
   id: string;
@@ -170,6 +171,10 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         });
         return;
       }
+      // Track template selection
+      analytics.mockupTemplateSelect(template.room, template.id);
+      analytics.funnelStep('template_selection', 2);
+      
       setSelectedTemplates([...selectedTemplates, template]);
     } else {
       setSelectedTemplates(selectedTemplates.filter(t => 
@@ -185,6 +190,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         description: "Please upload an artwork file first",
         variant: "destructive",
       });
+      analytics.errorEncounter('no_file_selected', 'mockup_generation', 'User attempted to generate without file');
       return;
     }
 
@@ -194,8 +200,14 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         description: "Please select at least one template",
         variant: "destructive",
       });
+      analytics.errorEncounter('no_templates_selected', 'mockup_generation', 'User attempted to generate without templates');
       return;
     }
+
+    // Track mockup generation start
+    const creditsUsed = selectedTemplates.length; // 1 credit per template
+    analytics.mockupGenerate(selectedTemplates.length, creditsUsed);
+    analytics.funnelStep('mockup_generation_start', 3);
 
     // Clear any existing stuck state timer
     if (stuckStateTimer) {
@@ -206,6 +218,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
     const timer = setTimeout(() => {
       if (generateMockups.isPending) {
         console.warn('⚠️ Mutation appears stuck, attempting to reset');
+        analytics.errorEncounter('generation_timeout', 'mockup_generation', 'Generation exceeded 10 minutes');
         toast({
           title: "Generation Taking Longer Than Expected",
           description: "The generation is still processing. Please wait or refresh the page if needed.",
