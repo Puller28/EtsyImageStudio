@@ -1744,11 +1744,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Create simple local mockup using Sharp with basic template overlay
+          // Use the external API directly with manifest values
           try {
-            const sharp = (await import('sharp')).default;
-            
-            // Get template files
+            // Get template manifest for parameters
             const templatePath = path.join('./templates', template.room, template.id);
             const manifestPath = path.join(templatePath, 'manifest.json');
             
@@ -1759,114 +1757,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const manifestContent = fs.readFileSync(manifestPath, 'utf8');
             const manifest = JSON.parse(manifestContent);
-            const bgFile = manifest.background || '';
-            const bgPath = path.join(templatePath, bgFile);
-            
-            if (!fs.existsSync(bgPath)) {
-              console.error(`Template background not found: ${bgPath}`);
-              continue;
-            }
 
-            // Load background template
-            const backgroundImage = sharp(bgPath);
-            const bgMetadata = await backgroundImage.metadata();
-            
-            // Process artwork with template dimensions
-            let artworkImage = sharp(req.file.buffer);
-            
-            // For templates with corner coordinates, apply perspective transformation like external API
-            if (manifest.corners && manifest.corners.length === 4) {
-              const corners = manifest.corners;
-              console.log(`Template corners: ${JSON.stringify(corners)}`);
-              
-              // The bedroom_02 corners form a skewed quadrilateral that needs perspective correction
-              // Corners: [[324, 122], [663, 136], [663, 510], [324, 514]]
-              // This is NOT a simple rectangle - it's a perspective-distorted frame
-              
-              // Calculate bounding rectangle for initial sizing
-              const minX = Math.min(...corners.map((c: number[]) => c[0]));
-              const maxX = Math.max(...corners.map((c: number[]) => c[0]));
-              const minY = Math.min(...corners.map((c: number[]) => c[1]));
-              const maxY = Math.max(...corners.map((c: number[]) => c[1]));
-              
-              const frameWidth = maxX - minX;
-              const frameHeight = maxY - minY;
-              
-              console.log(`Frame: ${frameWidth}x${frameHeight}, Parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
-              
-              // Create artwork that exactly matches the external API approach
-              // The key insight: the external API calculates the "visual" dimensions of the skewed frame
-              
-              // For bedroom_02, the frame is slightly tilted/skewed
-              // Calculate the actual visual width and height accounting for the skew
-              const topWidth = Math.sqrt(Math.pow(corners[1][0] - corners[0][0], 2) + Math.pow(corners[1][1] - corners[0][1], 2));
-              const bottomWidth = Math.sqrt(Math.pow(corners[2][0] - corners[3][0], 2) + Math.pow(corners[2][1] - corners[3][1], 2));
-              const leftHeight = Math.sqrt(Math.pow(corners[3][0] - corners[0][0], 2) + Math.pow(corners[3][1] - corners[0][1], 2));
-              const rightHeight = Math.sqrt(Math.pow(corners[2][0] - corners[1][0], 2) + Math.pow(corners[2][1] - corners[1][1], 2));
-              
-              // Use the maximum dimensions to ensure full coverage
-              const visualWidth = Math.max(topWidth, bottomWidth);
-              const visualHeight = Math.max(leftHeight, rightHeight);
-              
-              console.log(`Visual frame dimensions: ${Math.round(visualWidth)}x${Math.round(visualHeight)} vs bounding box: ${frameWidth}x${frameHeight}`);
-              
-              // Resize artwork to match the visual dimensions with cover mode
-              artworkImage = artworkImage.resize(Math.round(visualWidth), Math.round(visualHeight), {
-                fit: 'cover',
-                position: 'center'
-              });
-              
-              // Position artwork at the top-left corner of the bounding box
-              // This matches how the external API handles skewed frames
-              const offsetX = minX;
-              const offsetY = minY;
-              
-              // Apply feathering/blur (feather_px=-1 means use manifest default, matching your parameters)
-              const featherPx = -1; // Exactly matching your manual test parameter
-              const actualFeatherPx = featherPx === -1 ? (manifest.feather_px || 0) : featherPx;
-              if (actualFeatherPx > 0) {
-                artworkImage = artworkImage.blur(actualFeatherPx * 0.5); // Convert to Sharp blur sigma
-              }
-              
-              // Apply opacity (opacity=-1 means use manifest default, matching your parameters)  
-              const opacity = -1; // Exactly matching your manual test parameter
-              const actualOpacity = opacity === -1 ? (manifest.blend?.opacity || 1.0) : opacity;
-              if (actualOpacity < 1.0) {
-                artworkImage = artworkImage.composite([{
-                  input: Buffer.alloc(4, Math.round(255 * (1 - actualOpacity))), // Semi-transparent overlay
-                  raw: { width: 1, height: 1, channels: 4 },
-                  tile: true,
-                  blend: 'multiply'
-                }]);
-              }
-              
-              // Composite onto background with proper positioning
-              const result = await backgroundImage
-                .composite([{
-                  input: await artworkImage.png().toBuffer(),
-                  left: Math.round(offsetX),
-                  top: Math.round(offsetY)
-                }])
-                .png()
-                .toBuffer();
-              
-              const base64Result = result.toString('base64');
+            // Create FormData for external API exactly as your manual test
+            const formData = new FormData();
+            formData.append("file", req.file.buffer, {
+              filename: req.file.originalname || "artwork.jpg",
+              contentType: req.file.mimetype,
+            });
+            formData.append("room", template.room);
+            formData.append("template_id", template.id);
+            formData.append("fit", "cover");
+            formData.append("margin_px", "0");
+            formData.append("feather_px", "-1"); // Use manifest default
+            formData.append("opacity", "-1");    // Use manifest default
+            formData.append("return_format", "json");
+
+            console.log(`Calling external API for ${template.room}/${template.id} with exact manifest parameters...`);
+
+            const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup/apply", formData, {
+              headers: {
+                ...formData.getHeaders(),
+              },
+              timeout: 60000,
+            });
+
+            if (response.data && response.data.image_b64) {
               mockups.push({
                 template: {
                   room: template.room,
                   id: template.id,
                   name: template.name || `${template.room}_${template.id}`
                 },
-                image_data: `data:image/png;base64,${base64Result}`
+                image_data: `data:image/png;base64,${response.data.image_b64}`
               });
-              
-              console.log(`✅ Generated local mockup for ${template.room}/${template.id} with proper inset boundaries and margin padding`);
+              console.log(`✅ Generated mockup via external API for ${template.room}/${template.id}`);
             } else {
-              console.log(`No corners found for ${template.room}/${template.id}, skipping`);
+              console.error(`No image_b64 returned for ${template.room}/${template.id}`);
             }
             
-          } catch (localError: any) {
-            console.error(`Local mockup generation failed for ${template.room}/${template.id}:`, localError.message);
+          } catch (apiError: any) {
+            console.error(`External API failed for ${template.room}/${template.id}:`, apiError.message);
+            if (apiError.response) {
+              console.error('API response status:', apiError.response.status);
+              console.error('API response data:', apiError.response.data);
+            }
           }
           
         } catch (templateError) {
