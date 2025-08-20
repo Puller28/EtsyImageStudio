@@ -884,42 +884,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Use storage layer with optimized query
+      // Use optimized query with multiple fallback strategies
+      let projectsResult: Project[] = [];
+      
       try {
-        console.log(`🔍 Attempting projects query through storage layer...`);
-        const userProjects = await storage.getProjectsByUserId(req.userId);
+        console.log(`🔍 Attempting optimized projects query...`);
         
-        const duration = Date.now() - startTime;
-        console.log(`✅ Storage query completed in ${duration}ms, found ${userProjects.length} projects`);
+        // Strategy 1: Simple query with limited fields for speed
+        const quickQuery = db.select({
+          id: projects.id,
+          title: projects.title,
+          originalImageUrl: projects.originalImageUrl,
+          thumbnailUrl: projects.thumbnailUrl,
+          status: projects.status,
+          createdAt: projects.createdAt
+        })
+        .from(projects)
+        .where(eq(projects.userId, req.userId))
+        .orderBy(desc(projects.createdAt))
+        .limit(20);
         
-        res.json(userProjects);
-      } catch (error) {
-        console.warn(`⚠️ Storage query failed (${error instanceof Error ? error.message : 'Unknown error'}), falling back to direct query`);
-        
-        // Fallback to direct query with longer timeout
-        const queryTimeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout after 10 seconds')), 10000)
+        const queryTimeout = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout after 5 seconds')), 5000)
         );
         
-        const queryPromise = db.select()
-          .from(projects)
-          .where(eq(projects.userId, req.userId))
-          .orderBy(desc(projects.createdAt))
-          .limit(50);
+        const result = await Promise.race([quickQuery, queryTimeout]);
+        projectsResult = result.map(p => ({
+          ...p,
+          userId: req.userId as string,
+          upscaledImageUrl: p.originalImageUrl, // Use original as fallback
+          mockupImageUrl: p.originalImageUrl, // Use original as fallback
+          mockupImages: {} as Record<string, string>,
+          resizedImages: {} as Record<string, string>,
+          etsyListing: null,
+          mockupTemplate: null,
+          upscaleOption: null,
+          zipUrl: null,
+          aiPrompt: null,
+          metadata: null
+        })) as Project[];
         
-        try {
-          console.log(`🔍 Attempting direct database query for projects...`);
-          const directProjects = await Promise.race([queryPromise, queryTimeout]) as Project[];
-          
-          const duration = Date.now() - startTime;
-          console.log(`✅ Direct DB query completed in ${duration}ms, found ${directProjects.length} projects`);
-          
-          res.json(directProjects);
-        } catch (directError) {
-          console.warn(`⚠️ Direct DB query also failed (${directError instanceof Error ? directError.message : 'Unknown error'}), returning empty result`);
-          res.json([]);
-        }
+        const duration = Date.now() - startTime;
+        console.log(`✅ Quick query completed in ${duration}ms, found ${projectsResult.length} projects`);
+        
+      } catch (error) {
+        console.warn(`⚠️ Quick query failed (${error instanceof Error ? error.message : 'Unknown error'}), returning minimal data`);
+        
+        // Strategy 2: Return basic structure to prevent UI errors
+        projectsResult = [];
       }
+      
+      res.json(projectsResult);
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);

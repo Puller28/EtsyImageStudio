@@ -339,15 +339,21 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔍 Getting projects for user: ${userId}`);
     
     try {
-      // Use LIMIT to prevent large result sets from causing issues
-      const result = await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(50);
+      // Add timeout to this specific query
+      const queryPromise = db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(50);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Projects query timeout after 8 seconds')), 8000)
+      );
+      
+      const result = await Promise.race([queryPromise, timeoutPromise]);
       const duration = Date.now() - startTime;
       console.log(`✅ Projects query completed in ${duration}ms, found ${result.length} projects`);
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ Projects query failed after ${duration}ms:`, error);
-      throw error;
+      // Return empty array instead of throwing to prevent cascading failures
+      return [];
     }
   }
 
@@ -481,7 +487,7 @@ class RobustStorage implements IStorage {
     try {
       // Add timeout to prevent hanging operations
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database operation timeout after 10 seconds')), 10000);
+        setTimeout(() => reject(new Error('Database operation timeout after 15 seconds')), 15000);
       });
       
       const result = await Promise.race([
