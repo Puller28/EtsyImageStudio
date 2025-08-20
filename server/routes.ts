@@ -1737,6 +1737,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check mockup set limit for free users (5 sets max = 25 mockups)
+      if (isFreeUser) {
+        // Count existing mockup projects for free users
+        const existingProjects = await storage.getProjects();
+        const userMockupProjects = existingProjects.filter(p => p.userId === userId && p.type === 'mockup');
+        if (userMockupProjects.length >= 5) {
+          return res.status(403).json({
+            error: 'Mockup limit reached',
+            message: 'Free users can generate up to 5 mockup sets (25 mockups total). Upgrade to Pro for unlimited mockups!',
+            limit: 5,
+            current: userMockupProjects.length,
+            requiresUpgrade: true
+          });
+        }
+      }
+
       // Check if user has enough credits
       const totalCreditsNeeded = creditCost * selectedTemplates.length;
       if (user.credits < totalCreditsNeeded) {
@@ -2024,7 +2040,7 @@ else:
         remaining_credits: user.credits - actualCreditsUsed,
         plan_type: isFreeUser ? 'free' : 'paid',
         note: isFreeUser 
-          ? "All users pay 1 credit per mockup (100 mockups with 100 monthly credits). Upgrade to Pro for more credits and premium features!"
+          ? "Free users limited to 5 mockup sets total. Upgrade to Pro for unlimited mockups, 4x upscaling, and Etsy tags!"
           : "Generated with template-based system for perfect artwork preservation"
       });
 

@@ -77,10 +77,10 @@ export const subscriptionPlans = [
     features: [
       '100 credits per month',
       'AI art generation',
-      'Image upscaling (2x/4x)',
+      'Image upscaling (2x only)',
       'Print format resizing',
-      'Etsy listing generation',
-      'Automated mockup generation',
+      'Basic Etsy listing generation',
+      'Limited mockup generation (5 sets max)',
       'Basic AI tools'
     ]
   },
@@ -96,9 +96,9 @@ export const subscriptionPlans = [
     features: [
       '300 credits per month',
       'All Free plan features',
-      'Automated mockup generation',
-      'Higher resolution exports',
-      'Advanced AI art styles'
+      'Unlimited mockup generation',
+      'Image upscaling (2x and 4x)',
+      'Complete Etsy listing with tags'
     ],
     paystackPlanCode: 'PLN_0yglvnu9bd129yz'
   },
@@ -114,7 +114,7 @@ export const subscriptionPlans = [
     features: [
       '800 credits per month',
       'All Pro plan features',
-      'Automated mockup generation', 
+      'Unlimited mockup generation', 
       'Commercial usage rights',
       'Bulk processing capabilities',
       'Best value per credit'
