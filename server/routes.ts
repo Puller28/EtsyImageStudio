@@ -1790,18 +1790,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Use Python subprocess to call your exact template API logic
+          // Use FastAPI service that's already running
           try {
-            
             console.log(`Processing mockup for ${template.room}/${template.id} with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
 
-            // Create temporary file for artwork
-            const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
-            fs.writeFileSync(tempArtworkPath, req.file.buffer);
+            // Use axios with proper form-data for FastAPI service
+            const FormData = (await import('form-data')).default;
+            const formData = new FormData();
+            
+            formData.append('artwork', req.file.buffer, {
+              filename: 'artwork.jpg',
+              contentType: 'image/jpeg'
+            });
+            formData.append('room', template.room);
+            formData.append('template_id', template.id);
+            formData.append('margin_px', '0');
+            formData.append('feather_px', '-1');
+            formData.append('opacity', '-1');
+            formData.append('fit', 'cover');
 
-            // Call Python script with your exact logic
-            const pythonResult = await new Promise<any>((resolve, reject) => {
-              const python = spawn('python3', ['-c', `
+            const response = await axios.post('http://localhost:8001/mockup/apply', formData, {
+              headers: formData.getHeaders(),
+              timeout: 30000 // 30 second timeout
+            });
+
+            const result = response.data;
+            if (!result.mockup_b64) {
+              throw new Error('FastAPI service did not return mockup_b64');
+            }
+
+            const mockupImageUrl = `data:image/jpeg;base64,${result.mockup_b64}`;
+            mockups.push({
+              template: { room: template.room, id: template.id, name: template.name },
+              image_data: mockupImageUrl
+            });
+
+            console.log(`✅ Generated mockup via FastAPI service for ${template.room}/${template.id}`);
+
+          } catch (fastApiError) {
+            console.error(`❌ FastAPI service failed for ${template.room}/${template.id}:`, fastApiError);
+            throw fastApiError; // Don't fall back to the problematic subprocess
+          }
 import sys, json, io, os, math, hashlib, base64
 from pathlib import Path
 import numpy as np
