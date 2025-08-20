@@ -1785,27 +1785,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const frameWidth = maxX - minX;
               const frameHeight = maxY - minY;
               
-              // Apply margin padding (margin_px=0 means no additional margin)
+              // Apply margin padding exactly as external API (margin_px=0 means no additional margin)
               const marginPx = 0; // As per your working manual test
-              const paddedWidth = frameWidth - (marginPx * 2);
-              const paddedHeight = frameHeight - (marginPx * 2);
               
-              // Calculate inset boundaries - reduce frame by small amount for better fit
-              const insetPercent = 0.02; // 2% inset for proper boundaries
-              const insetWidth = paddedWidth * (1 - insetPercent);
-              const insetHeight = paddedHeight * (1 - insetPercent);
+              console.log(`Frame: ${frameWidth}x${frameHeight}, Parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
               
-              console.log(`Frame: ${frameWidth}x${frameHeight}, Inset: ${Math.round(insetWidth)}x${Math.round(insetHeight)}, Parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
-              
-              // Resize artwork to fill with cover mode (matching your manual test)
-              artworkImage = artworkImage.resize(Math.round(insetWidth), Math.round(insetHeight), {
+              // Resize artwork to fill exact frame dimensions with cover mode (matching external API)
+              artworkImage = artworkImage.resize(frameWidth, frameHeight, {
                 fit: 'cover',
                 position: 'center'
               });
               
-              // Calculate centered position within the frame
-              const offsetX = minX + marginPx + (paddedWidth - insetWidth) / 2;
-              const offsetY = minY + marginPx + (paddedHeight - insetHeight) / 2;
+              // Position at exact frame coordinates (no additional inset reduction)
+              const offsetX = minX;
+              const offsetY = minY;
               
               // Apply feathering/blur (feather_px=-1 means use manifest default, matching your parameters)
               const featherPx = -1; // Exactly matching your manual test parameter
