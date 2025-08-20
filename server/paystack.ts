@@ -80,7 +80,7 @@ export const subscriptionPlans = [
       'Image upscaling (2x/4x)',
       'Print format resizing',
       'Etsy listing generation',
-      'Unlimited mockup generation (1 credit each, limited by monthly credits)',
+      'Unlimited mockup generation (0.5 credits each, ~200 mockups monthly)',
       'Basic AI tools'
     ]
   },

@@ -1725,7 +1725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Free users get unlimited mockups (limited only by credits), paid users get premium service
       const isFreeUser = !user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active';
-      const creditCost = isFreeUser ? 1 : 3; // Free users pay 1 credit per mockup, paid users pay 3 for premium service
+      const creditCost = isFreeUser ? 0.5 : 3; // Free users pay 0.5 credits per mockup, paid users pay 3 for premium service
       const maxTemplates = 5; // All users can select up to 5 templates
 
       // Check template limit (same for all users)
@@ -2012,7 +2012,7 @@ else:
         type: 'debit',
         amount: actualCreditsUsed,
         description: isFreeUser 
-          ? `Free mockup generation (${mockups.length} templates × ${creditCost} credit each)`
+          ? `Free mockup generation (${mockups.length} templates × ${creditCost} credits each)`
           : `Premium mockup generation (${mockups.length} templates × ${creditCost} credits each)`,
         balanceAfter: user.credits - actualCreditsUsed
       });
@@ -2024,7 +2024,7 @@ else:
         remaining_credits: user.credits - actualCreditsUsed,
         plan_type: isFreeUser ? 'free' : 'paid',
         note: isFreeUser 
-          ? "Free users get unlimited mockups at 1 credit each (limited only by your 100 monthly credits). Upgrade to Pro for premium templates!"
+          ? "Free users get unlimited mockups at 0.5 credits each (up to 200 mockups with 100 monthly credits). Upgrade to Pro for premium templates!"
           : "Generated with premium template-based system for perfect artwork preservation"
       });
 
