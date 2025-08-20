@@ -459,7 +459,8 @@ class RobustStorage implements IStorage {
       ]);
       console.log('✅ Database connection test successful');
     } catch (error) {
-      console.warn('⚠️ Database connection test failed, will use fallback for all operations:', error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn('⚠️ Database connection test failed, will use fallback for all operations:', errorMessage);
       this.useFallback = true;
     }
   }
