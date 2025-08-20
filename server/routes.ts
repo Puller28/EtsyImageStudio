@@ -1744,63 +1744,234 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Use the external API directly with manifest values
+          // Use Python subprocess to call your exact template API logic
           try {
-            // Get template manifest for parameters
-            const templatePath = path.join('./templates', template.room, template.id);
-            const manifestPath = path.join(templatePath, 'manifest.json');
+            const { spawn } = require('child_process');
+            const fs = require('fs');
+            const path = require('path');
             
-            if (!fs.existsSync(manifestPath)) {
-              console.error(`Template manifest not found: ${manifestPath}`);
-              continue;
+            console.log(`Processing mockup for ${template.room}/${template.id} with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
+
+            // Create temporary file for artwork
+            const tempArtworkPath = path.join(__dirname, `../temp_artwork_${Date.now()}.jpg`);
+            fs.writeFileSync(tempArtworkPath, req.file.buffer);
+
+            // Call Python script with your exact logic
+            const pythonResult = await new Promise((resolve, reject) => {
+              const python = spawn('python3', ['-c', `
+import sys, json, io, os, math, hashlib, base64
+from pathlib import Path
+import numpy as np
+import cv2
+from PIL import Image, ImageOps
+
+# Your exact helper functions
+def _load_manifest(room, template_id):
+    template_root = Path("./templates")
+    room_dir = template_root / room
+    if not room_dir.exists():
+        raise Exception(f"Room folder not found: {room_dir}")
+    tdir = room_dir / template_id
+    if not tdir.exists():
+        raise Exception(f"Template '{template_id}' not found under {room_dir}")
+    
+    mpath = tdir / "manifest.json"
+    if not mpath.exists():
+        raise Exception(f"manifest.json missing in {tdir}")
+    
+    try:
+        manifest = json.loads(mpath.read_text())
+    except Exception as e:
+        raise Exception(f"manifest.json not valid JSON: {e}")
+    
+    bg_name = manifest.get("background")
+    if not bg_name:
+        raise Exception("manifest.json missing 'background'")
+    bg_path = tdir / bg_name
+    if not bg_path.exists():
+        raise Exception(f"Background not found: {bg_path}")
+    
+    corners = manifest.get("corners")
+    if not (isinstance(corners, list) and len(corners) == 4):
+        raise Exception("manifest.json 'corners' must be 4 points [TL,TR,BR,BL]")
+    
+    return manifest, bg_path
+
+def _fit_size(src_w, src_h, dst_w, dst_h, mode):
+    r_src = src_w / src_h
+    r_dst = dst_w / dst_h
+    if mode == "cover":
+        if r_src < r_dst:
+            w = dst_w; h = int(round(w / r_src))
+        else:
+            h = dst_h; w = int(round(h * r_src))
+    else:
+        if r_src > r_dst:
+            w = dst_w; h = int(round(w / r_src))
+        else:
+            h = dst_h; w = int(round(h * r_src))
+    return w, h
+
+def _pil_to_np(img):
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    arr = np.array(img)
+    bgr = cv2.cvtColor(arr, cv2.COLOR_RGBA2BGRA)
+    return bgr
+
+def _np_to_pil(arr):
+    rgba = cv2.cvtColor(arr, cv2.COLOR_BGRA2RGBA)
+    return Image.fromarray(rgba)
+
+def _polygon_mask(shape_hw, polygon, feather_px):
+    h, w = shape_hw
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.fillConvexPoly(mask, polygon.astype(np.int32), 255)
+    if feather_px and feather_px > 0:
+        k = max(1, int(round(feather_px)) | 1)
+        mask = cv2.GaussianBlur(mask, (k, k), 0)
+    return mask
+
+def _blend(bg_bgra, fg_bgra, mask, mode, opacity):
+    opacity = max(0.0, min(1.0, float(opacity)))
+    a = (mask.astype(np.float32) / 255.0) * opacity
+    a3 = np.dstack([a, a, a, a])
+    
+    if mode == "multiply":
+        bg_rgb = bg_bgra[..., :3].astype(np.float32) / 255.0
+        fg_rgb = fg_bgra[..., :3].astype(np.float32) / 255.0
+        mul_rgb = bg_rgb * fg_rgb
+        out_rgb = mul_rgb * a[..., None] + bg_rgb * (1.0 - a[..., None])
+        out_a = np.clip(bg_bgra[..., 3].astype(np.float32)/255.0 + a - bg_bgra[..., 3].astype(np.float32)/255.0 * a, 0, 1)
+        out = np.dstack([np.clip(out_rgb*255,0,255).astype(np.uint8), (out_a*255).astype(np.uint8)])
+        return out
+    
+    fg = fg_bgra.astype(np.float32)
+    bg = bg_bgra.astype(np.float32)
+    out = (fg * a3 + bg * (1.0 - a3)).astype(np.uint8)
+    return out
+
+# Main processing function
+def process_mockup(artwork_path, room, template_id):
+    try:
+        manifest, bg_path = _load_manifest(room, template_id)
+        
+        with Image.open(bg_path) as P:
+            bg = P.convert("RGBA")
+        
+        bg_w, bg_h = bg.size
+        corners = manifest["corners"]
+        TL, TR, BR, BL = [tuple(map(float, p)) for p in corners]
+        
+        with Image.open(artwork_path) as art_img:
+            art = art_img.convert("RGBA")
+            art = ImageOps.exif_transpose(art)
+        
+        dst_w = math.dist(TL, TR)
+        dst_h = math.dist(TL, BL)
+        
+        mx = 0  # margin_px = 0
+        dst_quad = np.array([TL, TR, BR, BL], dtype=np.float32)
+        
+        aw, ah = art.size
+        sw, sh = _fit_size(aw, ah, int(round(dst_w))-2*mx, int(round(dst_h))-2*mx, "cover")
+        
+        art_resized = art.resize((max(1,sw), max(1,sh)), Image.LANCZOS)
+        
+        canvas_w = int(round(dst_w))
+        canvas_h = int(round(dst_h))
+        art_canvas = Image.new("RGBA", (canvas_w, canvas_h), (0,0,0,0))
+        ox = (canvas_w - sw)//2
+        oy = (canvas_h - sh)//2
+        ox = max(0, ox + (mx if sw <= canvas_w-2*mx else 0))
+        oy = max(0, oy + (mx if sh <= canvas_h-2*mx else 0))
+        art_canvas.paste(art_resized, (ox, oy), art_resized)
+        
+        src_quad = np.array([[0,0],[canvas_w,0],[canvas_w,canvas_h],[0,canvas_h]], dtype=np.float32)
+        H, ok = cv2.findHomography(src_quad, dst_quad, method=0)
+        
+        bg_bgra = _pil_to_np(bg)
+        art_bgra = _pil_to_np(art_canvas)
+        warped = cv2.warpPerspective(art_bgra, H, (bg_w, bg_h), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_TRANSPARENT)
+        
+        feather_px = manifest.get("feather_px", 0)
+        quad_mask = _polygon_mask((bg_h, bg_w), dst_quad, feather_px)
+        opacity_val = manifest.get("blend", {}).get("opacity", 1.0)
+        blend_mode = manifest.get("blend", {}).get("mode", "normal").lower()
+        
+        composed = _blend(bg_bgra, warped, quad_mask, blend_mode, opacity_val)
+        out_img = _np_to_pil(composed)
+        
+        buf = io.BytesIO()
+        out_img.save(buf, "PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+        
+        result = {"image_b64": b64, "w": bg_w, "h": bg_h}
+        print(json.dumps(result))
+        
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
+
+# Execute
+if len(sys.argv) >= 4:
+    process_mockup(sys.argv[1], sys.argv[2], sys.argv[3])
+else:
+    process_mockup("${tempArtworkPath}", "${template.room}", "${template.id}")
+`]);
+
+              let output = '';
+              let error = '';
+
+              python.stdout.on('data', (data) => {
+                output += data.toString();
+              });
+
+              python.stderr.on('data', (data) => {
+                error += data.toString();
+              });
+
+              python.on('close', (code) => {
+                // Clean up temp file
+                try {
+                  fs.unlinkSync(tempArtworkPath);
+                } catch (e) {
+                  // Ignore cleanup errors
+                }
+
+                if (code !== 0) {
+                  reject(new Error(`Python process failed: ${error}`));
+                  return;
+                }
+
+                try {
+                  const result = JSON.parse(output.trim());
+                  resolve(result);
+                } catch (e) {
+                  reject(new Error(`Failed to parse Python output: ${output}`));
+                }
+              });
+            });
+
+            if (pythonResult.error) {
+              throw new Error(pythonResult.error);
             }
-            
-            const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-            const manifest = JSON.parse(manifestContent);
 
-            // Create FormData for external API exactly as your manual test
-            const formData = new FormData();
-            formData.append("file", req.file.buffer, {
-              filename: req.file.originalname || "artwork.jpg",
-              contentType: req.file.mimetype,
-            });
-            formData.append("room", template.room);
-            formData.append("template_id", template.id);
-            formData.append("fit", "cover");
-            formData.append("margin_px", "0");
-            formData.append("feather_px", "-1"); // Use manifest default
-            formData.append("opacity", "-1");    // Use manifest default
-            formData.append("return_format", "json");
-
-            console.log(`Calling external API for ${template.room}/${template.id} with exact manifest parameters...`);
-
-            const response = await axios.post("http://127.0.0.1:8000/mockup/apply", formData, {
-              headers: {
-                ...formData.getHeaders(),
-              },
-              timeout: 60000,
-            });
-
-            if (response.data && response.data.image_b64) {
+            if (pythonResult && pythonResult.image_b64) {
               mockups.push({
                 template: {
                   room: template.room,
                   id: template.id,
                   name: template.name || `${template.room}_${template.id}`
                 },
-                image_data: `data:image/png;base64,${response.data.image_b64}`
+                image_data: `data:image/png;base64,${pythonResult.image_b64}`
               });
-              console.log(`✅ Generated mockup via external API for ${template.room}/${template.id}`);
+              console.log(`✅ Generated mockup via Python processor for ${template.room}/${template.id}`);
             } else {
               console.error(`No image_b64 returned for ${template.room}/${template.id}`);
             }
             
-          } catch (apiError: any) {
-            console.error(`External API failed for ${template.room}/${template.id}:`, apiError.message);
-            if (apiError.response) {
-              console.error('API response status:', apiError.response.status);
-              console.error('API response data:', apiError.response.data);
-            }
+          } catch (processorError: any) {
+            console.error(`Python processor failed for ${template.room}/${template.id}:`, processorError.message);
           }
           
         } catch (templateError) {
