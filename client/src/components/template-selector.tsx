@@ -62,10 +62,32 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         name: t.name || `${t.room}_${t.id}`
       }))));
 
+      // Get token from auth store
+      const getToken = () => {
+        try {
+          const authStorage = localStorage.getItem('auth-storage');
+          const backupStorage = localStorage.getItem('auth-storage-backup');
+          
+          const storageData = authStorage || backupStorage;
+          if (storageData) {
+            const parsed = JSON.parse(storageData);
+            return parsed.token || parsed.state?.token;
+          }
+        } catch (error) {
+          console.error('Error getting token:', error);
+        }
+        return null;
+      };
+
+      const token = getToken();
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
       const response = await fetch("/api/apply-templates", {
         method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: formData,
       });
