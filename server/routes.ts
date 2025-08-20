@@ -1571,97 +1571,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Single mockup generation endpoint for sequential processing - Requires paid plan
-  // Get available templates for user selection
-  app.get("/api/templates", (req, res) => {
+  // Get available templates - automatically discover from filesystem
+  app.get("/api/templates", async (req, res) => {
     try {
-      // Hardcoded working templates until we fix the fs scanning
+      const templateRoot = './templates';
+      
+      // Check if templates directory exists
+      if (!fs.existsSync(templateRoot)) {
+        return res.status(404).json({ 
+          error: 'Templates directory not found',
+          template_root: templateRoot 
+        });
+      }
+
       const templatesData = {
-        template_root: './templates',
+        template_root: templateRoot,
         exists: true,
-        rooms: {
-          living_room: [
-            {
-              id: 'living_01',
-              room: 'living_room',
-              name: 'Living Room 01',
-              manifest_present: true,
-              bg_present: true,
-              preview_url: '/api/templates/preview/living_room/living_01',
-              corners: [[346, 268], [701, 333], [665, 588], [315, 526]],
-              width: 1024,
-              height: 1024
-            }
-          ],
-          bedroom: [
-            {
-              id: 'bedroom_01',
-              room: 'bedroom',
-              name: 'Bedroom 01',
-              manifest_present: true,
-              bg_present: true,
-              preview_url: '/api/templates/preview/bedroom/bedroom_01',
-              corners: [[123, 150], [456, 180], [430, 380], [100, 355]],
-              width: 1024,
-              height: 1024
-            },
-            {
-              id: 'bedroom_02',
-              room: 'bedroom',
-              name: 'Bedroom 02',
-              manifest_present: true,
-              bg_present: true,
-              preview_url: '/api/templates/preview/bedroom/bedroom_02',
-              corners: [[200, 200], [500, 220], [480, 420], [180, 400]],
-              width: 1024,
-              height: 1024
-            }
-          ],
-          study: [
-            {
-              id: 'study_01',
-              room: 'study',
-              name: 'Study 01',
-              manifest_present: true,
-              bg_present: true,
-              preview_url: '/api/templates/preview/study/study_01',
-              corners: [[150, 120], [400, 140], [380, 320], [130, 300]],
-              width: 1024,
-              height: 1024
-            }
-          ],
-          gallery: [
-            {
-              id: 'gallery_01',
-              room: 'gallery',
-              name: 'Gallery 01',
-              manifest_present: true,
-              bg_present: true,
-              preview_url: '/api/templates/preview/gallery/gallery_01',
-              corners: [[180, 160], [420, 180], [400, 360], [160, 340]],
-              width: 1024,
-              height: 1024
-            }
-          ],
-          kids_room: [
-            {
-              id: 'kids_room_01',
-              room: 'kids_room',
-              name: 'Kids Room 01',
-              manifest_present: true,
-              bg_present: true,
-              preview_url: '/api/templates/preview/kids_room/kids_room_01',
-              corners: [[120, 140], [380, 160], [360, 340], [100, 320]],
-              width: 1024,
-              height: 1024
-            }
-          ]
-        }
+        rooms: {} as Record<string, any[]>
       };
 
+      // Scan all room directories
+      const roomDirs = fs.readdirSync(templateRoot, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+      for (const roomName of roomDirs) {
+        const roomPath = path.join(templateRoot, roomName);
+        templatesData.rooms[roomName] = [];
+
+        // Scan all template directories within the room
+        const templateDirs = fs.readdirSync(roomPath, { withFileTypes: true })
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name);
+
+        for (const templateId of templateDirs) {
+          const templatePath = path.join(roomPath, templateId);
+          const manifestPath = path.join(templatePath, 'manifest.json');
+
+          try {
+            // Check if manifest exists
+            if (!fs.existsSync(manifestPath)) {
+              console.warn(`Template ${roomName}/${templateId} missing manifest.json - skipping`);
+              continue;
+            }
+
+            // Read and parse manifest
+            const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+            const manifest = JSON.parse(manifestContent);
+
+            // Check if background image exists
+            const bgPath = path.join(templatePath, manifest.background);
+            const bgExists = fs.existsSync(bgPath);
+
+            if (!bgExists) {
+              console.warn(`Template ${roomName}/${templateId} missing background image: ${manifest.background} - skipping`);
+              continue;
+            }
+
+            // Get image dimensions if available
+            let width = 1024, height = 1024; // defaults
+            try {
+              const sharp = await import('sharp');
+              const imageMetadata = await sharp.default(bgPath).metadata();
+              width = imageMetadata.width || 1024;
+              height = imageMetadata.height || 1024;
+            } catch (e) {
+              console.warn(`Could not read image metadata for ${roomName}/${templateId}`);
+            }
+
+            // Build template info
+            const templateInfo = {
+              id: templateId,
+              room: roomName,
+              name: manifest.name || `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
+              manifest_present: true,
+              bg_present: bgExists,
+              preview_url: `/api/templates/preview/${roomName}/${templateId}`,
+              corners: manifest.corners || [[100, 100], [400, 100], [400, 400], [100, 400]],
+              width,
+              height,
+              ...(manifest.description && { description: manifest.description }),
+              ...(manifest.tags && { tags: manifest.tags })
+            };
+
+            templatesData.rooms[roomName].push(templateInfo);
+
+          } catch (error) {
+            console.error(`Error processing template ${roomName}/${templateId}:`, error);
+            continue;
+          }
+        }
+
+        // Sort templates within each room by id
+        templatesData.rooms[roomName].sort((a, b) => a.id.localeCompare(b.id));
+      }
+
+      console.log(`📂 Discovered ${Object.keys(templatesData.rooms).length} room categories with templates:`, 
+        Object.entries(templatesData.rooms).map(([room, templates]) => `${room}: ${templates.length}`).join(', '));
+
       res.json(templatesData);
+
     } catch (error) {
-      console.error("Templates fetch error:", error);
-      res.status(500).json({ error: "Failed to fetch templates" });
+      console.error('Template discovery error:', error);
+      res.status(500).json({ error: 'Failed to discover templates' });
     }
   });
 
