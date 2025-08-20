@@ -458,7 +458,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      {Math.floor(pkg.credits / 1)} Free Mockups (1 credit each)
+                      {Math.floor(pkg.credits / 1)} Mockups (1 credit each)
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Check className="h-4 w-4 text-green-500" />

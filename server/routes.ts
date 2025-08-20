@@ -1723,20 +1723,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Free users get limited mockups, paid users get full access
+      // Free users get unlimited mockups (limited only by credits), paid users get premium service
       const isFreeUser = !user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active';
-      const creditCost = isFreeUser ? 1 : 3; // Free users pay 1 credit per mockup, paid users pay 3 for full service
-      const maxTemplates = isFreeUser ? 2 : 5; // Free users limited to 2 templates, paid users get 5
+      const creditCost = isFreeUser ? 1 : 3; // Free users pay 1 credit per mockup, paid users pay 3 for premium service
+      const maxTemplates = 5; // All users can select up to 5 templates
 
-      // Check template limit based on user plan
+      // Check template limit (same for all users)
       if (selectedTemplates.length > maxTemplates) {
         return res.status(400).json({ 
           error: `Template limit exceeded`, 
-          message: isFreeUser 
-            ? `Free users can generate up to ${maxTemplates} mockups. Upgrade to Pro for up to 5 mockups.`
-            : `Maximum ${maxTemplates} templates allowed`,
-          maxTemplates,
-          requiresUpgrade: isFreeUser
+          message: `Maximum ${maxTemplates} templates allowed`,
+          maxTemplates
         });
       }
 
@@ -2015,8 +2012,8 @@ else:
         type: 'debit',
         amount: actualCreditsUsed,
         description: isFreeUser 
-          ? `Free mockup generation (${mockups.length} templates × ${creditCost} credits)`
-          : `Template mockup generation (${mockups.length} templates × ${creditCost} credits)`,
+          ? `Free mockup generation (${mockups.length} templates × ${creditCost} credit each)`
+          : `Premium mockup generation (${mockups.length} templates × ${creditCost} credits each)`,
         balanceAfter: user.credits - actualCreditsUsed
       });
 
@@ -2027,8 +2024,8 @@ else:
         remaining_credits: user.credits - actualCreditsUsed,
         plan_type: isFreeUser ? 'free' : 'paid',
         note: isFreeUser 
-          ? "Free users get 2 mockups at 1 credit each. Upgrade to Pro for 5 mockups!"
-          : "Generated with template-based system for perfect artwork preservation"
+          ? "Free users get unlimited mockups at 1 credit each (limited only by your 100 monthly credits). Upgrade to Pro for premium templates!"
+          : "Generated with premium template-based system for perfect artwork preservation"
       });
 
     } catch (error) {
