@@ -1774,29 +1774,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let artworkImage = sharp(req.file.buffer);
           const artworkMetadata = await artworkImage.metadata();
           
-          // Calculate artwork dimensions based on corner coordinates
+          // Calculate artwork dimensions with proper perspective transformation
           const corners = manifest.corners;
           if (corners && corners.length === 4) {
-            // Calculate target width and height from corners
-            const targetWidth = Math.abs(corners[1][0] - corners[0][0]);
-            const targetHeight = Math.abs(corners[2][1] - corners[1][1]);
+            // Apply margin inset (like the working API)
+            const marginPx = manifest.pad_inset_px || 0;
             
-            // Resize artwork to cover the corner bounds
+            // Calculate bounding box with margin inset
+            const minX = Math.min(...corners.map(c => c[0])) + marginPx;
+            const maxX = Math.max(...corners.map(c => c[0])) - marginPx;
+            const minY = Math.min(...corners.map(c => c[1])) + marginPx;
+            const maxY = Math.max(...corners.map(c => c[1])) - marginPx;
+            
+            const targetWidth = maxX - minX;
+            const targetHeight = maxY - minY;
+            
+            // Resize artwork to cover the inset bounds
             artworkImage = artworkImage.resize(targetWidth, targetHeight, {
               fit: 'cover',
               background: { r: 0, g: 0, b: 0, alpha: 0 }
             });
             
-            // Position the artwork at the top-left corner coordinates
-            const left = corners[0][0];
-            const top = corners[0][1];
+            // Position the artwork at the inset coordinates
+            const left = minX;
+            const top = minY;
             
-            // Composite artwork onto background
+            // Apply feather/blend settings from manifest
+            const blendMode = manifest.blend?.mode || 'normal';
+            const opacity = manifest.blend?.opacity || 1.0;
+            
+            // Composite artwork onto background with proper blend settings
             const compositeBuffer = await backgroundImage
               .composite([{
                 input: await artworkImage.png().toBuffer(),
-                left: left,
-                top: top
+                left: Math.round(left),
+                top: Math.round(top),
+                blend: blendMode === 'normal' ? 'over' : blendMode
               }])
               .png()
               .toBuffer();
