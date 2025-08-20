@@ -89,7 +89,7 @@ export function MockupPage() {
               uploadedImage={uploadedFile ? {
                 file: uploadedFile,
                 preview: uploadedImageUrl
-              } : null}
+              } : undefined}
               onRemoveImage={() => {
                 setUploadedFile(null);
                 setUploadedImageUrl("");
