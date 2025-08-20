@@ -2,7 +2,7 @@ import { type User, type InsertUser, type Project, type InsertProject, type Cred
 import { users, projects, processedPayments, creditTransactions, contactMessages } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -339,21 +339,67 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔍 Getting projects for user: ${userId}`);
     
     try {
-      // Add timeout to this specific query
-      const queryPromise = db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(50);
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Projects query timeout after 8 seconds')), 8000)
-      );
+      // Use raw SQL for maximum performance - the ORM is causing massive delays
+      const query = `
+        SELECT id, user_id as "userId", title, original_image_url as "originalImageUrl", 
+               upscaled_image_url as "upscaledImageUrl", mockup_image_url as "mockupImageUrl",
+               mockup_images as "mockupImages", resized_images as "resizedImages",
+               etsy_listing as "etsyListing", mockup_template as "mockupTemplate",
+               upscale_option as "upscaleOption", status, zip_url as "zipUrl",
+               created_at as "createdAt", thumbnail_url as "thumbnailUrl",
+               ai_prompt as "aiPrompt", metadata
+        FROM projects 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT 50
+      `;
       
-      const result = await Promise.race([queryPromise, timeoutPromise]);
+      const result = await db.execute(sql.raw(query, [userId]));
       const duration = Date.now() - startTime;
-      console.log(`✅ Projects query completed in ${duration}ms, found ${result.length} projects`);
-      return result;
+      console.log(`✅ Raw SQL projects query completed in ${duration}ms, found ${result.length} projects`);
+      
+      // Transform the raw results to match our Project interface
+      return result.map((row: any) => ({
+        ...row,
+        createdAt: new Date(row.createdAt),
+        mockupImages: row.mockupImages || [],
+        resizedImages: row.resizedImages || [],
+        metadata: row.metadata || {}
+      }));
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`❌ Projects query failed after ${duration}ms:`, error);
-      // Return empty array instead of throwing to prevent cascading failures
-      return [];
+      console.error(`❌ Raw SQL projects query failed after ${duration}ms:`, error);
+      
+      // Fallback to simplified ORM query with just essential fields
+      try {
+        console.log(`🔄 Attempting simplified ORM fallback query...`);
+        const fallbackResult = await db.select({
+          id: projects.id,
+          userId: projects.userId,
+          title: projects.title,
+          status: projects.status,
+          createdAt: projects.createdAt,
+          thumbnailUrl: projects.thumbnailUrl,
+          originalImageUrl: projects.originalImageUrl,
+          upscaledImageUrl: projects.upscaledImageUrl,
+          mockupImageUrl: projects.mockupImageUrl,
+          mockupImages: projects.mockupImages,
+          resizedImages: projects.resizedImages,
+          etsyListing: projects.etsyListing,
+          mockupTemplate: projects.mockupTemplate,
+          upscaleOption: projects.upscaleOption,
+          zipUrl: projects.zipUrl,
+          aiPrompt: projects.aiPrompt,
+          metadata: projects.metadata
+        }).from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(20);
+        
+        const fallbackDuration = Date.now() - startTime;
+        console.log(`✅ Fallback query completed in ${fallbackDuration}ms, found ${fallbackResult.length} projects`);
+        return fallbackResult;
+      } catch (fallbackError) {
+        console.error(`❌ Fallback query also failed:`, fallbackError);
+        return [];
+      }
     }
   }
 
