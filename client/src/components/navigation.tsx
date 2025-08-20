@@ -101,7 +101,7 @@ export default function Navigation({ user }: NavigationProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="flex items-center w-full">
                       <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
+                      <span>Account</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

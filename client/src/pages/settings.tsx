@@ -88,7 +88,7 @@ export default function Settings() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center">
             <SettingsIcon className="w-6 h-6 mr-2 text-primary" />
-            Settings
+            Account
           </h1>
           <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
         </div>
@@ -131,6 +131,54 @@ export default function Settings() {
 
           {/* Settings Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Subscription Plan */}
+            <Card id="subscription">
+              <CardHeader>
+                <CardTitle>Current Plan</CardTitle>
+                <CardDescription>
+                  Your current subscription plan and usage details.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Plan Type</Label>
+                    <div className="mt-1 text-sm font-medium text-gray-900 capitalize">
+                      {currentUser?.subscriptionPlan ? (
+                        currentUser.subscriptionPlan === 'pro_monthly' ? 'Pro Plan' :
+                        currentUser.subscriptionPlan === 'business_monthly' ? 'Business Plan' :
+                        currentUser.subscriptionPlan
+                      ) : 'Free Plan'}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <div className="mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        currentUser?.subscriptionStatus === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {currentUser?.subscriptionStatus === 'active' ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Available Credits</p>
+                      <p className="text-sm text-gray-600">{currentUser?.credits || 0} credits remaining</p>
+                    </div>
+                    <Button variant="outline" asChild>
+                      <a href="/pricing">Upgrade Plan</a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Profile Settings */}
             <Card id="profile">
               <CardHeader>
