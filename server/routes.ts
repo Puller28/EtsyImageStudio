@@ -1151,7 +1151,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-
+      // Add mockups if they exist
+      if (project.mockupImages && typeof project.mockupImages === 'object') {
+        const mockupsFolder = zip.folder("mockups");
+        Object.entries(project.mockupImages as Record<string, string>).forEach(([mockupId, imageUrl], index) => {
+          if (imageUrl && imageUrl.startsWith('data:image/')) {
+            const base64Data = imageUrl.split(',')[1];
+            const cleanMockupId = mockupId.replace(/[^a-z0-9]/gi, '_');
+            mockupsFolder?.file(`${String(index + 1).padStart(2, '0')}_${cleanMockupId}.jpg`, base64Data, { base64: true });
+          }
+        });
+      }
 
       // Add Etsy listing content if available
       if (project.etsyListing) {
