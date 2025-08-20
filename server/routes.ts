@@ -1781,9 +1781,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const targetWidth = Math.abs(corners[1][0] - corners[0][0]);
             const targetHeight = Math.abs(corners[2][1] - corners[1][1]);
             
-            // Resize artwork to fit within the corner bounds
+            // Resize artwork to cover the corner bounds
             artworkImage = artworkImage.resize(targetWidth, targetHeight, {
-              fit: 'contain',
+              fit: 'cover',
               background: { r: 0, g: 0, b: 0, alpha: 0 }
             });
             
