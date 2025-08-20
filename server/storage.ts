@@ -154,6 +154,9 @@ export class MemStorage implements IStorage {
       mockupImageUrl: null,
       etsyListing: null,
       zipUrl: null,
+      thumbnailUrl: insertProject.thumbnailUrl || null,
+      aiPrompt: insertProject.aiPrompt || null,
+      metadata: insertProject.metadata || {},
       createdAt: new Date(),
       upscaleOption: insertProject.upscaleOption || "2x",
     };
@@ -192,6 +195,7 @@ export class MemStorage implements IStorage {
     const fullTransaction: CreditTransaction = {
       ...transaction,
       id,
+      projectId: transaction.projectId || null,
       createdAt: new Date(),
     };
     this.creditTransactions.set(id, fullTransaction);
@@ -331,7 +335,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    return await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
+    const startTime = Date.now();
+    console.log(`🔍 Getting projects for user: ${userId}`);
+    
+    try {
+      const result = await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
+      const duration = Date.now() - startTime;
+      console.log(`✅ Projects query completed in ${duration}ms, found ${result.length} projects`);
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ Projects query failed after ${duration}ms:`, error);
+      throw error;
+    }
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
@@ -432,18 +448,45 @@ class RobustStorage implements IStorage {
   }
 
   private async executeWithFallback<T>(operation: (storage: IStorage) => Promise<T>): Promise<T> {
+    const startTime = Date.now();
+    const operationName = operation.toString().slice(0, 50) + '...';
+    
     if (this.useFallback) {
-      return operation(this.fallbackStorage);
+      console.log(`🔄 Using fallback storage for operation`);
+      const result = await operation(this.fallbackStorage);
+      console.log(`✅ Fallback operation completed in ${Date.now() - startTime}ms`);
+      return result;
     }
 
+    console.log(`🔄 Executing primary storage operation`);
+    
     try {
-      return await operation(this.primaryStorage);
+      // Add timeout to prevent hanging operations
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Database operation timeout after 30 seconds')), 30000);
+      });
+      
+      const result = await Promise.race([
+        operation(this.primaryStorage),
+        timeoutPromise
+      ]);
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ Primary storage operation completed in ${duration}ms`);
+      return result;
     } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.warn(`❌ Primary storage failed after ${duration}ms: ${error.message}`);
+      
       if (!this.useFallback) {
         console.warn(`⚠️ Database operation failed, switching to in-memory storage: ${error.message}`);
         this.useFallback = true;
       }
-      return operation(this.fallbackStorage);
+      
+      console.log(`🔄 Falling back to memory storage`);
+      const fallbackResult = await operation(this.fallbackStorage);
+      console.log(`✅ Fallback completed in ${Date.now() - startTime}ms`);
+      return fallbackResult;
     }
   }
 

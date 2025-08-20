@@ -874,13 +874,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get user projects
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    const startTime = Date.now();
     try {
       if (!req.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
+      
+      console.log(`🔍 API /projects called for user: ${req.userId}`);
       const projects = await storage.getProjectsByUserId(req.userId);
+      const duration = Date.now() - startTime;
+      console.log(`✅ API /projects completed in ${duration}ms`);
+      
       res.json(projects);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ API /projects failed after ${duration}ms:`, error);
       res.status(500).json({ error: "Failed to get projects" });
     }
   });
