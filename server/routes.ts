@@ -18,6 +18,7 @@ import { generateMockupsForCategory } from "./services/mockup-templates";
 import { generateProjectZip } from "./services/zip-generator";
 import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
 import { comfyUIService } from "./services/comfyui-service";
+import { spawn } from "child_process";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -1746,9 +1747,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Use Python subprocess to call your exact template API logic
           try {
-            const { spawn } = require('child_process');
-            const fs = require('fs');
-            const path = require('path');
             
             console.log(`Processing mockup for ${template.room}/${template.id} with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
 
@@ -1757,7 +1755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fs.writeFileSync(tempArtworkPath, req.file.buffer);
 
             // Call Python script with your exact logic
-            const pythonResult = await new Promise((resolve, reject) => {
+            const pythonResult = await new Promise<any>((resolve, reject) => {
               const python = spawn('python3', ['-c', `
 import sys, json, io, os, math, hashlib, base64
 from pathlib import Path
@@ -1922,15 +1920,15 @@ else:
               let output = '';
               let error = '';
 
-              python.stdout.on('data', (data) => {
+              python.stdout.on('data', (data: any) => {
                 output += data.toString();
               });
 
-              python.stderr.on('data', (data) => {
+              python.stderr.on('data', (data: any) => {
                 error += data.toString();
               });
 
-              python.on('close', (code) => {
+              python.on('close', (code: any) => {
                 // Clean up temp file
                 try {
                   fs.unlinkSync(tempArtworkPath);
@@ -1952,11 +1950,11 @@ else:
               });
             });
 
-            if (pythonResult.error) {
+            if (pythonResult?.error) {
               throw new Error(pythonResult.error);
             }
 
-            if (pythonResult && pythonResult.image_b64) {
+            if (pythonResult?.image_b64) {
               mockups.push({
                 template: {
                   room: template.room,
