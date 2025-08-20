@@ -339,7 +339,8 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔍 Getting projects for user: ${userId}`);
     
     try {
-      const result = await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
+      // Use LIMIT to prevent large result sets from causing issues
+      const result = await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(50);
       const duration = Date.now() - startTime;
       console.log(`✅ Projects query completed in ${duration}ms, found ${result.length} projects`);
       return result;
@@ -440,9 +441,25 @@ class RobustStorage implements IStorage {
     this.primaryStorage = process.env.DATABASE_URL ? new DatabaseStorage() : this.fallbackStorage;
     
     if (process.env.DATABASE_URL) {
-      console.log('🔄 Attempting to use PostgreSQL database');
+      console.log('🔄 Attempting to use PostgreSQL database with timeout protection');
+      // Test database connection immediately
+      this.testConnection();
     } else {
       console.log('⚠️ No DATABASE_URL found, using in-memory storage');
+      this.useFallback = true;
+    }
+  }
+
+  private async testConnection() {
+    try {
+      console.log('🔍 Testing database connection...');
+      const testResult = await Promise.race([
+        this.primaryStorage.getUser('test-connection-user'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection test timeout')), 5000))
+      ]);
+      console.log('✅ Database connection test successful');
+    } catch (error) {
+      console.warn('⚠️ Database connection test failed, will use fallback for all operations:', error.message);
       this.useFallback = true;
     }
   }
@@ -463,7 +480,7 @@ class RobustStorage implements IStorage {
     try {
       // Add timeout to prevent hanging operations
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database operation timeout after 30 seconds')), 30000);
+        setTimeout(() => reject(new Error('Database operation timeout after 10 seconds')), 10000);
       });
       
       const result = await Promise.race([

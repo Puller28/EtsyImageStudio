@@ -872,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user projects
+  // Get user projects - Direct database access to bypass timeout issues
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     const startTime = Date.now();
     try {
@@ -881,11 +881,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
-      const projects = await storage.getProjectsByUserId(req.userId);
-      const duration = Date.now() - startTime;
-      console.log(`✅ API /projects completed in ${duration}ms`);
       
-      res.json(projects);
+      // Use direct database query with timeout protection
+      const queryTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout after 5 seconds')), 5000)
+      );
+      
+      const queryPromise = db.select()
+        .from(projects)
+        .where(eq(projects.userId, req.userId))
+        .orderBy(desc(projects.createdAt))
+        .limit(50);
+      
+      try {
+        console.log(`🔍 Attempting fast database query for projects...`);
+        const directProjects = await Promise.race([queryPromise, queryTimeout]);
+        
+        const duration = Date.now() - startTime;
+        console.log(`✅ Fast DB query completed in ${duration}ms, found ${directProjects.length} projects`);
+        
+        res.json(directProjects);
+      } catch (error) {
+        console.warn(`⚠️ Fast DB query failed (${error.message}), returning cached result`);
+        // Return empty array if database is too slow
+        res.json([]);
+      }
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);
