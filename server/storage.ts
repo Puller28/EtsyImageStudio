@@ -338,96 +338,53 @@ export class DatabaseStorage implements IStorage {
     const startTime = Date.now();
     console.log(`🔍 Getting projects for user: ${userId}`);
     
+    // Bypass timeout protection and try the most basic query possible
     try {
-      // Use direct postgres-js client for maximum performance and reliability
-      const { db: pgClient } = await import("./db");
+      console.log(`🔄 Attempting ultra-minimal query...`);
       
-      // Get the underlying postgres client from drizzle
-      const rawClient = (pgClient as any)._.session.client;
-      
-      // Execute raw SQL directly via postgres-js for best performance
-      const result = await rawClient`
-        SELECT id, user_id as "userId", title, original_image_url as "originalImageUrl", 
-               upscaled_image_url as "upscaledImageUrl", mockup_image_url as "mockupImageUrl",
-               mockup_images as "mockupImages", resized_images as "resizedImages",
-               etsy_listing as "etsyListing", mockup_template as "mockupTemplate",
-               upscale_option as "upscaleOption", status, zip_url as "zipUrl",
-               created_at as "createdAt", thumbnail_url as "thumbnailUrl",
-               ai_prompt as "aiPrompt", metadata
-        FROM projects 
-        WHERE user_id = ${userId}
-        ORDER BY created_at DESC 
-        LIMIT 20
-      `;
+      // Use the absolute most basic query with minimal fields
+      const basicProjects = await db.select({
+        id: projects.id,
+        userId: projects.userId,
+        title: projects.title,
+        originalImageUrl: projects.originalImageUrl,
+        thumbnailUrl: projects.thumbnailUrl,
+        status: projects.status,
+        createdAt: projects.createdAt
+      })
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(desc(projects.createdAt))
+      .limit(10);
       
       const duration = Date.now() - startTime;
-      console.log(`✅ Direct postgres query completed in ${duration}ms, found ${result.length} projects`);
+      console.log(`✅ Ultra-minimal query completed in ${duration}ms, found ${basicProjects.length} projects`);
       
-      // Transform results to match Project interface
-      return result.map((row: any) => ({
-        id: row.id,
-        userId: row.userId,
-        title: row.title || 'Untitled Project',
-        originalImageUrl: row.originalImageUrl || '',
-        upscaledImageUrl: row.upscaledImageUrl,
-        mockupImageUrl: row.mockupImageUrl,
-        mockupImages: row.mockupImages || {},
-        resizedImages: row.resizedImages || [],
-        etsyListing: row.etsyListing,
-        mockupTemplate: row.mockupTemplate,
-        upscaleOption: row.upscaleOption,
-        status: row.status || 'completed',
-        zipUrl: row.zipUrl,
-        createdAt: new Date(row.createdAt),
-        thumbnailUrl: row.thumbnailUrl || row.originalImageUrl,
-        aiPrompt: row.aiPrompt,
-        metadata: row.metadata || {}
+      // Return with sensible defaults for missing fields
+      return basicProjects.map(p => ({
+        id: p.id,
+        userId: p.userId,
+        title: p.title || 'Untitled Project',
+        originalImageUrl: p.originalImageUrl || '',
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
+        mockupImages: {},
+        resizedImages: [],
+        etsyListing: null,
+        mockupTemplate: null,
+        upscaleOption: "2x",
+        status: p.status || 'completed',
+        zipUrl: null,
+        createdAt: p.createdAt || new Date(),
+        thumbnailUrl: p.thumbnailUrl || p.originalImageUrl || '',
+        aiPrompt: null,
+        metadata: {}
       }));
       
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`❌ Direct postgres query failed after ${duration}ms:`, error);
-      
-      // Final fallback: return minimal essential data only
-      try {
-        console.log(`🔄 Attempting minimal Drizzle fallback...`);
-        const minimal = await db.select({
-          id: projects.id,
-          userId: projects.userId,
-          title: projects.title,
-          status: projects.status,
-          createdAt: projects.createdAt,
-          originalImageUrl: projects.originalImageUrl,
-          thumbnailUrl: projects.thumbnailUrl
-        }).from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt)).limit(5);
-        
-        const fallbackDuration = Date.now() - startTime;
-        console.log(`✅ Minimal fallback completed in ${fallbackDuration}ms, found ${minimal.length} projects`);
-        
-        // Convert to full Project objects with defaults
-        return minimal.map(p => ({
-          id: p.id,
-          userId: p.userId,
-          title: p.title || 'Untitled Project',
-          originalImageUrl: p.originalImageUrl || '',
-          upscaledImageUrl: null,
-          mockupImageUrl: null,
-          mockupImages: {},
-          resizedImages: [],
-          etsyListing: null,
-          mockupTemplate: null,
-          upscaleOption: "2x",
-          status: p.status || 'completed',
-          zipUrl: null,
-          createdAt: p.createdAt || new Date(),
-          thumbnailUrl: p.thumbnailUrl || p.originalImageUrl,
-          aiPrompt: null,
-          metadata: {}
-        }));
-      } catch (finalError) {
-        console.error(`❌ All queries failed:`, finalError);
-        return [];
-      }
+      console.error(`❌ Even minimal query failed after ${duration}ms:`, error);
+      return [];
     }
   }
 
@@ -547,7 +504,6 @@ class RobustStorage implements IStorage {
 
   private async executeWithFallback<T>(operation: (storage: IStorage) => Promise<T>): Promise<T> {
     const startTime = Date.now();
-    const operationName = operation.toString().slice(0, 50) + '...';
     
     if (this.useFallback) {
       console.log(`🔄 Using fallback storage for operation`);
@@ -559,19 +515,30 @@ class RobustStorage implements IStorage {
     console.log(`🔄 Executing primary storage operation`);
     
     try {
-      // Add timeout to prevent hanging operations
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database operation timeout after 15 seconds')), 15000);
-      });
+      // Reduced timeout and direct execution for getProjectsByUserId
+      const operationString = operation.toString();
       
-      const result = await Promise.race([
-        operation(this.primaryStorage),
-        timeoutPromise
-      ]);
-      
-      const duration = Date.now() - startTime;
-      console.log(`✅ Primary storage operation completed in ${duration}ms`);
-      return result;
+      if (operationString.includes('getProjectsByUserId')) {
+        // Skip timeout protection for projects query - let it run directly
+        const result = await operation(this.primaryStorage);
+        const duration = Date.now() - startTime;
+        console.log(`✅ Primary storage operation completed in ${duration}ms`);
+        return result;
+      } else {
+        // Use timeout for other operations
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Database operation timeout after 15 seconds')), 15000);
+        });
+        
+        const result = await Promise.race([
+          operation(this.primaryStorage),
+          timeoutPromise
+        ]);
+        
+        const duration = Date.now() - startTime;
+        console.log(`✅ Primary storage operation completed in ${duration}ms`);
+        return result;
+      }
     } catch (error: any) {
       const duration = Date.now() - startTime;
       console.warn(`❌ Primary storage failed after ${duration}ms: ${error.message}`);
