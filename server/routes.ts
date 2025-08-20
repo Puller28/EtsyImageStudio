@@ -1744,58 +1744,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Use the proven external API directly for now
+          // Create simple local mockup using Sharp with basic template overlay
           try {
-            const formData = new FormData();
-            formData.append("file", req.file.buffer, {
-              filename: req.file.originalname || "artwork.jpg",
-              contentType: req.file.mimetype,
-            });
-            // Map our room names to the external API's expected style names
-            const styleMapping: { [key: string]: string } = {
-              'bedroom': 'bedroom',
-              'living_room': 'living_room', 
-              'study': 'study',
-              'gallery': 'gallery',
-              'kids_room': 'kids_room'
-            };
+            const sharp = (await import('sharp')).default;
             
-            const apiStyle = styleMapping[template.room] || template.room;
-            formData.append("style", apiStyle);
+            // Get template files
+            const templatePath = path.join('./templates', template.room, template.id);
+            const manifestPath = path.join(templatePath, 'manifest.json');
+            
+            if (!fs.existsSync(manifestPath)) {
+              console.error(`Template manifest not found: ${manifestPath}`);
+              continue;
+            }
+            
+            const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+            const manifest = JSON.parse(manifestContent);
+            const bgFile = manifest.background || '';
+            const bgPath = path.join(templatePath, bgFile);
+            
+            if (!fs.existsSync(bgPath)) {
+              console.error(`Template background not found: ${bgPath}`);
+              continue;
+            }
 
-            console.log(`Calling external API for ${template.room}/${template.id} with style: ${apiStyle}...`);
-            const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup", formData, {
-              headers: {
-                ...formData.getHeaders(),
-              },
-              timeout: 90000, // Longer timeout for external API
-            });
-
-            if (response.data && response.data.mockup_url) {
-              console.log(`Got mockup URL: ${response.data.mockup_url}`);
-              const imageResponse = await axios.get(response.data.mockup_url, { 
-                responseType: 'arraybuffer',
-                timeout: 30000
+            // Load background template
+            const backgroundImage = sharp(bgPath);
+            const bgMetadata = await backgroundImage.metadata();
+            
+            // Process artwork with template dimensions
+            let artworkImage = sharp(req.file.buffer);
+            
+            // For templates with corner coordinates, calculate placement area
+            if (manifest.corners && manifest.corners.length === 4) {
+              const corners = manifest.corners;
+              const minX = Math.min(...corners.map((c: number[]) => c[0]));
+              const maxX = Math.max(...corners.map((c: number[]) => c[0]));
+              const minY = Math.min(...corners.map((c: number[]) => c[1]));
+              const maxY = Math.max(...corners.map((c: number[]) => c[1]));
+              
+              const frameWidth = maxX - minX;
+              const frameHeight = maxY - minY;
+              
+              // Resize artwork to fill the frame area
+              artworkImage = artworkImage.resize(frameWidth, frameHeight, {
+                fit: 'cover',
+                position: 'center'
               });
-              const base64Image = Buffer.from(imageResponse.data).toString('base64');
+              
+              // Composite onto background
+              const result = await backgroundImage
+                .composite([{
+                  input: await artworkImage.png().toBuffer(),
+                  left: Math.round(minX),
+                  top: Math.round(minY)
+                }])
+                .png()
+                .toBuffer();
+              
+              const base64Result = result.toString('base64');
               mockups.push({
                 template: {
                   room: template.room,
                   id: template.id,
                   name: template.name || `${template.room}_${template.id}`
                 },
-                image_data: `data:image/png;base64,${base64Image}`
+                image_data: `data:image/png;base64,${base64Result}`
               });
-              console.log(`✅ Generated mockup for ${template.room}/${template.id}`);
+              
+              console.log(`✅ Generated local mockup for ${template.room}/${template.id}`);
             } else {
-              console.error(`No mockup URL returned for ${template.room}/${template.id}`);
+              console.log(`No corners found for ${template.room}/${template.id}, skipping`);
             }
-          } catch (apiError: any) {
-            console.error(`API failed for ${template.room}/${template.id}:`, apiError.message);
-            if (apiError.response) {
-              console.error('API response status:', apiError.response.status);
-              console.error('API response data:', apiError.response.data);
-            }
+            
+          } catch (localError: any) {
+            console.error(`Local mockup generation failed for ${template.room}/${template.id}:`, localError.message);
           }
           
         } catch (templateError) {
