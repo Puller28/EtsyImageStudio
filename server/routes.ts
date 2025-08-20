@@ -1751,7 +1751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Processing mockup for ${template.room}/${template.id} with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
 
             // Create temporary file for artwork
-            const tempArtworkPath = path.join(__dirname, `../temp_artwork_${Date.now()}.jpg`);
+            const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
             fs.writeFileSync(tempArtworkPath, req.file.buffer);
 
             // Call Python script with your exact logic
