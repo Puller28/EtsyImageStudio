@@ -1763,19 +1763,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          // For now, create a simple mockup by encoding the background image
-          // In a real implementation, you would overlay the artwork using the corner coordinates
-          const backgroundBuffer = fs.readFileSync(bgPath);
-          const base64Background = backgroundBuffer.toString('base64');
+          // Create mockup with artwork overlay using Sharp
+          const sharp = (await import('sharp')).default;
           
-          mockups.push({
-            template: {
-              room: template.room,
-              id: template.id,
-              name: template.name || `${template.room}_${template.id}`
-            },
-            image_data: `data:image/png;base64,${base64Background}`
-          });
+          // Load template background
+          let backgroundImage = sharp(bgPath);
+          const bgMetadata = await backgroundImage.metadata();
+          
+          // Load and process artwork
+          let artworkImage = sharp(req.file.buffer);
+          const artworkMetadata = await artworkImage.metadata();
+          
+          // Calculate artwork dimensions based on corner coordinates
+          const corners = manifest.corners;
+          if (corners && corners.length === 4) {
+            // Calculate target width and height from corners
+            const targetWidth = Math.abs(corners[1][0] - corners[0][0]);
+            const targetHeight = Math.abs(corners[2][1] - corners[1][1]);
+            
+            // Resize artwork to fit within the corner bounds
+            artworkImage = artworkImage.resize(targetWidth, targetHeight, {
+              fit: 'contain',
+              background: { r: 0, g: 0, b: 0, alpha: 0 }
+            });
+            
+            // Position the artwork at the top-left corner coordinates
+            const left = corners[0][0];
+            const top = corners[0][1];
+            
+            // Composite artwork onto background
+            const compositeBuffer = await backgroundImage
+              .composite([{
+                input: await artworkImage.png().toBuffer(),
+                left: left,
+                top: top
+              }])
+              .png()
+              .toBuffer();
+            
+            const base64Composite = compositeBuffer.toString('base64');
+            
+            mockups.push({
+              template: {
+                room: template.room,
+                id: template.id,
+                name: template.name || `${template.room}_${template.id}`
+              },
+              image_data: `data:image/png;base64,${base64Composite}`
+            });
+          } else {
+            // Fallback: just return background if corners are invalid
+            const backgroundBuffer = fs.readFileSync(bgPath);
+            const base64Background = backgroundBuffer.toString('base64');
+            
+            mockups.push({
+              template: {
+                room: template.room,
+                id: template.id,
+                name: template.name || `${template.room}_${template.id}`
+              },
+              image_data: `data:image/png;base64,${base64Background}`
+            });
+          }
           
           console.log(`✅ Generated mockup for ${template.room}/${template.id}`);
         } catch (templateError) {
