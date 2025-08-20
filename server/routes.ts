@@ -1151,17 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Add mockups if they exist
-      if (project.mockupImages && typeof project.mockupImages === 'object') {
-        const mockupsFolder = zip.folder("mockups");
-        Object.entries(project.mockupImages as Record<string, string>).forEach(([mockupId, imageUrl], index) => {
-          if (imageUrl && imageUrl.startsWith('data:image/')) {
-            const base64Data = imageUrl.split(',')[1];
-            const cleanMockupId = mockupId.replace(/[^a-z0-9]/gi, '_');
-            mockupsFolder?.file(`${String(index + 1).padStart(2, '0')}_${cleanMockupId}.jpg`, base64Data, { base64: true });
-          }
-        });
-      }
+
 
       // Add Etsy listing content if available
       if (project.etsyListing) {
@@ -1790,47 +1780,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Use FastAPI service that's already running
+          // Use Python subprocess to call your exact template API logic
           try {
+            
             console.log(`Processing mockup for ${template.room}/${template.id} with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover`);
 
-            // Use axios with proper form-data for FastAPI service
-            const FormData = (await import('form-data')).default;
-            const formData = new FormData();
-            
-            formData.append('artwork', req.file.buffer, {
-              filename: 'artwork.jpg',
-              contentType: 'image/jpeg'
-            });
-            formData.append('room', template.room);
-            formData.append('template_id', template.id);
-            formData.append('margin_px', '0');
-            formData.append('feather_px', '-1');
-            formData.append('opacity', '-1');
-            formData.append('fit', 'cover');
+            // Create temporary file for artwork
+            const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
+            fs.writeFileSync(tempArtworkPath, req.file.buffer);
 
-            const response = await axios.post('http://localhost:8001/mockup/apply', formData, {
-              headers: formData.getHeaders(),
-              timeout: 30000 // 30 second timeout
-            });
-
-            const result = response.data;
-            if (!result.mockup_b64) {
-              throw new Error('FastAPI service did not return mockup_b64');
-            }
-
-            const mockupImageUrl = `data:image/jpeg;base64,${result.mockup_b64}`;
-            mockups.push({
-              template: { room: template.room, id: template.id, name: template.name },
-              image_data: mockupImageUrl
-            });
-
-            console.log(`✅ Generated mockup via FastAPI service for ${template.room}/${template.id}`);
-
-          } catch (fastApiError) {
-            console.error(`❌ FastAPI service failed for ${template.room}/${template.id}:`, fastApiError);
-            throw fastApiError; // Don't fall back to the problematic subprocess
-          }
+            // Call Python script with your exact logic
+            const pythonResult = await new Promise<any>((resolve, reject) => {
+              const python = spawn('python3', ['-c', `
 import sys, json, io, os, math, hashlib, base64
 from pathlib import Path
 import numpy as np
