@@ -1744,79 +1744,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
-          // Try local template API first, then fallback to proven external API
-          let mockupGenerated = false;
-          
+          // Use the proven external API directly for now
           try {
-            // Use the local template API with exact same parameters as manual test
-            const localFormData = new FormData();
-            localFormData.append("file", req.file.buffer, {
+            const formData = new FormData();
+            formData.append("file", req.file.buffer, {
               filename: req.file.originalname || "artwork.jpg",
               contentType: req.file.mimetype,
             });
-            localFormData.append("room", template.room);
-            localFormData.append("template_id", template.id);
-            localFormData.append("fit", "cover");
-            localFormData.append("margin_px", "0");
-            localFormData.append("feather_px", "-1");
-            localFormData.append("opacity", "-1");
-            localFormData.append("return_format", "json");
+            formData.append("style", template.room);
 
-            const localResponse = await axios.post("http://127.0.0.1:8000/mockup/apply", localFormData, {
+            console.log(`Calling external API for ${template.room}/${template.id}...`);
+            const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup", formData, {
               headers: {
-                ...localFormData.getHeaders(),
+                ...formData.getHeaders(),
               },
-              timeout: 15000,
+              timeout: 90000, // Longer timeout for external API
             });
 
-            if (localResponse.data && localResponse.data.image_b64) {
+            if (response.data && response.data.mockup_url) {
+              console.log(`Got mockup URL: ${response.data.mockup_url}`);
+              const imageResponse = await axios.get(response.data.mockup_url, { 
+                responseType: 'arraybuffer',
+                timeout: 30000
+              });
+              const base64Image = Buffer.from(imageResponse.data).toString('base64');
               mockups.push({
                 template: {
                   room: template.room,
                   id: template.id,
                   name: template.name || `${template.room}_${template.id}`
                 },
-                image_data: `data:image/png;base64,${localResponse.data.image_b64}`
+                image_data: `data:image/png;base64,${base64Image}`
               });
-              mockupGenerated = true;
-              console.log(`✅ Generated mockup via local API for ${template.room}/${template.id}`);
+              console.log(`✅ Generated mockup for ${template.room}/${template.id}`);
+            } else {
+              console.error(`No mockup URL returned for ${template.room}/${template.id}`);
             }
-          } catch (localError) {
-            console.log(`Local API failed for ${template.room}/${template.id}, trying external API...`);
-          }
-
-          // Fallback to proven external API if local failed
-          if (!mockupGenerated) {
-            try {
-              const externalFormData = new FormData();
-              externalFormData.append("file", req.file.buffer, {
-                filename: req.file.originalname || "artwork.jpg",
-                contentType: req.file.mimetype,
-              });
-              externalFormData.append("style", template.room);
-
-              const externalResponse = await axios.post("https://mockup-api-cv83.onrender.com/mockup", externalFormData, {
-                headers: {
-                  ...externalFormData.getHeaders(),
-                },
-                timeout: 60000,
-              });
-
-              if (externalResponse.data && externalResponse.data.mockup_url) {
-                const imageResponse = await axios.get(externalResponse.data.mockup_url, { responseType: 'arraybuffer' });
-                const base64Image = Buffer.from(imageResponse.data).toString('base64');
-                mockups.push({
-                  template: {
-                    room: template.room,
-                    id: template.id,
-                    name: template.name || `${template.room}_${template.id}`
-                  },
-                  image_data: `data:image/png;base64,${base64Image}`
-                });
-                console.log(`✅ Generated mockup via external API for ${template.room}/${template.id}`);
-              }
-            } catch (externalError) {
-              console.error(`Both APIs failed for ${template.room}/${template.id}`);
+          } catch (apiError: any) {
+            console.error(`API failed for ${template.room}/${template.id}:`, apiError.message);
+            if (apiError.response) {
+              console.error('API response status:', apiError.response.status);
+              console.error('API response data:', apiError.response.data);
             }
           }
           
