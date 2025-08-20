@@ -50,6 +50,7 @@ function Router() {
           <Route path="/buy-credits" component={BuyCredits} />
           <Route path="/template-mockups" component={TemplateMockupPage} />
           <Route path="/template-mockup" component={TemplateMockupPage} />
+          <Route path="/mockup" component={MockupPage} />
           <Route path="/mockups" component={MockupPage} />
           <Route path="/payment-callback/:reference" component={PaymentCallback} />
           <Route path="/payment-callback" component={PaymentCallback} />
@@ -62,6 +63,8 @@ function Router() {
           <Route path="/buy-credits" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/template-mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/template-mockup" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+          <Route path="/mockup" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+          <Route path="/mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/payment-callback/:reference" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/payment-callback" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
         </>
