@@ -37,8 +37,7 @@ export default function ProjectsPage() {
   };
 
   const handleViewProject = (projectId: string) => {
-    // For now, we can navigate back to dashboard or implement project detail view
-    setLocation("/");
+    setLocation(`/projects/${projectId}`);
   };
 
   // Filter projects based on search term and status

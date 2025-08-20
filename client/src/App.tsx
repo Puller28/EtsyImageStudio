@@ -21,6 +21,7 @@ import FeaturesPage from "@/pages/features";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
 import ProjectsPage from "@/pages/projects";
+import ProjectDetailPage from "@/pages/project-detail";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { initGA, identifyUser, trackUserPlan } from "./lib/analytics";
@@ -69,6 +70,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/projects" component={ProjectsPage} />
+          <Route path="/projects/:id" component={ProjectDetailPage} />
           <Route path="/settings" component={Settings} />
           <Route path="/buy-credits" component={BuyCredits} />
           <Route path="/template-mockups" component={MockupPage} />

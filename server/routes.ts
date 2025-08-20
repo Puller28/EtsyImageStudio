@@ -900,15 +900,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific project
-  app.get("/api/projects/:id", async (req, res) => {
+  app.get("/api/projects/:id", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const project = await storage.getProject(req.params.id);
-      if (!project) {
-        return res.status(404).json({ error: "Project not found" });
+      const userId = req.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
       }
+
+      const projectId = req.params.id;
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      
+      // Verify project belongs to user
+      if (project.userId !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       res.json(project);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get project" });
+      console.error('❌ Error fetching project:', error);
+      res.status(500).json({ error: 'Failed to fetch project' });
+    }
+  });
+
+  // Generate and download project assets as zip
+  app.post('/api/projects/:id/download', optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const projectId = req.params.id;
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      
+      // Verify project belongs to user
+      if (project.userId !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // For now, redirect to existing zip if available
+      if (project.zipUrl) {
+        return res.redirect(project.zipUrl);
+      }
+
+      // TODO: Generate zip file with all project assets
+      // This would include: original image, upscaled image, mockups, resized images, Etsy content as text file
+      res.status(501).json({ error: 'Zip generation not yet implemented' });
+    } catch (error) {
+      console.error('❌ Error downloading project:', error);
+      res.status(500).json({ error: 'Failed to download project' });
     }
   });
 
