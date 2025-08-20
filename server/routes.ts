@@ -1714,40 +1714,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      // Parse selected templates from request first
+      const selectedTemplates = JSON.parse(req.body.templates || "[]");
+      
       // Get user and check subscription status
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check if user has a paid plan (not free)
-      if (!user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active') {
-        return res.status(403).json({ 
-          error: "Template mockup generation requires a paid plan", 
-          message: "Upgrade to Pro or Business plan to generate template mockups",
-          requiresUpgrade: true
+      // Free users get limited mockups, paid users get full access
+      const isFreeUser = !user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active';
+      const creditCost = isFreeUser ? 1 : 3; // Free users pay 1 credit per mockup, paid users pay 3 for full service
+      const maxTemplates = isFreeUser ? 2 : 5; // Free users limited to 2 templates, paid users get 5
+
+      // Check template limit based on user plan
+      if (selectedTemplates.length > maxTemplates) {
+        return res.status(400).json({ 
+          error: `Template limit exceeded`, 
+          message: isFreeUser 
+            ? `Free users can generate up to ${maxTemplates} mockups. Upgrade to Pro for up to 5 mockups.`
+            : `Maximum ${maxTemplates} templates allowed`,
+          maxTemplates,
+          requiresUpgrade: isFreeUser
         });
       }
 
-      // Check if user has enough credits (reduced from 5 to 3 since templates are cheaper)
-      if (user.credits < 3) {
+      // Check if user has enough credits
+      const totalCreditsNeeded = creditCost * selectedTemplates.length;
+      if (user.credits < totalCreditsNeeded) {
         return res.status(402).json({ 
           error: "Insufficient credits", 
-          message: "Need 3 credits for template mockup generation",
-          creditsNeeded: 3,
-          currentCredits: user.credits
+          message: isFreeUser 
+            ? `Free mockup generation costs ${creditCost} credit each. You need ${totalCreditsNeeded} credits for ${selectedTemplates.length} mockups.`
+            : `Template mockup generation costs ${creditCost} credits each. You need ${totalCreditsNeeded} credits for ${selectedTemplates.length} mockups.`,
+          creditsNeeded: totalCreditsNeeded,
+          currentCredits: user.credits,
+          creditCost: creditCost
         });
       }
-
-      // Parse selected templates from request
-      const selectedTemplates = JSON.parse(req.body.templates || "[]");
       if (!Array.isArray(selectedTemplates) || selectedTemplates.length === 0) {
         return res.status(400).json({ error: "No templates selected" });
       }
 
-      if (selectedTemplates.length > 5) {
-        return res.status(400).json({ error: "Maximum 5 templates allowed" });
-      }
+      // Template limit is now checked above based on user plan
 
       const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
@@ -1994,26 +2004,31 @@ else:
       }
 
       // Deduct credits and log transaction
-      const creditCost = 3;
+      const actualCreditsUsed = creditCost * mockups.length;
       await storage.updateUser(userId, { 
-        credits: user.credits - creditCost 
+        credits: user.credits - actualCreditsUsed 
       });
 
       // Log the transaction
       await storage.logCreditTransaction({
         userId,
         type: 'debit',
-        amount: creditCost,
-        description: `Template mockup generation (${mockups.length} templates)`,
-        balanceAfter: user.credits - creditCost
+        amount: actualCreditsUsed,
+        description: isFreeUser 
+          ? `Free mockup generation (${mockups.length} templates × ${creditCost} credits)`
+          : `Template mockup generation (${mockups.length} templates × ${creditCost} credits)`,
+        balanceAfter: user.credits - actualCreditsUsed
       });
 
       res.json({
         mockups,
         total_generated: mockups.length,
-        credits_used: creditCost,
-        remaining_credits: user.credits - creditCost,
-        note: "Generated with template-based system for perfect artwork preservation"
+        credits_used: actualCreditsUsed,
+        remaining_credits: user.credits - actualCreditsUsed,
+        plan_type: isFreeUser ? 'free' : 'paid',
+        note: isFreeUser 
+          ? "Free users get 2 mockups at 1 credit each. Upgrade to Pro for 5 mockups!"
+          : "Generated with template-based system for perfect artwork preservation"
       });
 
     } catch (error) {
