@@ -1,0 +1,18 @@
+{
+  "name": "Modern Study",
+  "description": "Clean workspace with natural lighting",
+  "background": "bg.png", 
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [300, 180],
+    [724, 180],
+    [724, 620],
+    [300, 620]
+  ],
+  "feather_px": 2.0,
+  "blend": {
+    "mode": "normal", 
+    "opacity": 1.0
+  }
+}

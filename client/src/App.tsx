@@ -11,6 +11,7 @@ import BuyCredits from "@/pages/buy-credits";
 import PaymentCallback from "@/pages/payment-callback";
 import NotFound from "@/pages/not-found";
 import TemplateMockupPage from "@/pages/template-mockup-page";
+import { MockupPage } from "@/pages/mockup-page";
 import AboutUsPage from "@/pages/about-us";
 import TermsOfServicePage from "@/pages/terms-of-service";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
@@ -49,6 +50,7 @@ function Router() {
           <Route path="/buy-credits" component={BuyCredits} />
           <Route path="/template-mockups" component={TemplateMockupPage} />
           <Route path="/template-mockup" component={TemplateMockupPage} />
+          <Route path="/mockups" component={MockupPage} />
           <Route path="/payment-callback/:reference" component={PaymentCallback} />
           <Route path="/payment-callback" component={PaymentCallback} />
         </>

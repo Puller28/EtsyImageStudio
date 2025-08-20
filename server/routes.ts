@@ -1580,86 +1580,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Single mockup generation endpoint for sequential processing - Requires paid plan
-  app.post("/api/generate-single-mockup", authenticateToken, upload.single("file"), async (req: AuthenticatedRequest, res) => {
+  // Get available templates for user selection
+  app.get("/api/templates", async (req, res) => {
     try {
-      const userId = req.userId!;
-      
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      // Get user and check subscription status
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      // Check if user has a paid plan (not free)
-      if (!user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active') {
-        return res.status(403).json({ 
-          error: "Mockup generation requires a paid plan", 
-          message: "Upgrade to Pro or Business plan to generate AI mockups",
-          requiresUpgrade: true
-        });
-      }
-
-      // Check if user has enough credits
-      if (user.credits < 5) {
-        return res.status(402).json({ 
-          error: "Insufficient credits", 
-          message: "Need 5 credits for mockup generation",
-          creditsNeeded: 5,
-          currentCredits: user.credits
-        });
-      }
-
-      // Use proven working Render API for perfect artwork preservation
-      const formData = new FormData();
-      formData.append("file", req.file.buffer, {
-        filename: req.file.originalname || "artwork.jpg",
-        contentType: req.file.mimetype,
+      const templateApiPort = process.env.TEMPLATE_API_PORT || 8002;
+      const response = await axios.get(`http://127.0.0.1:${templateApiPort}/templates/list`, {
+        timeout: 10000,
       });
-      formData.append("style", req.body.style || "living_room");
-
-      const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup", formData, {
-        headers: {
-          ...formData.getHeaders(),
-        },
-        timeout: 120000, // 2 minutes for proven API
-      });
-
-      // Handle response format from Render API for single mockup
-      if (response.data && response.data.mockup_url) {
-        // If Render returns a URL, fetch the image
-        const imageResponse = await axios.get(response.data.mockup_url, { responseType: 'arraybuffer' });
-        const base64Image = Buffer.from(imageResponse.data).toString('base64');
-        res.json({
-          styles: {
-            [req.body.style || "living_room"]: [{
-              filename: `mockup_${req.body.style || "living_room"}_v01.png`,
-              image_data: `data:image/png;base64,${base64Image}`
-            }]
-          },
-          total_variants: 1,
-          note: "Generated with proven Render API for perfect artwork preservation"
-        });
-      } else {
-        // Return as-is for compatibility
-        res.json(response.data);
-      }
+      res.json(response.data);
     } catch (error) {
-      console.error("Single mockup generation error:", error);
-      if (axios.isAxiosError(error) && error.response) {
-        res.status(error.response.status).json({ error: error.response.data });
-      } else {
-        res.status(500).json({ 
-          error: error instanceof Error ? error.message : "Single mockup generation failed" 
-        });
-      }
+      console.error("Templates list error:", error);
+      // Fallback mock data for development
+      res.json({
+        template_root: "./templates",
+        exists: true,
+        rooms: {
+          living_room: [
+            { id: "living_01", manifest_present: true, bg_present: true, bg: "bg.png" },
+            { id: "living_02", manifest_present: true, bg_present: true, bg: "bg.png" }
+          ],
+          bedroom: [
+            { id: "bedroom_01", manifest_present: true, bg_present: true, bg: "bg.png" }
+          ],
+          study: [
+            { id: "study_01", manifest_present: true, bg_present: true, bg: "bg.png" }
+          ]
+        }
+      });
     }
   });
 
-  app.post("/api/generate-template-mockups", authenticateToken, upload.single("file"), async (req: AuthenticatedRequest, res) => {
+  // Apply artwork to selected templates
+  app.post("/api/apply-templates", authenticateToken, upload.single("file"), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.userId!;
       
@@ -1682,68 +1634,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user has enough credits
-      if (user.credits < 5) {
+      // Check if user has enough credits (reduced from 5 to 3 since templates are cheaper)
+      if (user.credits < 3) {
         return res.status(402).json({ 
           error: "Insufficient credits", 
-          message: "Need 5 credits for template mockup generation",
-          creditsNeeded: 5,
+          message: "Need 3 credits for template mockup generation",
+          creditsNeeded: 3,
           currentCredits: user.credits
         });
       }
 
-      // Use proven working Render API for template mockups with perfect artwork preservation
-      const styles = req.body.template ? [req.body.template] : ["living_room", "bedroom", "study", "gallery", "kitchen"];
-      const mockups: { [style: string]: Array<{ filename: string; image_data: string }> } = {};
+      // Parse selected templates from request
+      const selectedTemplates = JSON.parse(req.body.templates || "[]");
+      if (!Array.isArray(selectedTemplates) || selectedTemplates.length === 0) {
+        return res.status(400).json({ error: "No templates selected" });
+      }
 
-      for (const style of styles) {
+      if (selectedTemplates.length > 5) {
+        return res.status(400).json({ error: "Maximum 5 templates allowed" });
+      }
+
+      const templateApiPort = process.env.TEMPLATE_API_PORT || 8002;
+      const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
+
+      // Generate mockup for each selected template
+      for (const template of selectedTemplates) {
         try {
           const formData = new FormData();
           formData.append("file", req.file.buffer, {
             filename: req.file.originalname || "artwork.jpg",
             contentType: req.file.mimetype,
           });
-          formData.append("style", style);
+          formData.append("room", template.room);
+          formData.append("template_id", template.id);
+          formData.append("fit", "contain");
+          formData.append("margin_px", "10");
+          formData.append("return_format", "json");
 
-          const response = await axios.post("https://mockup-api-cv83.onrender.com/mockup", formData, {
+          const response = await axios.post(`http://127.0.0.1:${templateApiPort}/mockup/apply`, formData, {
             headers: {
               ...formData.getHeaders(),
             },
-            timeout: 120000, // 2 minutes per style
+            timeout: 30000, // 30 seconds per template
           });
 
-          // Handle response format from Render API
-          if (response.data && response.data.mockup_url) {
-            // If Render returns a URL, fetch the image
-            const imageResponse = await axios.get(response.data.mockup_url, { responseType: 'arraybuffer' });
-            const base64Image = Buffer.from(imageResponse.data).toString('base64');
-            mockups[style] = [{ 
-              filename: `mockup_${style}_v01.png`, 
-              image_data: `data:image/png;base64,${base64Image}` 
-            }];
-          } else if (response.data && response.data.styles) {
-            // If Render returns styles format like our FastAPI
-            mockups[style] = response.data.styles[style] || [];
-          } else {
-            // Fallback - assume direct image data
-            mockups[style] = [{ 
-              filename: `mockup_${style}_v01.png`, 
-              image_data: response.data 
-            }];
+          if (response.data && response.data.image_b64) {
+            mockups.push({
+              template: {
+                room: template.room,
+                id: template.id,
+                name: template.name || `${template.room}_${template.id}`
+              },
+              image_data: `data:image/png;base64,${response.data.image_b64}`
+            });
           }
-        } catch (styleError) {
-          console.error(`Error generating ${style} mockup:`, styleError);
-          // Continue with other styles
+        } catch (templateError) {
+          console.error(`Error generating template ${template.room}/${template.id}:`, templateError);
+          // Fallback to Render API for now
+          try {
+            const fallbackFormData = new FormData();
+            fallbackFormData.append("file", req.file.buffer, {
+              filename: req.file.originalname || "artwork.jpg",
+              contentType: req.file.mimetype,
+            });
+            fallbackFormData.append("style", template.room);
+
+            const fallbackResponse = await axios.post("https://mockup-api-cv83.onrender.com/mockup", fallbackFormData, {
+              headers: {
+                ...fallbackFormData.getHeaders(),
+              },
+              timeout: 60000,
+            });
+
+            if (fallbackResponse.data && fallbackResponse.data.mockup_url) {
+              const imageResponse = await axios.get(fallbackResponse.data.mockup_url, { responseType: 'arraybuffer' });
+              const base64Image = Buffer.from(imageResponse.data).toString('base64');
+              mockups.push({
+                template: {
+                  room: template.room,
+                  id: template.id,
+                  name: template.name || `${template.room}_${template.id}`
+                },
+                image_data: `data:image/png;base64,${base64Image}`
+              });
+            }
+          } catch (fallbackError) {
+            console.error(`Fallback API also failed for ${template.room}/${template.id}:`, fallbackError);
+          }
         }
       }
 
-      const successResponse = {
-        styles: mockups,
-        total_variants: Object.values(mockups).reduce((sum, arr) => sum + arr.length, 0),
-        note: "Generated with proven Render API for perfect artwork preservation"
-      };
+      if (mockups.length === 0) {
+        return res.status(500).json({ error: "Failed to generate any mockups" });
+      }
 
-      res.json(successResponse);
+      // Deduct credits and log transaction
+      const creditCost = 3;
+      await storage.updateUser(userId, { 
+        credits: user.credits - creditCost 
+      });
+
+      // Log the transaction
+      await storage.logCreditTransaction({
+        userId,
+        type: 'debit',
+        amount: creditCost,
+        description: `Template mockup generation (${mockups.length} templates)`,
+        balanceAfter: user.credits - creditCost
+      });
+
+      res.json({
+        mockups,
+        total_generated: mockups.length,
+        credits_used: creditCost,
+        remaining_credits: user.credits - creditCost,
+        note: "Generated with template-based system for perfect artwork preservation"
+      });
+
     } catch (error) {
       console.error("Template mockup generation error:", error);
       if (axios.isAxiosError(error) && error.response) {
@@ -1755,6 +1762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
+
+
 
   app.post("/api/comfyui/generate", upload.single("file"), async (req, res) => {
     try {
