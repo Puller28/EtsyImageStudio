@@ -8,7 +8,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
-import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, type Project } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, type Project, projects } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -19,6 +19,8 @@ import { generateProjectZip } from "./services/zip-generator";
 import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
 import { comfyUIService } from "./services/comfyui-service";
 import { spawn } from "child_process";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -895,14 +897,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         console.log(`🔍 Attempting fast database query for projects...`);
-        const directProjects = await Promise.race([queryPromise, queryTimeout]);
+        const directProjects = await Promise.race([queryPromise, queryTimeout]) as Project[];
         
         const duration = Date.now() - startTime;
         console.log(`✅ Fast DB query completed in ${duration}ms, found ${directProjects.length} projects`);
         
         res.json(directProjects);
       } catch (error) {
-        console.warn(`⚠️ Fast DB query failed (${error.message}), returning cached result`);
+        console.warn(`⚠️ Fast DB query failed (${error instanceof Error ? error.message : 'Unknown error'}), returning cached result`);
         // Return empty array if database is too slow
         res.json([]);
       }
