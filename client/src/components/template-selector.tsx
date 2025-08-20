@@ -62,17 +62,27 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         name: t.name || `${t.room}_${t.id}`
       }))));
 
-      return apiRequest("/api/apply-templates", {
+      const response = await fetch("/api/apply-templates", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
         body: formData,
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Failed to generate mockups');
+      }
+
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Mockups Generated Successfully",
-        description: `Created ${data.mockups.length} mockups using ${data.credits_used} credits`,
+        description: `Created ${data.mockups?.length || 0} mockups using ${data.credits_used || 3} credits`,
       });
-      onMockupsGenerated(data.mockups);
+      onMockupsGenerated(data.mockups || []);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error: any) => {
@@ -146,7 +156,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
     );
   }
 
-  const templatesByRoom: TemplatesByRoom = templatesData.rooms || {};
+  const templatesByRoom: TemplatesByRoom = (templatesData as any)?.rooms || {};
 
   return (
     <div className="space-y-6">
