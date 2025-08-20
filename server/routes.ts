@@ -884,29 +884,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Use direct database query with timeout protection
-      const queryTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout after 5 seconds')), 5000)
-      );
-      
-      const queryPromise = db.select()
-        .from(projects)
-        .where(eq(projects.userId, req.userId))
-        .orderBy(desc(projects.createdAt))
-        .limit(50);
-      
+      // Use storage layer with optimized query
       try {
-        console.log(`🔍 Attempting fast database query for projects...`);
-        const directProjects = await Promise.race([queryPromise, queryTimeout]) as Project[];
+        console.log(`🔍 Attempting projects query through storage layer...`);
+        const userProjects = await storage.getProjectsByUserId(req.userId);
         
         const duration = Date.now() - startTime;
-        console.log(`✅ Fast DB query completed in ${duration}ms, found ${directProjects.length} projects`);
+        console.log(`✅ Storage query completed in ${duration}ms, found ${userProjects.length} projects`);
         
-        res.json(directProjects);
+        res.json(userProjects);
       } catch (error) {
-        console.warn(`⚠️ Fast DB query failed (${error instanceof Error ? error.message : 'Unknown error'}), returning cached result`);
-        // Return empty array if database is too slow
-        res.json([]);
+        console.warn(`⚠️ Storage query failed (${error instanceof Error ? error.message : 'Unknown error'}), falling back to direct query`);
+        
+        // Fallback to direct query with longer timeout
+        const queryTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout after 10 seconds')), 10000)
+        );
+        
+        const queryPromise = db.select()
+          .from(projects)
+          .where(eq(projects.userId, req.userId))
+          .orderBy(desc(projects.createdAt))
+          .limit(50);
+        
+        try {
+          console.log(`🔍 Attempting direct database query for projects...`);
+          const directProjects = await Promise.race([queryPromise, queryTimeout]) as Project[];
+          
+          const duration = Date.now() - startTime;
+          console.log(`✅ Direct DB query completed in ${duration}ms, found ${directProjects.length} projects`);
+          
+          res.json(directProjects);
+        } catch (directError) {
+          console.warn(`⚠️ Direct DB query also failed (${directError instanceof Error ? directError.message : 'Unknown error'}), returning empty result`);
+          res.json([]);
+        }
       }
     } catch (error) {
       const duration = Date.now() - startTime;
