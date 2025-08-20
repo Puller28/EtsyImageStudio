@@ -80,7 +80,7 @@ export const subscriptionPlans = [
       'Image upscaling (2x/4x)',
       'Print format resizing',
       'Etsy listing generation',
-      'AI mockup creation (1 credit per mockup)',
+      'Automated mockup generation',
       'Basic AI tools'
     ]
   },
@@ -96,7 +96,7 @@ export const subscriptionPlans = [
     features: [
       '300 credits per month',
       'All Free plan features',
-      'Professional mockup creation (1 credit each)',
+      'Automated mockup generation',
       'Premium room templates',
       'Priority processing'
     ],
@@ -114,7 +114,7 @@ export const subscriptionPlans = [
     features: [
       '800 credits per month',
       'All Pro plan features',
-      'Professional mockup creation (1 credit each)', 
+      'Automated mockup generation', 
       'More credits for heavy usage',
       'Suitable for agencies & teams',
       'Best value per credit'
