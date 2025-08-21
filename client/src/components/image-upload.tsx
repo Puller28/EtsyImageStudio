@@ -41,10 +41,10 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
           </h3>
           {onBackToChoice && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={onBackToChoice}
-              className="text-gray-500 hover:text-gray-700"
+              className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold shadow-md"
               data-testid="button-back-to-choice"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
