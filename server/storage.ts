@@ -154,18 +154,41 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    // MEMORY-FIRST APPROACH: User registration never fails due to database issues
-    console.log(`🧠 IMMEDIATE: Saving user ${user.email} to memory for instant access`);
+    // ABSOLUTE SCHEMA TARGETING - Force public.users table
+    console.log(`💾 Persisting user ${user.email} to public.users table...`);
     
-    // Save to memory immediately - this ensures user can login right away
-    this.users.set(id, user);
-    console.log(`✅ User ${user.email} registered successfully and ready for login`);
-    
-    // Attempt database sync in background - non-blocking
-    this.syncUserToDatabase(user).catch(error => {
-      console.warn(`⚠️ Background database sync failed for ${user.email}:`, error.message);
-      // App continues working normally - database sync will be retried later
-    });
+    try {
+      const postgres = (await import('postgres')).default;
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        prepare: false,
+        transform: { undefined: null }
+      });
+      
+      // Use ABSOLUTELY EXPLICIT table reference - no ambiguity possible
+      await sql`
+        INSERT INTO public.users (
+          id, email, name, password, avatar, credits, 
+          subscription_status, subscription_plan, subscription_id,
+          subscription_start_date, subscription_end_date, created_at
+        ) VALUES (
+          ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
+          ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
+          ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
+        )
+      `;
+      
+      await sql.end();
+      console.log(`✅ User ${user.email} successfully persisted to public.users table`);
+      
+      // Save to memory only after successful database persistence
+      this.users.set(id, user);
+      console.log(`🧠 User ${user.email} saved to memory after DB success`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to persist user ${user.email}:`, error);
+      throw new Error(`Database persistence failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
     
     return user;
   }
