@@ -154,10 +154,9 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    // Save to memory for fast access
-    this.users.set(id, user);
+    // FIRST PERSIST TO DATABASE with production fallback strategy
+    let databasePersistenceSuccess = false;
     
-    // ALSO PERSIST TO DATABASE with production fallback strategy
     try {
       // First try direct SQL connection which we know works in production
       const directDb = await import("./direct-db");
@@ -178,6 +177,7 @@ export class MemStorage implements IStorage {
       `;
       
       console.log(`✅ Successfully persisted user ${user.email} to database with direct connection`);
+      databasePersistenceSuccess = true;
       
     } catch (directDbError) {
       console.error(`⚠️ Direct DB failed for user ${user.email}:`, directDbError);
@@ -203,11 +203,21 @@ export class MemStorage implements IStorage {
         `);
         
         console.log(`✅ Successfully persisted user ${user.email} to database with Drizzle fallback`);
+        databasePersistenceSuccess = true;
         
       } catch (drizzleError) {
         console.error(`⚠️ All database methods failed for user ${user.email}:`, drizzleError);
-        // Continue anyway - user is still in memory and can use the app
+        databasePersistenceSuccess = false;
       }
+    }
+    
+    // Only save to memory AFTER successful database persistence
+    if (databasePersistenceSuccess) {
+      this.users.set(id, user);
+      console.log(`🧠 User ${user.email} saved to memory after successful DB persistence`);
+    } else {
+      console.error(`🚨 CRITICAL: User ${user.email} NOT saved to memory due to database persistence failure`);
+      throw new Error(`Failed to persist user ${user.email} to database. Registration aborted.`);
     }
     
     return user;
