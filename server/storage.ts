@@ -371,7 +371,96 @@ export class MemStorage implements IStorage {
   }
 
   async getProject(id: string): Promise<Project | undefined> {
-    return this.projects.get(id);
+    // First check memory
+    const memoryProject = this.projects.get(id);
+    if (memoryProject) {
+      return memoryProject;
+    }
+    
+    // If not in memory, fetch from database
+    try {
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
+      
+      console.log(`🔍 Fetching project ${id} from database...`);
+      
+      const result = await sql`
+        SELECT 
+          id, 
+          user_id as "userId", 
+          title, 
+          original_image_url as "originalImageUrl",
+          upscaled_image_url as "upscaledImageUrl",
+          mockup_image_url as "mockupImageUrl",
+          mockup_images as "mockupImages",
+          resized_images as "resizedImages", 
+          etsy_listing as "etsyListing",
+          mockup_template as "mockupTemplate",
+          upscale_option as "upscaleOption",
+          status,
+          zip_url as "zipUrl",
+          thumbnail_url as "thumbnailUrl",
+          ai_prompt as "aiPrompt",
+          metadata,
+          created_at as "createdAt"
+        FROM projects 
+        WHERE id = ${id}
+        LIMIT 1
+      `;
+      
+      if (result.length === 0) {
+        console.log(`❌ Project ${id} not found in database`);
+        return undefined;
+      }
+      
+      const row = result[0];
+      
+      // Parse JSON fields
+      let mockupImages = null;
+      let resizedImages = null;
+      let etsyListing = null;
+      let metadata = {};
+      
+      try {
+        mockupImages = row.mockupImages ? JSON.parse(row.mockupImages) : null;
+        resizedImages = row.resizedImages ? JSON.parse(row.resizedImages) : null;
+        etsyListing = row.etsyListing ? JSON.parse(row.etsyListing) : null;
+        metadata = row.metadata ? JSON.parse(row.metadata) : {};
+      } catch (parseError) {
+        console.warn('Failed to parse JSON fields for project:', parseError);
+      }
+      
+      const project: Project = {
+        id: row.id,
+        userId: row.userId,
+        title: row.title || 'Untitled Project',
+        originalImageUrl: row.originalImageUrl || '',
+        upscaledImageUrl: row.upscaledImageUrl,
+        mockupImageUrl: row.mockupImageUrl,
+        mockupImages,
+        resizedImages,
+        etsyListing,
+        mockupTemplate: row.mockupTemplate,
+        upscaleOption: row.upscaleOption || "2x",
+        status: row.status || 'completed',
+        zipUrl: row.zipUrl,
+        createdAt: new Date(row.createdAt),
+        thumbnailUrl: row.thumbnailUrl || row.originalImageUrl || '',
+        aiPrompt: row.aiPrompt,
+        metadata
+      };
+      
+      console.log(`✅ Successfully fetched project ${id} from database`);
+      
+      // Cache in memory for faster future access
+      this.projects.set(id, project);
+      
+      return project;
+      
+    } catch (dbError) {
+      console.error(`❌ Failed to fetch project ${id} from database:`, dbError);
+      return undefined;
+    }
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {

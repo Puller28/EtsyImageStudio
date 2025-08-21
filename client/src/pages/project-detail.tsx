@@ -144,8 +144,12 @@ export default function ProjectDetailPage() {
   }
 
   const mockupKeys = project.mockupImages ? Object.keys(project.mockupImages) : [];
-  const displayMockup = selectedMockup && project.mockupImages?.[selectedMockup] 
-    ? project.mockupImages[selectedMockup] 
+  
+  // Initialize selectedMockup with first mockup key if not set and mockups exist
+  const effectiveSelectedMockup = selectedMockup || (mockupKeys.length > 0 ? mockupKeys[0] : null);
+  
+  const displayMockup = effectiveSelectedMockup && project.mockupImages?.[effectiveSelectedMockup] 
+    ? project.mockupImages[effectiveSelectedMockup] 
     : project.mockupImageUrl;
 
   return (
@@ -278,7 +282,7 @@ export default function ProjectDetailPage() {
                           key={key}
                           onClick={() => setSelectedMockup(key)}
                           className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
-                            selectedMockup === key ? 'border-indigo-500' : 'border-gray-200'
+                            effectiveSelectedMockup === key ? 'border-indigo-500' : 'border-gray-200'
                           }`}
                         >
                           <img
