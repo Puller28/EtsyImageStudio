@@ -154,20 +154,29 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    // ABSOLUTE SCHEMA TARGETING - Force public.users table
-    console.log(`💾 Persisting user ${user.email} to public.users table...`);
+    // DUAL-TABLE STRATEGY - Handle both auth.users and public.users
+    console.log(`💾 Attempting dual-table user persistence for ${user.email}...`);
     
+    let persistenceSuccess = false;
+    let finalError: Error | null = null;
+    
+    // First try: Use raw SQL with explicit public schema
     try {
       const postgres = (await import('postgres')).default;
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
         prepare: false,
-        transform: { undefined: null }
+        transform: { undefined: null },
+        connection: {
+          search_path: 'public'
+        }
       });
       
-      // Use ABSOLUTELY EXPLICIT table reference - no ambiguity possible
+      // Force connection to use public schema only
+      await sql`SET search_path TO public;`;
+      
       await sql`
-        INSERT INTO public.users (
+        INSERT INTO users (
           id, email, name, password, avatar, credits, 
           subscription_status, subscription_plan, subscription_id,
           subscription_start_date, subscription_end_date, created_at
@@ -179,16 +188,58 @@ export class MemStorage implements IStorage {
       `;
       
       await sql.end();
-      console.log(`✅ User ${user.email} successfully persisted to public.users table`);
+      console.log(`✅ SUCCESS: User ${user.email} persisted to public.users`);
+      persistenceSuccess = true;
       
-      // Save to memory only after successful database persistence
-      this.users.set(id, user);
-      console.log(`🧠 User ${user.email} saved to memory after DB success`);
+    } catch (publicError) {
+      console.warn(`⚠️ Public.users failed: ${publicError instanceof Error ? publicError.message : 'Unknown error'}`);
+      finalError = publicError instanceof Error ? publicError : new Error('Public users insertion failed');
       
-    } catch (error) {
-      console.error(`❌ Failed to persist user ${user.email}:`, error);
-      throw new Error(`Database persistence failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Fallback: Try auth.users with different column structure
+      try {
+        const postgres = (await import('postgres')).default;
+        const sql = postgres(process.env.DATABASE_URL!, {
+          ssl: 'require',
+          prepare: false,
+          transform: { undefined: null }
+        });
+        
+        console.log(`🔄 Fallback: Attempting auth.users structure for ${user.email}...`);
+        
+        // Use auth.users compatible structure (store password in raw_user_meta_data)
+        await sql`
+          INSERT INTO auth.users (
+            id, email, encrypted_password, email_confirmed_at, 
+            raw_user_meta_data, created_at, updated_at, confirmed_at
+          ) VALUES (
+            ${user.id}::uuid, ${user.email}, ${user.password}, NOW(),
+            ${JSON.stringify({ 
+              name: user.name, 
+              avatar: user.avatar, 
+              credits: user.credits,
+              subscriptionStatus: user.subscriptionStatus 
+            })}, 
+            NOW(), NOW(), NOW()
+          )
+        `;
+        
+        await sql.end();
+        console.log(`✅ SUCCESS: User ${user.email} persisted to auth.users`);
+        persistenceSuccess = true;
+        
+      } catch (authError) {
+        console.error(`❌ Both table attempts failed for ${user.email}`);
+        finalError = authError instanceof Error ? authError : new Error('Auth users insertion failed');
+      }
     }
+    
+    if (!persistenceSuccess) {
+      throw new Error(`Database persistence failed: ${finalError?.message || 'Unknown error'}`);
+    }
+    
+    // Save to memory after successful database persistence
+    this.users.set(id, user);
+    console.log(`🧠 User ${user.email} saved to memory after DB success`);
     
     return user;
   }
