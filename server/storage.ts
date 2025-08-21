@@ -132,11 +132,8 @@ export class MemStorage implements IStorage {
       prepare: false,
       transform: { undefined: null },
       onnotice: () => {},
-      // Production-optimized connection pooling
-      fetch_types: false, // Skip type fetching for speed
-      publications: 'all', // Reduce connection overhead
-      // Force immediate connection cleanup
-      socket_timeout: 30
+      // Production-optimized settings
+      fetch_types: false // Skip type fetching for speed
     });
 
     try {

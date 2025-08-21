@@ -21,8 +21,7 @@ const sql = postgres(process.env.DATABASE_URL, {
   connection: {
     timezone: 'UTC'
   },
-  fetch_types: false, // Skip type queries for speed
-  socket_timeout: 20 // Fast socket timeout
+  fetch_types: false // Skip type queries for speed
 });
 
 export { sql };
