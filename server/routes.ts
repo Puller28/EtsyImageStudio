@@ -2095,8 +2095,43 @@ else:
         balanceAfter: user.credits - actualCreditsUsed
       });
 
+      // CREATE PROJECT TO SAVE THE MOCKUPS - This was missing!
+      console.log(`📁 Creating project for mockup set with ${mockups.length} mockups`);
+      
+      // Generate a descriptive title based on templates used
+      const templateNames = selectedTemplates.map(t => `${t.room}_${t.id}`).join(', ');
+      const projectTitle = `Mockup Set - ${templateNames}`;
+      
+      const projectData = {
+        userId,
+        title: projectTitle,
+        originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
+        artworkTitle: projectTitle,
+        styleKeywords: 'mockup, template-based, professional',
+        status: 'completed',
+        upscaleOption: '2x',
+        mockupImages: mockups.reduce((acc, m, index) => {
+          acc[`${m.template.room}_${m.template.id}`] = m.image_data;
+          return acc;
+        }, {} as Record<string, string>), // Store all mockup images as key-value pairs
+        mockupTemplate: selectedTemplates.length === 1 ? `${selectedTemplates[0].room}/${selectedTemplates[0].id}` : 'multiple',
+        thumbnailUrl: mockups[0]?.image_data || `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
+        metadata: {
+          mockupSet: 'true',
+          templatesUsed: JSON.stringify(selectedTemplates),
+          mockupCount: mockups.length.toString(),
+          creditsUsed: actualCreditsUsed.toString(),
+          generationMethod: 'template-based',
+          generatedAt: new Date().toISOString()
+        }
+      };
+
+      const project = await storage.createProject(projectData);
+      console.log(`✅ Created project ${project.id} for mockup set with ${mockups.length} mockups`);
+
       res.json({
         mockups,
+        project_id: project.id, // Return project ID so frontend knows where to find it
         total_generated: mockups.length,
         credits_used: actualCreditsUsed,
         remaining_credits: user.credits - actualCreditsUsed,
