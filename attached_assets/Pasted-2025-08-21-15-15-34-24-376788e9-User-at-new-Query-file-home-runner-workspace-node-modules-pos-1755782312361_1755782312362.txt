@@ -1,0 +1,152 @@
+2025-08-21 15:15:34.24
+376788e9
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-21 15:15:34.24
+376788e9
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 15:15:34.24
+376788e9
+User
+at MemStorage.createUser (file:///home/runner/workspace/dist/index.js:337:21) {
+2025-08-21 15:15:34.24
+376788e9
+User
+severity_local: 'ERROR',
+2025-08-21 15:15:34.24
+376788e9
+User
+severity: 'ERROR',
+2025-08-21 15:15:34.24
+376788e9
+User
+code: '42703',
+2025-08-21 15:15:34.24
+376788e9
+User
+position: '219',
+2025-08-21 15:15:34.24
+376788e9
+User
+file: 'parse_target.c',
+2025-08-21 15:15:34.24
+376788e9
+User
+line: '1066',
+2025-08-21 15:15:34.24
+376788e9
+User
+routine: 'checkInsertTargets'
+2025-08-21 15:15:34.24
+376788e9
+User
+}
+2025-08-21 15:15:34.24
+376788e9
+User
+1:15:34 PM [express] POST /api/auth/register 201 in 3179ms :: {"user":{"name":"Test Test","email":"l…
+2025-08-21 15:15:34.67
+376788e9
+User
+🔍 API /projects called for user: 587ada11-d5ad-49bb-9f3f-858352e9b4a1
+2025-08-21 15:15:34.67
+376788e9
+User
+✅ Projects API completed in 0ms, found 0 projects
+2025-08-21 15:15:34.67
+376788e9
+User
+1:15:34 PM [express] GET /api/projects 304 in 78ms :: []
+2025-08-21 15:15:34.93
+376788e9
+User
+1:15:34 PM [express] GET /api/user 200 in 323ms :: {"name":"Test Test","email":"llodewyks@inspiredte…
+2025-08-21 15:16:06.40
+376788e9
+User
+Template gallery/gallery_02 missing manifest.json - skipping
+2025-08-21 15:16:06.40
+376788e9
+User
+Template gallery/gallery_03 missing manifest.json - skipping
+2025-08-21 15:16:06.40
+376788e9
+User
+Template gallery/gallery_04 missing manifest.json - skipping
+2025-08-21 15:16:06.40
+376788e9
+User
+Template gallery/gallery_05 missing manifest.json - skipping
+2025-08-21 15:16:06.50
+376788e9
+User
+📂 Discovered 5 room categories with templates: bedroom: 2, gallery: 1, kids_room: 1, living_room: 1, study: 1
+2025-08-21 15:16:06.50
+376788e9
+User
+1:16:06 PM [express] GET /api/templates 304 in 221ms :: {"template_root":"./templates","exists":true…
+2025-08-21 15:16:06.83
+376788e9
+User
+1:16:06 PM [express] GET /api/templates/preview/living_room/living_01 304 in 2ms
+2025-08-21 15:16:06.83
+376788e9
+User
+1:16:06 PM [express] GET /api/templates/preview/study/study_01 304 in 2ms
+2025-08-21 15:16:06.83
+376788e9
+User
+1:16:06 PM [express] GET /api/templates/preview/gallery/gallery_01 304 in 1ms
+2025-08-21 15:16:06.84
+376788e9
+User
+1:16:06 PM [express] GET /api/templates/preview/kids_room/kids_room_01 304 in 1ms
+2025-08-21 15:16:06.84
+376788e9
+User
+1:16:06 PM [express] GET /api/templates/preview/bedroom/bedroom_01 304 in 1ms
+2025-08-21 15:16:06.86
+376788e9
+User
+1:16:06 PM [express] GET /api/templates/preview/bedroom/bedroom_02 304 in 3ms
+2025-08-21 15:16:16.35
+376788e9
+User
+🎨 Generating mockup for bedroom/bedroom_02
+2025-08-21 15:16:16.35
+376788e9
+User
+Processing mockup for bedroom/bedroom_02 with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover
+2025-08-21 15:16:20.80
+376788e9
+User
+✅ Generated mockup via Python processor for bedroom/bedroom_02
+2025-08-21 15:16:20.80
+376788e9
+User
+🎨 Generating mockup for bedroom/bedroom_01
+2025-08-21 15:16:20.80
+376788e9
+User
+Processing mockup for bedroom/bedroom_01 with parameters: margin_px=0, feather_px=-1, opacity=-1, fit=cover
+2025-08-21 15:16:23.75
+376788e9
+User
+✅ Generated mockup via Python processor for bedroom/bedroom_01
+2025-08-21 15:16:23.75
+376788e9
+User
+Template mockup generation error: TypeError: storage.logCreditTransaction is not a function
+2025-08-21 15:16:23.75
+376788e9
+User
+at file:///home/runner/workspace/dist/index.js:4643:21
+2025-08-21 15:16:23.75
+376788e9
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-08-21 15:16:23.75
+376788e9
+User
+1:16:23 PM [express] POST /api/apply-templates 500 in 7818ms :: {"error":"storage.logCreditTransacti…
