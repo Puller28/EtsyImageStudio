@@ -154,43 +154,52 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    // FIRST PERSIST TO DATABASE with production fallback strategy
+    // FIRST PERSIST TO DATABASE with production-specific strategy
     let databasePersistenceSuccess = false;
     
     try {
-      // First try direct SQL connection which we know works in production
-      const directDb = await import("./direct-db");
-      const sql = directDb.sql;
+      // NEW: Use raw postgres connection with absolute schema forcing
+      const postgres = (await import('postgres')).default;
+      const productionSql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        prepare: false,
+        transform: { undefined: null },
+        onconnect: async (connection) => {
+          // Absolutely force schema to exclude auth
+          await connection.query('SET search_path TO public');
+          console.log('🔧 Production: Forced search_path to public only');
+        }
+      });
       
-      console.log(`💾 Persisting user ${user.email} to database with direct connection...`);
+      console.log(`💾 Production: Persisting user ${user.email} with raw postgres connection...`);
       
-      await sql`
-        INSERT INTO public.users (
-          id, email, name, password, avatar, credits, 
-          subscription_status, subscription_plan, subscription_id,
-          subscription_start_date, subscription_end_date, created_at
+      // Use template literal with explicit column order to avoid any schema confusion
+      await productionSql`
+        INSERT INTO users (
+          id, email, name, avatar, credits, subscription_status, subscription_plan, 
+          subscription_id, subscription_start_date, subscription_end_date, password, created_at
         ) VALUES (
-          ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
+          ${user.id}, ${user.email}, ${user.name}, ${user.avatar}, ${user.credits}, 
           ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
-          ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
+          ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.password}, ${user.createdAt}
         )
       `;
       
-      console.log(`✅ Successfully persisted user ${user.email} to database with direct connection`);
+      await productionSql.end(); // Clean up connection
+      console.log(`✅ Production: Successfully persisted user ${user.email}`);
       databasePersistenceSuccess = true;
       
-    } catch (directDbError) {
-      console.error(`⚠️ Direct DB failed for user ${user.email}:`, directDbError);
+    } catch (productionError) {
+      console.error(`⚠️ Production method failed for user ${user.email}:`, productionError);
       
-      // Fallback to Drizzle ORM with debugging
+      // Fallback to direct DB connection
       try {
-        const { db } = await import("./db");
-        const { sql } = await import("drizzle-orm");
+        const directDb = await import("./direct-db");
+        const sql = directDb.sql;
         
-        console.log(`💾 Fallback: Persisting user ${user.email} to database with Drizzle...`);
+        console.log(`💾 Fallback: Persisting user ${user.email} with direct connection...`);
         
-        // Use raw SQL with explicit schema targeting
-        await db.execute(sql`
+        await sql`
           INSERT INTO public.users (
             id, email, name, password, avatar, credits, 
             subscription_status, subscription_plan, subscription_id,
@@ -200,13 +209,13 @@ export class MemStorage implements IStorage {
             ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
             ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
           )
-        `);
+        `;
         
-        console.log(`✅ Successfully persisted user ${user.email} to database with Drizzle fallback`);
+        console.log(`✅ Successfully persisted user ${user.email} with direct connection fallback`);
         databasePersistenceSuccess = true;
         
-      } catch (drizzleError) {
-        console.error(`⚠️ All database methods failed for user ${user.email}:`, drizzleError);
+      } catch (fallbackError) {
+        console.error(`⚠️ All database methods failed for user ${user.email}:`, fallbackError);
         databasePersistenceSuccess = false;
       }
     }

@@ -1,0 +1,172 @@
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 19:44:19.30
+2c88da8a
+User
+at MemStorage.createUser (file:///home/runner/workspace/dist/index.js:342:21) {
+2025-08-21 19:44:19.30
+2c88da8a
+User
+severity_local: 'ERROR',
+2025-08-21 19:44:19.30
+2c88da8a
+User
+severity: 'ERROR',
+2025-08-21 19:44:19.30
+2c88da8a
+User
+code: '42703',
+2025-08-21 19:44:19.30
+2c88da8a
+User
+position: '64',
+2025-08-21 19:44:19.30
+2c88da8a
+User
+file: 'parse_target.c',
+2025-08-21 19:44:19.30
+2c88da8a
+User
+line: '1066',
+2025-08-21 19:44:19.30
+2c88da8a
+User
+routine: 'checkInsertTargets'
+2025-08-21 19:44:19.30
+2c88da8a
+User
+}
+2025-08-21 19:44:19.30
+2c88da8a
+User
+💾 Fallback: Persisting user monique@gmail.com to database with Drizzle...
+2025-08-21 19:44:19.59
+2c88da8a
+User
+⚠️ All database methods failed for user monique@gmail.com: PostgresError: column "password" of relation "users" does not exist
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2025-08-21 19:44:19.59
+2c88da8a
+User
+severity_local: 'ERROR',
+2025-08-21 19:44:19.59
+2c88da8a
+User
+severity: 'ERROR',
+2025-08-21 19:44:19.59
+2c88da8a
+User
+code: '42703',
+2025-08-21 19:44:19.59
+2c88da8a
+User
+position: '68',
+2025-08-21 19:44:19.59
+2c88da8a
+User
+file: 'parse_target.c',
+2025-08-21 19:44:19.59
+2c88da8a
+User
+line: '1066',
+2025-08-21 19:44:19.59
+2c88da8a
+User
+routine: 'checkInsertTargets'
+2025-08-21 19:44:19.59
+2c88da8a
+User
+}
+2025-08-21 19:44:19.59
+2c88da8a
+User
+🚨 CRITICAL: User monique@gmail.com NOT saved to memory due to database persistence failure
+2025-08-21 19:44:19.59
+2c88da8a
+User
+Registration error: Error: Failed to persist user monique@gmail.com to database. Registration aborted.
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at MemStorage.createUser (file:///home/runner/workspace/dist/index.js:384:17)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at async AuthService.register (file:///home/runner/workspace/dist/index.js:625:22)
+2025-08-21 19:44:19.59
+2c88da8a
+User
+at async file:///home/runner/workspace/dist/index.js:3093:22
+2025-08-21 19:44:19.59
+2c88da8a
+User
+5:44:19 PM [express] POST /api/auth/register 500 in 3479ms :: {"error":"Registration failed"}

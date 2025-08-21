@@ -22,7 +22,12 @@ const sql = postgres(process.env.DATABASE_URL, {
     timezone: 'UTC'
   },
   // Retry logic for unreliable network conditions  
-  backoff: true
+  backoff: true,
+  // Force search path to exclude auth schema
+  onconnect: async (connection) => {
+    await connection.query('SET search_path TO public, extensions, pg_catalog');
+    console.log('🔧 Direct DB: Set search path to exclude auth schema');
+  }
 });
 
 export { sql };
