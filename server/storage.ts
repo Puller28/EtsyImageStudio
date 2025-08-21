@@ -171,6 +171,18 @@ export class MemStorage implements IStorage {
           }
         });
         
+        // Debug: Check what table we're actually connecting to
+        const schemaCheck = await sql`SELECT current_schema(), current_database()`;
+        console.log(`🔍 Connection info:`, schemaCheck[0]);
+        
+        const tableCheck = await sql`
+          SELECT table_schema, table_name, column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'users' AND column_name = 'password'
+          ORDER BY table_schema
+        `;
+        console.log(`🔍 Password column exists in:`, tableCheck);
+        
         await sql`
           INSERT INTO users (
             id, email, name, password, avatar, credits, 
