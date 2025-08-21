@@ -154,49 +154,41 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    // DUAL-TABLE STRATEGY - Handle both auth.users and public.users
-    console.log(`💾 Attempting dual-table user persistence for ${user.email}...`);
+    // FORCED PUBLIC SCHEMA - Multiple connection attempts
+    console.log(`💾 Forcing connection to public.users table for ${user.email}...`);
     
-    let persistenceSuccess = false;
-    let finalError: Error | null = null;
-    
-    // First try: Use raw SQL with explicit public schema
-    try {
-      const postgres = (await import('postgres')).default;
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        prepare: false,
-        transform: { undefined: null },
-        connection: {
-          search_path: 'public'
-        }
-      });
+    let attempts = [
+      // Attempt 1: Set search path during connection
+      async () => {
+        const postgres = (await import('postgres')).default;
+        const sql = postgres(process.env.DATABASE_URL!, {
+          ssl: 'require',
+          prepare: false,
+          transform: { undefined: null },
+          onconnect: async (connection) => {
+            await connection.query('SET search_path TO public');
+            console.log('🔧 Connection setup: search_path set to public');
+          }
+        });
+        
+        await sql`
+          INSERT INTO users (
+            id, email, name, password, avatar, credits, 
+            subscription_status, subscription_plan, subscription_id,
+            subscription_start_date, subscription_end_date, created_at
+          ) VALUES (
+            ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
+            ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
+            ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
+          )
+        `;
+        
+        await sql.end();
+        return 'onconnect search_path';
+      },
       
-      // Force connection to use public schema only
-      await sql`SET search_path TO public;`;
-      
-      await sql`
-        INSERT INTO users (
-          id, email, name, password, avatar, credits, 
-          subscription_status, subscription_plan, subscription_id,
-          subscription_start_date, subscription_end_date, created_at
-        ) VALUES (
-          ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
-          ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
-          ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
-        )
-      `;
-      
-      await sql.end();
-      console.log(`✅ SUCCESS: User ${user.email} persisted to public.users`);
-      persistenceSuccess = true;
-      
-    } catch (publicError) {
-      console.warn(`⚠️ Public.users failed: ${publicError instanceof Error ? publicError.message : 'Unknown error'}`);
-      finalError = publicError instanceof Error ? publicError : new Error('Public users insertion failed');
-      
-      // Fallback: Try auth.users with different column structure
-      try {
+      // Attempt 2: Explicit public.users in query
+      async () => {
         const postgres = (await import('postgres')).default;
         const sql = postgres(process.env.DATABASE_URL!, {
           ssl: 'require',
@@ -204,42 +196,42 @@ export class MemStorage implements IStorage {
           transform: { undefined: null }
         });
         
-        console.log(`🔄 Fallback: Attempting auth.users structure for ${user.email}...`);
-        
-        // Use auth.users compatible structure (store password in raw_user_meta_data)
         await sql`
-          INSERT INTO auth.users (
-            id, email, encrypted_password, email_confirmed_at, 
-            raw_user_meta_data, created_at, updated_at, confirmed_at
+          INSERT INTO public.users (
+            id, email, name, password, avatar, credits, 
+            subscription_status, subscription_plan, subscription_id,
+            subscription_start_date, subscription_end_date, created_at
           ) VALUES (
-            ${user.id}::uuid, ${user.email}, ${user.password}, NOW(),
-            ${JSON.stringify({ 
-              name: user.name, 
-              avatar: user.avatar, 
-              credits: user.credits,
-              subscriptionStatus: user.subscriptionStatus 
-            })}, 
-            NOW(), NOW(), NOW()
+            ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
+            ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
+            ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
           )
         `;
         
         await sql.end();
-        console.log(`✅ SUCCESS: User ${user.email} persisted to auth.users`);
-        persistenceSuccess = true;
+        return 'explicit public.users';
+      }
+    ];
+    
+    let lastError: Error | null = null;
+    
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        const method = await attempts[i]();
+        console.log(`✅ SUCCESS: User ${user.email} persisted using ${method}`);
         
-      } catch (authError) {
-        console.error(`❌ Both table attempts failed for ${user.email}`);
-        finalError = authError instanceof Error ? authError : new Error('Auth users insertion failed');
+        // Save to memory after successful database persistence
+        this.users.set(id, user);
+        console.log(`🧠 User ${user.email} saved to memory after DB success`);
+        return user;
+        
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        console.warn(`⚠️ Attempt ${i + 1} failed: ${lastError.message}`);
       }
     }
     
-    if (!persistenceSuccess) {
-      throw new Error(`Database persistence failed: ${finalError?.message || 'Unknown error'}`);
-    }
-    
-    // Save to memory after successful database persistence
-    this.users.set(id, user);
-    console.log(`🧠 User ${user.email} saved to memory after DB success`);
+    throw new Error(`All connection attempts failed: ${lastError?.message || 'Unknown error'}`);
     
     return user;
   }
