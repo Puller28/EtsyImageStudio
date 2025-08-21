@@ -382,15 +382,11 @@ export class MemStorage implements IStorage {
   }
 
   async updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean> {
-    console.log(`🔥 CREDIT DEDUCTION CALLED: User=${userId}, Change=${creditChange}, Type=${transactionType}, Desc=${description}`);
-    
     const user = this.users.get(userId);
     if (!user) {
       console.error(`❌ User ${userId} not found for credit transaction`);
       return false;
     }
-
-    console.log(`🔥 USER FOUND: Credits Before=${user.credits}, Change=${creditChange}, Will Have=${user.credits + creditChange}`);
 
     // Check if user has enough credits for deductions
     if (creditChange < 0 && user.credits + creditChange < 0) {
@@ -398,12 +394,30 @@ export class MemStorage implements IStorage {
       return false;
     }
 
-    // Update credits
-    const oldCredits = user.credits;
+    // Update credits in memory
     user.credits += creditChange;
     this.users.set(userId, user);
 
-    console.log(`🔥 CREDITS UPDATED: ${oldCredits} → ${user.credits} (change: ${creditChange})`);
+    // CRITICAL: Update database immediately to prevent refresh overwrites
+    try {
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
+      
+      await sql`
+        UPDATE public.users 
+        SET credits = ${user.credits} 
+        WHERE id = ${userId}
+      `;
+      
+      console.log(`💾 Updated user ${userId} credits in database: ${user.credits}`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to update credits in database for user ${userId}:`, dbError);
+      // Revert memory change if DB update fails
+      user.credits -= creditChange;
+      this.users.set(userId, user);
+      return false;
+    }
 
     // Log the transaction with proper parameters
     await this.logCreditTransaction(userId, transactionType, creditChange, description);

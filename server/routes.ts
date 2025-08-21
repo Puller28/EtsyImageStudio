@@ -2085,15 +2085,14 @@ else:
       });
 
       // Log the transaction
-      await storage.logCreditTransaction({
+      await storage.logCreditTransaction(
         userId,
-        type: 'debit',
-        amount: actualCreditsUsed,
-        description: isFreeUser 
+        'debit',
+        actualCreditsUsed,
+        isFreeUser 
           ? `Free mockup generation (${mockups.length} templates × ${creditCost} credits each)`
-          : `Premium mockup generation (${mockups.length} templates × ${creditCost} credits each)`,
-        balanceAfter: user.credits - actualCreditsUsed
-      });
+          : `Premium mockup generation (${mockups.length} templates × ${creditCost} credits each)`
+      );
 
       // CREATE PROJECT TO SAVE THE MOCKUPS - This was missing!
       console.log(`📁 Creating project for mockup set with ${mockups.length} mockups`);
