@@ -541,7 +541,13 @@ export default function Dashboard() {
             )}
 
             {showAIGenerator && !uploadedImage && (
-              <AIArtGenerator onArtworkGenerated={handleArtworkGenerated} />
+              <AIArtGenerator 
+                onArtworkGenerated={handleArtworkGenerated} 
+                onBackToChoice={() => {
+                  setShowAIGenerator(false);
+                  setShowUploadMode(false);
+                }}
+              />
             )}
 
             {showUploadMode && !uploadedImage && (
@@ -554,6 +560,10 @@ export default function Dashboard() {
                   setUploadedImage(undefined);
                   setCurrentStep(0);
                   setShowUploadMode(false);
+                }}
+                onBackToChoice={() => {
+                  setShowUploadMode(false);
+                  setShowAIGenerator(false);
                 }}
               />
             )}
@@ -573,6 +583,12 @@ export default function Dashboard() {
                   setUploadedImage(undefined);
                   setCurrentStep(0);
                   setShowUploadMode(false);
+                }}
+                onBackToChoice={() => {
+                  setUploadedImage(undefined);
+                  setShowUploadMode(false);
+                  setShowAIGenerator(false);
+                  setCurrentStep(0);
                 }}
               />
             )}

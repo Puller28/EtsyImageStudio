@@ -9,14 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Wand2, Sparkles, Palette } from "lucide-react";
+import { Wand2, Sparkles, Palette, ArrowLeft } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 
 interface AIArtGeneratorProps {
   onArtworkGenerated: (imageData: string, prompt: string) => void;
+  onBackToChoice?: () => void; // To go back to initial choice
 }
 
-export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorProps) {
+export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: AIArtGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("1:1");
@@ -107,10 +108,25 @@ export default function AIArtGenerator({ onArtworkGenerated }: AIArtGeneratorPro
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Wand2 className="h-6 w-6 text-purple-600" />
-          <CardTitle className="text-2xl">AI Art Generator</CardTitle>
-          <Sparkles className="h-6 w-6 text-purple-600" />
+        <div className="flex items-center justify-between mb-4">
+          {onBackToChoice && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBackToChoice}
+              className="text-gray-500 hover:text-gray-700"
+              data-testid="button-back-to-choice"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Options
+            </Button>
+          )}
+          <div className="flex items-center justify-center gap-2 mx-auto">
+            <Wand2 className="h-6 w-6 text-purple-600" />
+            <CardTitle className="text-2xl">AI Art Generator</CardTitle>
+            <Sparkles className="h-6 w-6 text-purple-600" />
+          </div>
+          <div className="w-[100px]"></div> {/* Spacer for alignment */}
         </div>
         <p className="text-gray-600 dark:text-gray-400">
           Generate high-quality artwork using Google's Imagen 3 AI model

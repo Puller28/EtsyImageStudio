@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { CloudUpload, X, Image } from "lucide-react";
+import { CloudUpload, X, Image, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ImageUploadProps {
@@ -11,9 +11,10 @@ interface ImageUploadProps {
   };
   onRemoveImage: () => void;
   onGenerateNew?: () => void; // For AI-generated images
+  onBackToChoice?: () => void; // To go back to initial choice
 }
 
-export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImage, onGenerateNew }: ImageUploadProps) {
+export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImage, onGenerateNew, onBackToChoice }: ImageUploadProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onImageUpload(acceptedFiles[0]);
@@ -33,10 +34,24 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          <CloudUpload className="inline w-5 h-5 text-primary mr-2" />
-          Upload Your Artwork
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">
+            <CloudUpload className="inline w-5 h-5 text-primary mr-2" />
+            Upload Your Artwork
+          </h3>
+          {onBackToChoice && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBackToChoice}
+              className="text-gray-500 hover:text-gray-700"
+              data-testid="button-back-to-choice"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Options
+            </Button>
+          )}
+        </div>
         
         {!uploadedImage ? (
           <>
