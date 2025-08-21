@@ -171,17 +171,7 @@ export class MemStorage implements IStorage {
           }
         });
         
-        // Debug: Check what table we're actually connecting to
-        const schemaCheck = await sql`SELECT current_schema(), current_database()`;
-        console.log(`🔍 Connection info:`, schemaCheck[0]);
-        
-        const tableCheck = await sql`
-          SELECT table_schema, table_name, column_name 
-          FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = 'password'
-          ORDER BY table_schema
-        `;
-        console.log(`🔍 Password column exists in:`, tableCheck);
+
         
         await sql`
           INSERT INTO users (
@@ -391,7 +381,7 @@ export class MemStorage implements IStorage {
     });
   }
 
-  async updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string): Promise<boolean> {
+  async updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean> {
     const user = this.users.get(userId);
     if (!user) {
       console.error(`❌ User ${userId} not found for credit transaction`);
@@ -408,8 +398,20 @@ export class MemStorage implements IStorage {
     user.credits += creditChange;
     this.users.set(userId, user);
 
-    // Log the transaction
+    // Log the transaction with proper parameters
     await this.logCreditTransaction(userId, transactionType, creditChange, description);
+
+    // Also create detailed audit trail with projectId if provided
+    if (projectId) {
+      await this.createCreditTransaction({
+        userId,
+        type: transactionType as 'earn' | 'spend' | 'refund' | 'purchase',
+        amount: creditChange,
+        description,
+        balanceAfter: user.credits,
+        projectId
+      });
+    }
 
     console.log(`✅ Credit update successful - User: ${userId}, New Balance: ${user.credits}`);
     return true;
