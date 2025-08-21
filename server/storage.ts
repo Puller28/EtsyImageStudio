@@ -263,7 +263,42 @@ export class MemStorage implements IStorage {
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    // First check if we have the user in memory
+    let user = this.users.get(id);
+    
+    // If user exists in memory but we want to ensure fresh credit data, refresh from DB
+    if (user) {
+      try {
+        const directDb = await import("./direct-db");
+        const sql = directDb.sql;
+        const [dbUser] = await sql`SELECT id, email, name, password, avatar, credits, subscription_status, subscription_plan, subscription_id, subscription_start_date, subscription_end_date, created_at FROM users WHERE id = ${id}`;
+        
+        if (dbUser) {
+          // Update memory with latest database values, especially credits
+          const refreshedUser = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            password: dbUser.password,
+            avatar: dbUser.avatar,
+            credits: dbUser.credits || 0,
+            subscriptionStatus: dbUser.subscription_status || 'free',
+            subscriptionPlan: dbUser.subscription_plan,
+            subscriptionId: dbUser.subscription_id,
+            subscriptionStartDate: dbUser.subscription_start_date,
+            subscriptionEndDate: dbUser.subscription_end_date,
+            createdAt: new Date(dbUser.created_at)
+          };
+          this.users.set(id, refreshedUser);
+          console.log(`🔄 Refreshed user ${id} from DB - Credits: ${refreshedUser.credits}`);
+          return refreshedUser;
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to refresh user from DB, using memory data:', error);
+      }
+    }
+    
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -394,6 +429,34 @@ export class MemStorage implements IStorage {
   }
 
   async updateUserCreditsWithTransaction(userId: string, amount: number, transactionType: string, description: string, projectId?: string): Promise<{ newBalance: number; transaction: CreditTransaction }> {
+    // First, refresh user data from database to ensure we have the latest credit balance
+    try {
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
+      const [dbUser] = await sql`SELECT id, email, name, password, avatar, credits, subscription_status, subscription_plan, subscription_id, subscription_start_date, subscription_end_date, created_at FROM users WHERE id = ${userId}`;
+      
+      if (dbUser) {
+        // Update memory with latest database values
+        this.users.set(userId, {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          password: dbUser.password,
+          avatar: dbUser.avatar,
+          credits: dbUser.credits || 0,
+          subscriptionStatus: dbUser.subscription_status || 'free',
+          subscriptionPlan: dbUser.subscription_plan,
+          subscriptionId: dbUser.subscription_id,
+          subscriptionStartDate: dbUser.subscription_start_date,
+          subscriptionEndDate: dbUser.subscription_end_date,
+          createdAt: new Date(dbUser.created_at)
+        });
+        console.log(`🔄 Refreshed user ${userId} credits from DB: ${dbUser.credits}`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to refresh user from DB, using memory data:', error);
+    }
+    
     const user = this.users.get(userId);
     if (!user) {
       throw new Error("User not found");
@@ -412,6 +475,7 @@ export class MemStorage implements IStorage {
       projectId: projectId || null,
     });
     
+    console.log(`💳 Updated user ${userId} credits: ${user.credits} + ${amount} = ${newBalance}`);
     return { newBalance, transaction };
   }
 
