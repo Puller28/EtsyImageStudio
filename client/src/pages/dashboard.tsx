@@ -390,6 +390,8 @@ export default function Dashboard() {
       window.URL.revokeObjectURL(url);
       
       console.log("🎁 Download completed successfully");
+      // Mark download step as completed
+      setCurrentStep(4);
       toast({
         title: "Download Complete",
         description: "Your project assets have been downloaded successfully.",

@@ -10,8 +10,11 @@ export default function WorkflowProgress({ currentStep, hasActiveProject = false
     { label: "Upload", icon: Check },
     { label: "Processing", icon: Cog },
     { label: "Generate", icon: Clock },
-    { label: "Download", icon: Clock },
+    { label: "Download", icon: Check },
   ];
+
+  // Ensure currentStep doesn't exceed the number of steps
+  const safeCurrentStep = Math.min(currentStep, steps.length);
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
@@ -19,9 +22,9 @@ export default function WorkflowProgress({ currentStep, hasActiveProject = false
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {steps.map((step, index) => {
-            const isCompleted = index < currentStep;
-            const isCurrent = index === currentStep;
-            const isPending = index > currentStep;
+            const isCompleted = index < safeCurrentStep;
+            const isCurrent = index === safeCurrentStep;
+            const isPending = index > safeCurrentStep;
 
             return (
               <div key={index} className="flex items-center">
