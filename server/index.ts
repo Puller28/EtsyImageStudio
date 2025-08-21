@@ -160,9 +160,17 @@ async function initializeDatabase() {
   }
 }
 
-// FastAPI Process Management
+// FastAPI Process Management (conditional for deployment)
 async function startFastApiServer() {
   return new Promise<void>((resolve, reject) => {
+    // Skip FastAPI in production deployment to avoid port conflicts
+    if (process.env.NODE_ENV === 'production' && process.env.REPLIT_DEV_DOMAIN === undefined) {
+      console.log('🚀 Skipping FastAPI server in production deployment');
+      fastApiReady = false;
+      resolve();
+      return;
+    }
+    
     console.log('🚀 Starting FastAPI server...');
     
     const env = { ...process.env };
