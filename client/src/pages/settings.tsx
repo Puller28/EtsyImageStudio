@@ -273,7 +273,7 @@ export default function Settings() {
                   <p>• Image upscaling (2x): 1 credit per operation</p>
                   <p>• Image upscaling (4x): 2 credits per operation</p>
                   <p>• Etsy listing generation: 2 credits per listing</p>
-                  <p>• Mockup generation: 3 credits per set</p>
+                  <p>• Mockup generation: 1 credit per template</p>
                 </div>
 
                 <Separator />
