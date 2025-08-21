@@ -7,10 +7,10 @@ if (!process.env.DATABASE_URL) {
 // Create a dedicated postgres-js client for direct queries with deployment optimization
 const sql = postgres(process.env.DATABASE_URL, { 
   ssl: 'require', // Required for Supabase
-  max: 3, // Balanced connection pool for deployment
-  idle_timeout: 20, 
-  connect_timeout: 30, // Increased for deployment networks
-  max_lifetime: 60 * 10, // Longer lifetime for stability
+  max: 1, // Single connection optimized for Supabase pooler
+  idle_timeout: 5, // Quick timeout for pooled connections
+  connect_timeout: 10, // Fast connection timeout
+  max_lifetime: 30, // Short lifetime for fresh connections
   debug: false,
   prepare: false,
   transform: {
@@ -20,13 +20,6 @@ const sql = postgres(process.env.DATABASE_URL, {
   // Enhanced connection settings for deployment
   connection: {
     timezone: 'UTC'
-  },
-  // Retry logic for unreliable network conditions  
-  backoff: true,
-  // Force search path to exclude auth schema
-  onconnect: async (connection) => {
-    await connection.query('SET search_path TO public, extensions, pg_catalog');
-    console.log('🔧 Direct DB: Set search path to exclude auth schema');
   }
 });
 

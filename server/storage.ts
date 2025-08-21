@@ -105,7 +105,7 @@ export class MemStorage implements IStorage {
           return;
         }
       } catch (error) {
-        console.warn(`⚠️ Project load attempt ${retryCount + 1} failed:`, error.message);
+        console.warn(`⚠️ Project load attempt ${retryCount + 1} failed:`, (error as Error).message);
       }
       
       retryCount++;
@@ -233,17 +233,13 @@ export class MemStorage implements IStorage {
     console.log(`💾 Forcing connection to public.users table for ${user.email}...`);
     
     let attempts = [
-      // Attempt 1: Set search path during connection
+      // Attempt 1: Direct connection to public schema
       async () => {
         const postgres = (await import('postgres')).default;
         const sql = postgres(process.env.DATABASE_URL!, {
           ssl: 'require',
           prepare: false,
-          transform: { undefined: null },
-          onconnect: async (connection) => {
-            await connection.query('SET search_path TO public');
-            console.log('🔧 Connection setup: search_path set to public');
-          }
+          transform: { undefined: null }
         });
         
 
@@ -361,10 +357,10 @@ export class MemStorage implements IStorage {
       mockupImages: insertProject.mockupImages || {},
       id,
       status: insertProject.status || "uploading",
-      resizedImages: insertProject.resizedImages || [] as string[],
+      resizedImages: insertProject.resizedImages || [],
       upscaledImageUrl: insertProject.upscaledImageUrl || null,
       mockupImageUrl: insertProject.mockupImageUrl || null,
-      etsyListing: insertProject.etsyListing || null as { title: string; tags: string[]; description: string; } | null,
+      etsyListing: insertProject.etsyListing || null,
       zipUrl: insertProject.zipUrl || null,
       thumbnailUrl: insertProject.thumbnailUrl || null,
       aiPrompt: insertProject.aiPrompt || null,
@@ -520,7 +516,7 @@ export class MemStorage implements IStorage {
     // Also create a credit transaction record for audit trail
     await this.createCreditTransaction({
       userId,
-      type: type as 'earn' | 'spend' | 'refund' | 'purchase',
+      transactionType: type as 'earn' | 'spend' | 'refund' | 'purchase',
       amount,
       description,
       balanceAfter: this.users.get(userId)?.credits || 0,
@@ -572,7 +568,7 @@ export class MemStorage implements IStorage {
     if (projectId) {
       await this.createCreditTransaction({
         userId,
-        type: transactionType as 'earn' | 'spend' | 'refund' | 'purchase',
+        transactionType: transactionType as 'earn' | 'spend' | 'refund' | 'purchase',
         amount: creditChange,
         description,
         balanceAfter: user.credits,
