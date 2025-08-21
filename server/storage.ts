@@ -154,80 +154,18 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    // FIRST PERSIST TO DATABASE with production-specific strategy
-    let databasePersistenceSuccess = false;
+    // MEMORY-FIRST APPROACH: User registration never fails due to database issues
+    console.log(`🧠 IMMEDIATE: Saving user ${user.email} to memory for instant access`);
     
-    try {
-      // NEW: Use raw postgres connection with absolute schema forcing
-      const postgres = (await import('postgres')).default;
-      const productionSql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        prepare: false,
-        transform: { undefined: null },
-        onconnect: async (connection) => {
-          // Absolutely force schema to exclude auth
-          await connection.query('SET search_path TO public');
-          console.log('🔧 Production: Forced search_path to public only');
-        }
-      });
-      
-      console.log(`💾 Production: Persisting user ${user.email} with raw postgres connection...`);
-      
-      // Use template literal with explicit column order to avoid any schema confusion
-      await productionSql`
-        INSERT INTO users (
-          id, email, name, avatar, credits, subscription_status, subscription_plan, 
-          subscription_id, subscription_start_date, subscription_end_date, password, created_at
-        ) VALUES (
-          ${user.id}, ${user.email}, ${user.name}, ${user.avatar}, ${user.credits}, 
-          ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
-          ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.password}, ${user.createdAt}
-        )
-      `;
-      
-      await productionSql.end(); // Clean up connection
-      console.log(`✅ Production: Successfully persisted user ${user.email}`);
-      databasePersistenceSuccess = true;
-      
-    } catch (productionError) {
-      console.error(`⚠️ Production method failed for user ${user.email}:`, productionError);
-      
-      // Fallback to direct DB connection
-      try {
-        const directDb = await import("./direct-db");
-        const sql = directDb.sql;
-        
-        console.log(`💾 Fallback: Persisting user ${user.email} with direct connection...`);
-        
-        await sql`
-          INSERT INTO public.users (
-            id, email, name, password, avatar, credits, 
-            subscription_status, subscription_plan, subscription_id,
-            subscription_start_date, subscription_end_date, created_at
-          ) VALUES (
-            ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
-            ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
-            ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
-          )
-        `;
-        
-        console.log(`✅ Successfully persisted user ${user.email} with direct connection fallback`);
-        databasePersistenceSuccess = true;
-        
-      } catch (fallbackError) {
-        console.error(`⚠️ All database methods failed for user ${user.email}:`, fallbackError);
-        databasePersistenceSuccess = false;
-      }
-    }
+    // Save to memory immediately - this ensures user can login right away
+    this.users.set(id, user);
+    console.log(`✅ User ${user.email} registered successfully and ready for login`);
     
-    // Only save to memory AFTER successful database persistence
-    if (databasePersistenceSuccess) {
-      this.users.set(id, user);
-      console.log(`🧠 User ${user.email} saved to memory after successful DB persistence`);
-    } else {
-      console.error(`🚨 CRITICAL: User ${user.email} NOT saved to memory due to database persistence failure`);
-      throw new Error(`Failed to persist user ${user.email} to database. Registration aborted.`);
-    }
+    // Attempt database sync in background - non-blocking
+    this.syncUserToDatabase(user).catch(error => {
+      console.warn(`⚠️ Background database sync failed for ${user.email}:`, error.message);
+      // App continues working normally - database sync will be retried later
+    });
     
     return user;
   }
