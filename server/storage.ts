@@ -382,11 +382,15 @@ export class MemStorage implements IStorage {
   }
 
   async updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean> {
+    console.log(`🔥 CREDIT DEDUCTION CALLED: User=${userId}, Change=${creditChange}, Type=${transactionType}, Desc=${description}`);
+    
     const user = this.users.get(userId);
     if (!user) {
       console.error(`❌ User ${userId} not found for credit transaction`);
       return false;
     }
+
+    console.log(`🔥 USER FOUND: Credits Before=${user.credits}, Change=${creditChange}, Will Have=${user.credits + creditChange}`);
 
     // Check if user has enough credits for deductions
     if (creditChange < 0 && user.credits + creditChange < 0) {
@@ -395,8 +399,11 @@ export class MemStorage implements IStorage {
     }
 
     // Update credits
+    const oldCredits = user.credits;
     user.credits += creditChange;
     this.users.set(userId, user);
+
+    console.log(`🔥 CREDITS UPDATED: ${oldCredits} → ${user.credits} (change: ${creditChange})`);
 
     // Log the transaction with proper parameters
     await this.logCreditTransaction(userId, transactionType, creditChange, description);
