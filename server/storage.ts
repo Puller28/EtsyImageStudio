@@ -93,6 +93,36 @@ export class MemStorage implements IStorage {
       } catch (userError) {
         console.warn('⚠️ Failed to load users:', userError);
       }
+
+      // Load projects from database
+      try {
+        const projects = await sql`SELECT * FROM projects ORDER BY created_at DESC LIMIT 200`;
+        console.log(`📋 Loaded ${projects.length} projects into memory`);
+        
+        projects.forEach((project: any) => {
+          this.projects.set(project.id, {
+            id: project.id,
+            userId: project.user_id,
+            title: project.title,
+            originalImageUrl: project.original_image_url,
+            upscaledImageUrl: project.upscaled_image_url,
+            mockupImageUrl: project.mockup_image_url,
+            mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
+            resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
+            etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
+            mockupTemplate: project.mockup_template,
+            upscaleOption: project.upscale_option || '2x',
+            status: project.status || 'uploading',
+            zipUrl: project.zip_url,
+            thumbnailUrl: project.thumbnail_url,
+            aiPrompt: project.ai_prompt,
+            metadata: typeof project.metadata === 'string' ? JSON.parse(project.metadata) : (project.metadata || {}),
+            createdAt: new Date(project.created_at)
+          });
+        });
+      } catch (projectError) {
+        console.warn('⚠️ Failed to load projects:', projectError);
+      }
       
     } catch (error) {
       console.error('⚠️ Failed to load data from database:', error);
