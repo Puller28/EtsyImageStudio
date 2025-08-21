@@ -320,21 +320,53 @@ export class MemStorage implements IStorage {
     const project: Project = {
       ...insertProject,
       mockupTemplate: insertProject.mockupTemplate || null,
-      mockupImages: null,
+      mockupImages: insertProject.mockupImages || null,
       id,
-      status: "uploading",
-      resizedImages: null,
-      upscaledImageUrl: null,
-      mockupImageUrl: null,
-      etsyListing: null,
-      zipUrl: null,
+      status: insertProject.status || "uploading",
+      resizedImages: insertProject.resizedImages || null,
+      upscaledImageUrl: insertProject.upscaledImageUrl || null,
+      mockupImageUrl: insertProject.mockupImageUrl || null,
+      etsyListing: insertProject.etsyListing || null,
+      zipUrl: insertProject.zipUrl || null,
       thumbnailUrl: insertProject.thumbnailUrl || null,
       aiPrompt: insertProject.aiPrompt || null,
       metadata: insertProject.metadata || {},
       createdAt: new Date(),
       upscaleOption: insertProject.upscaleOption || "2x",
     };
+    
+    // Save to memory for fast access
     this.projects.set(id, project);
+    
+    // ALSO PERSIST TO DATABASE - This was missing!
+    try {
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
+      
+      console.log(`💾 Persisting project ${id} to database...`);
+      
+      await sql`
+        INSERT INTO projects (
+          id, user_id, title, original_image_url, upscaled_image_url, 
+          mockup_image_url, mockup_images, resized_images, etsy_listing,
+          mockup_template, upscale_option, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at
+        ) VALUES (
+          ${project.id}, ${project.userId}, ${project.title}, ${project.originalImageUrl},
+          ${project.upscaledImageUrl}, ${project.mockupImageUrl}, ${JSON.stringify(project.mockupImages)},
+          ${JSON.stringify(project.resizedImages)}, ${JSON.stringify(project.etsyListing)},
+          ${project.mockupTemplate}, ${project.upscaleOption}, ${project.status}, ${project.zipUrl},
+          ${project.thumbnailUrl}, ${project.aiPrompt}, ${JSON.stringify(project.metadata)}, ${project.createdAt}
+        )
+      `;
+      
+      console.log(`✅ Successfully persisted project ${id} to database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to persist project ${id} to database:`, dbError);
+      // Continue anyway - project is still in memory
+    }
+    
     return project;
   }
 
