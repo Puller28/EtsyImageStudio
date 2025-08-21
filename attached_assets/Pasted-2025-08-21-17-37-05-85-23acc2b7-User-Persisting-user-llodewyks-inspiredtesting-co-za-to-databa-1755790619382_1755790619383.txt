@@ -1,0 +1,92 @@
+2025-08-21 17:37:05.85
+23acc2b7
+User
+💾 Persisting user llodewyks@inspiredtesting.co.za to database with Drizzle...
+2025-08-21 17:37:06.59
+23acc2b7
+User
+⚠️ Failed to persist user llodewyks@inspiredtesting.co.za to database: PostgresError: column "password" of relation "users" does not exist
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 17:37:06.59
+23acc2b7
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2025-08-21 17:37:06.59
+23acc2b7
+User
+severity_local: 'ERROR',
+2025-08-21 17:37:06.59
+23acc2b7
+User
+severity: 'ERROR',
+2025-08-21 17:37:06.59
+23acc2b7
+User
+code: '42703',
+2025-08-21 17:37:06.59
+23acc2b7
+User
+position: '45',
+2025-08-21 17:37:06.59
+23acc2b7
+User
+file: 'parse_target.c',
+2025-08-21 17:37:06.59
+23acc2b7
+User
+line: '1066',
+2025-08-21 17:37:06.59
+23acc2b7
+User
+routine: 'checkInsertTargets'
+2025-08-21 17:37:06.59
+23acc2b7
+User
+}
+2025-08-21 17:37:06.59
+23acc2b7
+User
+3:37:06 PM [express] POST /api/auth/register 201 in 1165ms :: {"user":{"name":"Test Test","email":"l…
+2025-08-21 17:37:07.27
+23acc2b7
+User
+🔍 API /projects called for user: 85b7e049-6110-49c4-ba67-e50fcb33d164
+2025-08-21 17:37:07.27
+23acc2b7
+User
+✅ Projects API completed in 1ms, found 0 projects
+2025-08-21 17:37:07.27
+23acc2b7
+User
+3:37:07 PM [express] GET /api/user 200 in 352ms :: {"name":"Test Test","email":"llodewyks@inspiredte…
+2025-08-21 17:37:07.27
+23acc2b7
+User
+3:37:07 PM [express] GET /api/projects 304 in 357ms :: []
