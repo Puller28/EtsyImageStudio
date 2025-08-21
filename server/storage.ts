@@ -152,55 +152,7 @@ export class MemStorage implements IStorage {
         
       } catch (projectError) {
         console.warn('⚠️ Failed to load projects from database:', projectError);
-        
-        // Add some demo projects for the specific user
-        console.log('🔄 Adding demo projects for user...');
-        const demoProjects = [
-          {
-            id: "demo-project-1",
-            userId: "67a20b3f-db39-46df-b34f-27256dace2e9",
-            title: "Abstract Art Piece",
-            originalImageUrl: "https://picsum.photos/400/400?random=1",
-            upscaledImageUrl: null,
-            mockupImageUrl: null,
-            mockupImages: {},
-            resizedImages: [],
-            etsyListing: null,
-            mockupTemplate: null,
-            upscaleOption: "2x",
-            status: "completed",
-            zipUrl: null,
-            createdAt: new Date("2024-08-15"),
-            thumbnailUrl: "https://picsum.photos/200/200?random=1",
-            aiPrompt: null,
-            metadata: {}
-          },
-          {
-            id: "demo-project-2", 
-            userId: "67a20b3f-db39-46df-b34f-27256dace2e9",
-            title: "Digital Landscape",
-            originalImageUrl: "https://picsum.photos/400/400?random=2",
-            upscaledImageUrl: null,
-            mockupImageUrl: null,
-            mockupImages: {},
-            resizedImages: [],
-            etsyListing: null,
-            mockupTemplate: null,
-            upscaleOption: "2x",
-            status: "completed",
-            zipUrl: null,
-            createdAt: new Date("2024-08-10"),
-            thumbnailUrl: "https://picsum.photos/200/200?random=2",
-            aiPrompt: null,
-            metadata: {}
-          }
-        ];
-        
-        demoProjects.forEach(project => {
-          this.projects.set(project.id, project);
-        });
-        
-        console.log(`📥 Added ${demoProjects.length} demo projects for testing`);
+        console.log('🔄 Database connection failed - projects will be empty until connection restored');
       }
       
       // Load credit transactions
@@ -391,7 +343,60 @@ export class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    return Array.from(this.projects.values()).filter(project => project.userId === userId);
+    // Always get real user projects from database to avoid showing demo data
+    const startTime = Date.now();
+    console.log(`🔍 Getting real projects for user: ${userId} from database`);
+    
+    try {
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
+      
+      // Execute raw SQL to get real user projects
+      const result = await sql`
+        SELECT 
+          id, 
+          user_id as "userId", 
+          title, 
+          original_image_url as "originalImageUrl",
+          thumbnail_url as "thumbnailUrl",
+          status,
+          created_at as "createdAt"
+        FROM projects 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC 
+        LIMIT 10
+      `;
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ Database query completed in ${duration}ms, found ${result.length} real projects`);
+      
+      // Transform to Project interface  
+      return result.map((row: any) => ({
+        id: row.id,
+        userId: row.userId,
+        title: row.title || 'Untitled Project',
+        originalImageUrl: row.originalImageUrl || '',
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
+        mockupImages: {},
+        resizedImages: [],
+        etsyListing: null,
+        mockupTemplate: null,
+        upscaleOption: "2x",
+        status: row.status || 'completed',
+        zipUrl: null,
+        createdAt: new Date(row.createdAt),
+        thumbnailUrl: row.thumbnailUrl || row.originalImageUrl || '',
+        aiPrompt: null,
+        metadata: {}
+      }));
+      
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ Database query failed after ${duration}ms:`, error);
+      console.log('🔄 Falling back to in-memory cache (may contain demo data)');
+      return Array.from(this.projects.values()).filter(project => project.userId === userId);
+    }
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
