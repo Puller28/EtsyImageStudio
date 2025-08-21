@@ -271,7 +271,37 @@ export class MemStorage implements IStorage {
       subscriptionEndDate: null,
       createdAt: new Date(),
     };
+    
+    // Save to memory for fast access
     this.users.set(id, user);
+    
+    // ALSO PERSIST TO DATABASE - This was missing!
+    try {
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
+      
+      console.log(`💾 Persisting user ${user.email} to database...`);
+      
+      await sql`
+        INSERT INTO users (
+          id, email, name, password, avatar, credits, 
+          subscription_status, subscription_plan, subscription_id,
+          subscription_start_date, subscription_end_date, created_at
+        ) VALUES (
+          ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar},
+          ${user.credits}, ${user.subscriptionStatus}, ${user.subscriptionPlan}, 
+          ${user.subscriptionId}, ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, 
+          ${user.createdAt}
+        )
+      `;
+      
+      console.log(`✅ Successfully persisted user ${user.email} to database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to persist user ${user.email} to database:`, dbError);
+      // Continue anyway - user is still in memory and can use the app
+    }
+    
     return user;
   }
 
