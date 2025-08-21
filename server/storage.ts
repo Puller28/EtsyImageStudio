@@ -157,26 +157,15 @@ export class MemStorage implements IStorage {
     // Save to memory for fast access
     this.users.set(id, user);
     
-    // ALSO PERSIST TO DATABASE using Drizzle ORM with explicit schema targeting
+    // ALSO PERSIST TO DATABASE with production fallback strategy
     try {
-      const { db } = await import("./db");
-      const { users } = await import("@shared/schema");
-      const { sql } = await import("drizzle-orm");
+      // First try direct SQL connection which we know works in production
+      const directDb = await import("./direct-db");
+      const sql = directDb.sql;
       
-      console.log(`💾 Persisting user ${user.email} to database with Drizzle...`);
+      console.log(`💾 Persisting user ${user.email} to database with direct connection...`);
       
-      // Debug: Check which tables exist before insert
-      const tableCheck = await db.execute(sql`
-        SELECT schemaname, tablename FROM pg_tables WHERE tablename = 'users' ORDER BY schemaname
-      `);
-      console.log(`🔍 Available user tables:`, tableCheck.map(t => `${t.schemaname}.${t.tablename}`));
-      
-      // Force connection to use explicit schema
-      await db.execute(sql`SET search_path TO public, extensions, drizzle`);
-      console.log(`🔧 Forced search path to public schema`);
-      
-      // Use raw SQL with explicit schema targeting as last resort
-      await db.execute(sql`
+      await sql`
         INSERT INTO public.users (
           id, email, name, password, avatar, credits, 
           subscription_status, subscription_plan, subscription_id,
@@ -186,13 +175,39 @@ export class MemStorage implements IStorage {
           ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
           ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
         )
-      `);
+      `;
       
-      console.log(`✅ Successfully persisted user ${user.email} to database with Drizzle`);
+      console.log(`✅ Successfully persisted user ${user.email} to database with direct connection`);
       
-    } catch (dbError) {
-      console.error(`⚠️ Failed to persist user ${user.email} to database:`, dbError);
-      // Continue anyway - user is still in memory and can use the app
+    } catch (directDbError) {
+      console.error(`⚠️ Direct DB failed for user ${user.email}:`, directDbError);
+      
+      // Fallback to Drizzle ORM with debugging
+      try {
+        const { db } = await import("./db");
+        const { sql } = await import("drizzle-orm");
+        
+        console.log(`💾 Fallback: Persisting user ${user.email} to database with Drizzle...`);
+        
+        // Use raw SQL with explicit schema targeting
+        await db.execute(sql`
+          INSERT INTO public.users (
+            id, email, name, password, avatar, credits, 
+            subscription_status, subscription_plan, subscription_id,
+            subscription_start_date, subscription_end_date, created_at
+          ) VALUES (
+            ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
+            ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
+            ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
+          )
+        `);
+        
+        console.log(`✅ Successfully persisted user ${user.email} to database with Drizzle fallback`);
+        
+      } catch (drizzleError) {
+        console.error(`⚠️ All database methods failed for user ${user.email}:`, drizzleError);
+        // Continue anyway - user is still in memory and can use the app
+      }
     }
     
     return user;
