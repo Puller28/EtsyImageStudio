@@ -122,17 +122,21 @@ export class MemStorage implements IStorage {
     // Use the same connection pattern as the working SQL tool
     const postgres = (await import('postgres')).default;
     
-    // Create a one-time connection with aggressive settings
+    // Ultra-aggressive connection settings optimized for production deployment
     const sql = postgres(process.env.DATABASE_URL!, {
       ssl: 'require',
-      max: 1,
-      idle_timeout: 5, // Close quickly to avoid pooler issues
-      connect_timeout: 10, // Short connection timeout
-      max_lifetime: 30, // Short lifetime
+      max: 1, // Single connection only
+      idle_timeout: 3, // Ultra-fast cleanup
+      connect_timeout: 5, // Very short connection timeout
+      max_lifetime: 15, // Very short lifetime for fresh connections
       prepare: false,
       transform: { undefined: null },
-      onnotice: () => {}, // Suppress notices
-      backoff: false // No retries at connection level
+      onnotice: () => {},
+      // Production-optimized connection pooling
+      fetch_types: false, // Skip type fetching for speed
+      publications: 'all', // Reduce connection overhead
+      // Force immediate connection cleanup
+      socket_timeout: 30
     });
 
     try {

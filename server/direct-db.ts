@@ -4,23 +4,25 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-// Create a dedicated postgres-js client for direct queries with deployment optimization
+// Ultra-optimized connection for production deployment reliability
 const sql = postgres(process.env.DATABASE_URL, { 
   ssl: 'require', // Required for Supabase
-  max: 1, // Single connection optimized for Supabase pooler
-  idle_timeout: 5, // Quick timeout for pooled connections
-  connect_timeout: 10, // Fast connection timeout
-  max_lifetime: 30, // Short lifetime for fresh connections
+  max: 1, // Single connection only
+  idle_timeout: 2, // Immediate cleanup
+  connect_timeout: 5, // Ultra-short connection timeout
+  max_lifetime: 10, // Very short lifetime for maximum freshness
   debug: false,
   prepare: false,
   transform: {
     undefined: null,
   },
   onnotice: () => {},
-  // Enhanced connection settings for deployment
+  // Production deployment optimizations
   connection: {
     timezone: 'UTC'
-  }
+  },
+  fetch_types: false, // Skip type queries for speed
+  socket_timeout: 20 // Fast socket timeout
 });
 
 export { sql };
