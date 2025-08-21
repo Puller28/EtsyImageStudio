@@ -21,15 +21,8 @@ const sql = postgres(process.env.DATABASE_URL, {
   connection: {
     timezone: 'UTC'
   },
-  // Retry logic for unreliable network conditions
-  backoff: true,
-  retry_delay: [1000, 2000, 4000],
-  // Force search path to public schema to avoid auth.users confusion
-  onconnect: async (connection) => {
-    console.log('🔧 Setting database search path to public schema...');
-    await connection.query('SET search_path TO public, extensions');
-    console.log('✅ Database search path set to public schema');
-  }
+  // Retry logic for unreliable network conditions  
+  backoff: true
 });
 
 export { sql };

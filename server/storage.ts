@@ -157,26 +157,34 @@ export class MemStorage implements IStorage {
     // Save to memory for fast access
     this.users.set(id, user);
     
-    // ALSO PERSIST TO DATABASE using Drizzle ORM for better compatibility
+    // ALSO PERSIST TO DATABASE using Drizzle ORM with explicit schema targeting
     try {
       const { db } = await import("./db");
       const { users } = await import("@shared/schema");
+      const { sql } = await import("drizzle-orm");
       
       console.log(`💾 Persisting user ${user.email} to database with Drizzle...`);
       
-      await db.insert(users).values({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar,
-        credits: user.credits,
-        subscriptionStatus: user.subscriptionStatus,
-        subscriptionPlan: user.subscriptionPlan,
-        subscriptionId: user.subscriptionId,
-        subscriptionStartDate: user.subscriptionStartDate,
-        subscriptionEndDate: user.subscriptionEndDate,
-        createdAt: user.createdAt,
-        password: user.password,
+      // Execute within a transaction to ensure schema targeting
+      await db.transaction(async (tx) => {
+        // Set search path within transaction
+        await tx.execute(sql`SET search_path TO public, extensions`);
+        
+        // Insert user with explicit schema targeting
+        await tx.insert(users).values({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          credits: user.credits,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionId: user.subscriptionId,
+          subscriptionStartDate: user.subscriptionStartDate,
+          subscriptionEndDate: user.subscriptionEndDate,
+          createdAt: user.createdAt,
+          password: user.password,
+        });
       });
       
       console.log(`✅ Successfully persisted user ${user.email} to database with Drizzle`);
