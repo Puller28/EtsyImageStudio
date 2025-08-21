@@ -223,7 +223,7 @@ export class MemStorage implements IStorage {
       try {
         const directDb = await import("./direct-db");
         const sql = directDb.sql;
-        const [dbUser] = await sql`SELECT id, email, name, password, avatar, credits, subscription_status, subscription_plan, subscription_id, subscription_start_date, subscription_end_date, created_at FROM users WHERE id = ${id}`;
+        const [dbUser] = await sql`SELECT u.id, u.email, u.name, u.password, u.avatar, u.credits, u.subscription_status, u.subscription_plan, u.subscription_id, u.subscription_start_date, u.subscription_end_date, u.created_at FROM users u WHERE u.id = ${id}`;
         
         if (dbUser) {
           // Update memory with latest database values, especially credits

@@ -1,0 +1,152 @@
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+code: '42703',
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+position: '25',
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+file: 'parse_relation.c',
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+line: '3722',
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+routine: 'errorMissingColumn'
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+}
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+✅ Fallback operation completed in 32ms
+2025-08-21 11:59:22.71
+b6f92cfc
+User
+9:59:22 AM [express] GET /api/user 200 in 34ms :: {"name":"Test Test","email":"llodewyks@inspiredtes…
+2025-08-21 12:01:52.29
+b6f92cfc
+User
+🔄 Using fallback storage for operation
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+⚠️ Failed to refresh user from DB, using memory data: PostgresError: column "password" does not exist
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+at MemStorage.getUser (file:///home/runner/workspace/dist/index.js:382:40) {
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+severity_local: 'ERROR',
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+severity: 'ERROR',
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+code: '42703',
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+position: '25',
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+file: 'parse_relation.c',
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+line: '3722',
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+routine: 'errorMissingColumn'
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+}
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+✅ Fallback operation completed in 2812ms
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+🔍 API /projects called for user: 29844159-1abf-426a-9964-91c2537febe5
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+🔄 Using fallback storage for operation
+2025-08-21 12:01:55.10
+b6f92cfc
+User
+🔍 Getting real projects for user: 29844159-1abf-426a-9964-91c2537febe5 from database
+2025-08-21 12:01:57.45
+b6f92cfc
+User
+✅ Database query completed in 2350ms, found 0 real projects
+2025-08-21 12:01:57.45
+b6f92cfc
+User
+✅ Fallback operation completed in 2350ms
+2025-08-21 12:01:57.45
+b6f92cfc
+User
+✅ Projects API completed in 2350ms, found 0 projects
+2025-08-21 12:01:57.45
+b6f92cfc
+User
+10:01:57 AM [express] GET /api/projects 304 in 5163ms :: []
