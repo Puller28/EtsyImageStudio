@@ -119,39 +119,57 @@ export class MemStorage implements IStorage {
   }
 
   private async loadProjectsFromDatabase() {
-    const directDb = await import("./direct-db");
-    const sql = directDb.sql;
+    // Use the same connection pattern as the working SQL tool
+    const postgres = (await import('postgres')).default;
     
-    // Use a shorter timeout per attempt
-    const projectsPromise = sql`SELECT * FROM projects ORDER BY created_at DESC LIMIT 200`;
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database query timeout')), 8000)
-    );
-    
-    const projects = await Promise.race([projectsPromise, timeoutPromise]) as any[];
-    console.log(`📋 Loaded ${projects.length} projects into memory`);
-    
-    projects.forEach((project: any) => {
-      this.projects.set(project.id, {
-        id: project.id,
-        userId: project.user_id,
-        title: project.title,
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
-        resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
-        etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option || '2x',
-        status: project.status || 'uploading',
-        zipUrl: project.zip_url,
-        thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: typeof project.metadata === 'string' ? JSON.parse(project.metadata) : (project.metadata || {}),
-        createdAt: new Date(project.created_at)
-      });
+    // Create a one-time connection with aggressive settings
+    const sql = postgres(process.env.DATABASE_URL!, {
+      ssl: 'require',
+      max: 1,
+      idle_timeout: 5, // Close quickly to avoid pooler issues
+      connect_timeout: 10, // Short connection timeout
+      max_lifetime: 30, // Short lifetime
+      prepare: false,
+      transform: { undefined: null },
+      onnotice: () => {}, // Suppress notices
+      backoff: false // No retries at connection level
     });
+
+    try {
+      console.log('🔗 Creating fresh DB connection for projects...');
+      
+      // Simple, fast query without complex operations
+      const projects = await sql`SELECT * FROM projects ORDER BY created_at DESC LIMIT 200`;
+      console.log(`📋 Loaded ${projects.length} projects into memory`);
+      
+      projects.forEach((project: any) => {
+        this.projects.set(project.id, {
+          id: project.id,
+          userId: project.user_id,
+          title: project.title,
+          originalImageUrl: project.original_image_url,
+          upscaledImageUrl: project.upscaled_image_url,
+          mockupImageUrl: project.mockup_image_url,
+          mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
+          resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
+          etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
+          mockupTemplate: project.mockup_template,
+          upscaleOption: project.upscale_option || '2x',
+          status: project.status || 'uploading',
+          zipUrl: project.zip_url,
+          thumbnailUrl: project.thumbnail_url,
+          aiPrompt: project.ai_prompt,
+          metadata: typeof project.metadata === 'string' ? JSON.parse(project.metadata) : (project.metadata || {}),
+          createdAt: new Date(project.created_at)
+        });
+      });
+
+    } catch (error) {
+      throw error;
+    } finally {
+      // Always close the connection
+      await sql.end();
+    }
   }
 
 
@@ -413,48 +431,65 @@ export class MemStorage implements IStorage {
     // If memory is empty, try direct database query as fallback
     try {
       console.log(`🔍 Memory empty, querying database for user ${userId} projects...`);
-      const directDb = await import("./direct-db");
-      const sql = directDb.sql;
       
-      const projects = await sql`
-        SELECT * FROM projects 
-        WHERE user_id = ${userId} 
-        ORDER BY created_at DESC 
-        LIMIT 50
-      `;
-      
-      console.log(`📋 Found ${projects.length} projects in database for user ${userId}`);
-      
-      // Convert and store in memory for future use
-      const convertedProjects = projects.map((project: any) => ({
-        id: project.id,
-        userId: project.user_id,
-        title: project.title,
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
-        resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
-        etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option || '2x',
-        status: project.status || 'uploading',
-        zipUrl: project.zip_url,
-        thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: typeof project.metadata === 'string' ? JSON.parse(project.metadata) : (project.metadata || {}),
-        createdAt: new Date(project.created_at)
-      }));
-      
-      // Store in memory for future use
-      convertedProjects.forEach(project => {
-        this.projects.set(project.id, project);
+      // Use the same reliable connection pattern
+      const postgres = (await import('postgres')).default;
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10,
+        max_lifetime: 30,
+        prepare: false,
+        transform: { undefined: null },
+        onnotice: () => {},
+        backoff: false
       });
-      
-      return convertedProjects;
+
+      try {
+        const projects = await sql`
+          SELECT * FROM projects 
+          WHERE user_id = ${userId} 
+          ORDER BY created_at DESC 
+          LIMIT 50
+        `;
+        
+        console.log(`📋 Found ${projects.length} projects in database for user ${userId}`);
+        
+        // Convert and store in memory for future use
+        const convertedProjects = projects.map((project: any) => ({
+          id: project.id,
+          userId: project.user_id,
+          title: project.title,
+          originalImageUrl: project.original_image_url,
+          upscaledImageUrl: project.upscaled_image_url,
+          mockupImageUrl: project.mockup_image_url,
+          mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
+          resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
+          etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
+          mockupTemplate: project.mockup_template,
+          upscaleOption: project.upscale_option || '2x',
+          status: project.status || 'uploading',
+          zipUrl: project.zip_url,
+          thumbnailUrl: project.thumbnail_url,
+          aiPrompt: project.ai_prompt,
+          metadata: typeof project.metadata === 'string' ? JSON.parse(project.metadata) : (project.metadata || {}),
+          createdAt: new Date(project.created_at)
+        }));
+        
+        // Store in memory for future use
+        convertedProjects.forEach(project => {
+          this.projects.set(project.id, project);
+        });
+        
+        return convertedProjects;
+        
+      } finally {
+        await sql.end();
+      }
       
     } catch (error) {
-      console.warn(`⚠️ Failed to query database for user ${userId} projects:`, error.message);
+      console.warn(`⚠️ Failed to query database for user ${userId} projects:`, error);
       return memoryProjects; // Return empty array if both memory and DB fail
     }
   }
