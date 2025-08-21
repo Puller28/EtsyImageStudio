@@ -24,6 +24,10 @@ const sql = postgres(process.env.DATABASE_URL, {
   // Retry logic for unreliable network conditions
   backoff: true,
   retry_delay: [1000, 2000, 4000],
+  // Force search path to public schema to avoid auth.users confusion
+  onconnect: async (connection) => {
+    await connection.query('SET search_path TO public, extensions');
+  }
 });
 
 export { sql };
