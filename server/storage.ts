@@ -165,6 +165,16 @@ export class MemStorage implements IStorage {
       
       console.log(`💾 Persisting user ${user.email} to database with Drizzle...`);
       
+      // Debug: Check which tables exist before insert
+      const tableCheck = await db.execute(sql`
+        SELECT schemaname, tablename FROM pg_tables WHERE tablename = 'users' ORDER BY schemaname
+      `);
+      console.log(`🔍 Available user tables:`, tableCheck.map(t => `${t.schemaname}.${t.tablename}`));
+      
+      // Force connection to use explicit schema
+      await db.execute(sql`SET search_path TO public, extensions, drizzle`);
+      console.log(`🔧 Forced search path to public schema`);
+      
       // Use raw SQL with explicit schema targeting as last resort
       await db.execute(sql`
         INSERT INTO public.users (
