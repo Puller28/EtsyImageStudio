@@ -1,0 +1,108 @@
+2025-08-21 13:34:03.40
+8dda4afa
+User
+💾 Persisting user llodewyks@inspiredtesting.co.za to database...
+2025-08-21 13:34:06.11
+8dda4afa
+User
+⚠️ Failed to persist user llodewyks@inspiredtesting.co.za to database: PostgresError: column "password" of relation "users" does not exist
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 13:34:06.11
+8dda4afa
+User
+at MemStorage.createUser (file:///home/runner/workspace/dist/index.js:337:21) {
+2025-08-21 13:34:06.11
+8dda4afa
+User
+severity_local: 'ERROR',
+2025-08-21 13:34:06.11
+8dda4afa
+User
+severity: 'ERROR',
+2025-08-21 13:34:06.11
+8dda4afa
+User
+code: '42703',
+2025-08-21 13:34:06.11
+8dda4afa
+User
+position: '212',
+2025-08-21 13:34:06.11
+8dda4afa
+User
+file: 'parse_target.c',
+2025-08-21 13:34:06.11
+8dda4afa
+User
+line: '1066',
+2025-08-21 13:34:06.11
+8dda4afa
+User
+routine: 'checkInsertTargets'
+2025-08-21 13:34:06.11
+8dda4afa
+User
+}
+2025-08-21 13:34:06.11
+8dda4afa
+User
+11:34:06 AM [express] POST /api/auth/register 201 in 3172ms :: {"user":{"name":"Test Test","email":"l…
+2025-08-21 13:34:06.51
+8dda4afa
+User
+🔍 API /projects called for user: 04ab5a19-9674-4f96-9b0f-e4f6c4e0f036
+2025-08-21 13:34:06.51
+8dda4afa
+User
+✅ Projects API completed in 0ms, found 0 projects
+2025-08-21 13:34:06.51
+8dda4afa
+User
+11:34:06 AM [express] GET /api/projects 304 in 78ms :: []
+2025-08-21 13:34:06.79
+8dda4afa
+User
+11:34:06 AM [express] GET /api/user 200 in 358ms :: {"name":"Test Test","email":"llodewyks@inspiredte…

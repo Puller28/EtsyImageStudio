@@ -71,7 +71,7 @@ export class MemStorage implements IStorage {
       
       // Load users first (this worked before)
       try {
-        const users = await sql`SELECT * FROM users LIMIT 50`;
+        const users = await sql`SELECT * FROM public.users LIMIT 50`;
         console.log(`📥 Loaded ${users.length} users into memory`);
         
         users.forEach((user: any) => {
@@ -106,7 +106,7 @@ export class MemStorage implements IStorage {
       try {
         const directDb = await import("./direct-db");
         const sql = directDb.sql;
-        const [dbUser] = await sql`SELECT u.id, u.email, u.name, u.avatar, u.credits, u.subscription_status, u.subscription_plan, u.subscription_id, u.subscription_start_date, u.subscription_end_date, u.created_at FROM users u WHERE u.id = ${id}`;
+        const [dbUser] = await sql`SELECT u.id, u.email, u.name, u.avatar, u.credits, u.subscription_status, u.subscription_plan, u.subscription_id, u.subscription_start_date, u.subscription_end_date, u.created_at FROM public.users u WHERE u.id = ${id}`;
         
         if (dbUser) {
           const refreshedUser = {
@@ -165,7 +165,7 @@ export class MemStorage implements IStorage {
       console.log(`💾 Persisting user ${user.email} to database...`);
       
       await sql`
-        INSERT INTO users (
+        INSERT INTO public.users (
           id, email, name, avatar, credits, 
           subscription_status, subscription_plan, subscription_id,
           subscription_start_date, subscription_end_date, created_at, password
@@ -256,7 +256,7 @@ export class MemStorage implements IStorage {
       const sql = directDb.sql;
       
       // First ensure the user exists in the database
-      const [existingUser] = await sql`SELECT id FROM users WHERE id = ${project.userId}`;
+      const [existingUser] = await sql`SELECT id FROM public.users WHERE id = ${project.userId}`;
       if (!existingUser) {
         console.warn(`⚠️ User ${project.userId} not found in database, skipping project persistence`);
         return project; // Return project but don't persist to DB
