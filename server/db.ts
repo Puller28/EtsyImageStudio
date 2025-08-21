@@ -25,7 +25,12 @@ const sql = postgres(process.env.DATABASE_URL, {
   connection: {
     application_name: 'etsy-art-upscaler'
   },
-
+  // Force search path to exclude auth schema completely
+  onconnect: async (connection) => {
+    console.log('🔧 Setting database search path to exclude auth schema...');
+    await connection.unsafe('SET search_path TO public, extensions, drizzle');
+    console.log('✅ Database search path set to exclude auth schema');
+  }
 });
 
 export const db = drizzle(sql, { schema });
