@@ -272,8 +272,8 @@ export default function Settings() {
                   <p>• AI image generation: 2 credits per image</p>
                   <p>• Image upscaling (2x): 1 credit per operation</p>
                   <p>• Image upscaling (4x): 2 credits per operation</p>
-                  <p>• Etsy listing generation: 1 credit per listing</p>
-                  <p>• Mockup generation: 5 credits per session</p>
+                  <p>• Etsy listing generation: 2 credits per listing</p>
+                  <p>• Mockup generation: 3 credits per set</p>
                 </div>
 
                 <Separator />
