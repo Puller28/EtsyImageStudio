@@ -326,6 +326,44 @@ export class MemStorage implements IStorage {
     this.processedPayments.add(paymentReference);
   }
 
+  async logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void> {
+    // Log to console for debugging
+    console.log(`💰 Credit Transaction - User: ${userId}, Type: ${type}, Amount: ${amount}, Description: ${description}`);
+    
+    // Also create a credit transaction record for audit trail
+    await this.createCreditTransaction({
+      userId,
+      type: type as 'earn' | 'spend' | 'refund' | 'purchase',
+      amount,
+      description,
+      balanceAfter: this.users.get(userId)?.credits || 0,
+    });
+  }
+
+  async updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) {
+      console.error(`❌ User ${userId} not found for credit transaction`);
+      return false;
+    }
+
+    // Check if user has enough credits for deductions
+    if (creditChange < 0 && user.credits + creditChange < 0) {
+      console.warn(`⚠️ Insufficient credits for user ${userId}. Current: ${user.credits}, Required: ${Math.abs(creditChange)}`);
+      return false;
+    }
+
+    // Update credits
+    user.credits += creditChange;
+    this.users.set(userId, user);
+
+    // Log the transaction
+    await this.logCreditTransaction(userId, transactionType, creditChange, description);
+
+    console.log(`✅ Credit update successful - User: ${userId}, New Balance: ${user.credits}`);
+    return true;
+  }
+
   async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
     const id = randomUUID();
     const fullTransaction: CreditTransaction = {
