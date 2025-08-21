@@ -1,0 +1,148 @@
+2025-08-21 13:08:11.88
+28d9a653
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 13:08:11.88
+28d9a653
+User
+at MemStorage.createProject (file:///home/runner/workspace/dist/index.js:503:21) {
+2025-08-21 13:08:11.88
+28d9a653
+User
+severity_local: 'ERROR',
+2025-08-21 13:08:11.88
+28d9a653
+User
+severity: 'ERROR',
+2025-08-21 13:08:11.88
+28d9a653
+User
+code: '23503',
+2025-08-21 13:08:11.88
+28d9a653
+User
+detail: 'Key (user_id)=(7c6df39d-14e2-4232-8e3f-d85ec9f8fabd) is not present in table "users".',
+2025-08-21 13:08:11.88
+28d9a653
+User
+schema_name: 'public',
+2025-08-21 13:08:11.88
+28d9a653
+User
+table_name: 'projects',
+2025-08-21 13:08:11.88
+28d9a653
+User
+constraint_name: 'projects_user_id_fkey',
+2025-08-21 13:08:11.88
+28d9a653
+User
+file: 'ri_triggers.c',
+2025-08-21 13:08:11.88
+28d9a653
+User
+line: '2608',
+2025-08-21 13:08:11.88
+28d9a653
+User
+routine: 'ri_ReportViolation'
+2025-08-21 13:08:11.88
+28d9a653
+User
+}
+2025-08-21 13:08:11.88
+28d9a653
+User
+✅ Fallback operation completed in 925ms
+2025-08-21 13:08:11.88
+28d9a653
+User
+✅ Created project 4b453dd3-eb76-49d1-9148-71fce87d3995 for mockup set with 2 mockups
+2025-08-21 13:08:11.96
+28d9a653
+User
+11:08:11 AM [express] POST /api/apply-templates 200 in 14225ms :: {"mockups":[{"template":{"room":"be…
+2025-08-21 13:08:13.31
+28d9a653
+User
+🔄 Using fallback storage for operation
+2025-08-21 13:08:13.37
+28d9a653
+User
+✅ Fallback operation completed in 60ms
+2025-08-21 13:08:13.37
+28d9a653
+User
+11:08:13 AM [express] GET /api/user 200 in 63ms :: {"name":"Test Test","email":"llodewyks@inspiredtes…
+2025-08-21 13:08:18.03
+28d9a653
+User
+🔄 Using fallback storage for operation
+2025-08-21 13:08:18.09
+28d9a653
+User
+✅ Fallback operation completed in 59ms
+2025-08-21 13:08:18.09
+28d9a653
+User
+🔍 API /projects called for user: 7c6df39d-14e2-4232-8e3f-d85ec9f8fabd
+2025-08-21 13:08:18.09
+28d9a653
+User
+🔄 Using fallback storage for operation
+2025-08-21 13:08:18.09
+28d9a653
+User
+🔍 Getting real projects for user: 7c6df39d-14e2-4232-8e3f-d85ec9f8fabd from database
+2025-08-21 13:08:18.15
+28d9a653
+User
+✅ Database query completed in 60ms, found 0 real projects
+2025-08-21 13:08:18.15
+28d9a653
+User
+✅ Fallback operation completed in 60ms
+2025-08-21 13:08:18.15
+28d9a653
+User
+✅ Projects API completed in 60ms, found 0 projects
+2025-08-21 13:08:18.15
+28d9a653
+User
+11:08:18 AM [express] GET /api/projects 304 in 121ms :: []
+2025-08-21 13:10:44.65
+28d9a653
+User
+🔄 Using fallback storage for operation
+2025-08-21 13:10:47.45
+28d9a653
+User
+✅ Fallback operation completed in 2802ms
+2025-08-21 13:10:47.45
+28d9a653
+User
+🔍 API /projects called for user: 7c6df39d-14e2-4232-8e3f-d85ec9f8fabd
+2025-08-21 13:10:47.45
+28d9a653
+User
+🔄 Using fallback storage for operation
+2025-08-21 13:10:47.45
+28d9a653
+User
+🔍 Getting real projects for user: 7c6df39d-14e2-4232-8e3f-d85ec9f8fabd from database
+2025-08-21 13:10:47.52
+28d9a653
+User
+✅ Database query completed in 74ms, found 0 real projects
+2025-08-21 13:10:47.52
+28d9a653
+User
+✅ Fallback operation completed in 74ms
+2025-08-21 13:10:47.52
+28d9a653
+User
+✅ Projects API completed in 74ms, found 0 projects
+2025-08-21 13:10:47.52
+28d9a653
+User
+11:10:47 AM [express] GET /api/projects 304 in 2878ms :: []
