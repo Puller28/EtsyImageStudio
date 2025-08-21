@@ -166,14 +166,14 @@ export class MemStorage implements IStorage {
       
       await sql`
         INSERT INTO users (
-          id, email, name, password, avatar, credits, 
+          id, email, name, avatar, credits, 
           subscription_status, subscription_plan, subscription_id,
-          subscription_start_date, subscription_end_date, created_at
+          subscription_start_date, subscription_end_date, created_at, password
         ) VALUES (
-          ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar},
+          ${user.id}, ${user.email}, ${user.name}, ${user.avatar},
           ${user.credits}, ${user.subscriptionStatus}, ${user.subscriptionPlan}, 
           ${user.subscriptionId}, ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, 
-          ${user.createdAt}
+          ${user.createdAt}, ${user.password}
         )
       `;
       
