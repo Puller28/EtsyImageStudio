@@ -235,10 +235,10 @@ export class MemStorage implements IStorage {
       mockupImages: insertProject.mockupImages || {},
       id,
       status: insertProject.status || "uploading",
-      resizedImages: insertProject.resizedImages || [],
+      resizedImages: insertProject.resizedImages || [] as string[],
       upscaledImageUrl: insertProject.upscaledImageUrl || null,
       mockupImageUrl: insertProject.mockupImageUrl || null,
-      etsyListing: insertProject.etsyListing || null,
+      etsyListing: insertProject.etsyListing || null as { title: string; tags: string[]; description: string; } | null,
       zipUrl: insertProject.zipUrl || null,
       thumbnailUrl: insertProject.thumbnailUrl || null,
       aiPrompt: insertProject.aiPrompt || null,
@@ -322,6 +322,7 @@ export class MemStorage implements IStorage {
       ...transaction,
       id,
       createdAt: new Date(),
+      projectId: transaction.projectId || null,
     };
     
     this.creditTransactions.set(id, fullTransaction);
@@ -331,7 +332,7 @@ export class MemStorage implements IStorage {
   async getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]> {
     return Array.from(this.creditTransactions.values())
       .filter(transaction => transaction.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
   }
 
   async createContactMessage(insertMessage: InsertContactMessage): Promise<ContactMessage> {
@@ -340,6 +341,7 @@ export class MemStorage implements IStorage {
       ...insertMessage,
       id,
       createdAt: new Date(),
+      status: "unread",
     };
     
     this.contactMessages.set(id, message);
@@ -348,7 +350,7 @@ export class MemStorage implements IStorage {
 
   async getAllContactMessages(): Promise<ContactMessage[]> {
     return Array.from(this.contactMessages.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
   }
 }
 
