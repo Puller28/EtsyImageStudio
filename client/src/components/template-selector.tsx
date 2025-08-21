@@ -300,7 +300,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
                   ) : (
                     <>
                       <ImageIcon className="h-4 w-4 mr-2" />
-                      Generate Mockups (3 credits)
+                      Generate Mockups ({selectedTemplates.length} credit{selectedTemplates.length !== 1 ? 's' : ''})
                     </>
                   )}
                 </Button>
