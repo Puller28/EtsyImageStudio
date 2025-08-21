@@ -24,6 +24,12 @@ const sql = postgres(process.env.DATABASE_URL, {
   // Add connection retry logic
   connection: {
     application_name: 'etsy-art-upscaler'
+  },
+  // Force search path to public schema
+  onconnect: async (connection) => {
+    console.log('🔧 Setting Drizzle connection search path to public schema...');
+    await connection.query('SET search_path TO public, extensions');
+    console.log('✅ Drizzle connection search path set to public schema');
   }
 });
 
