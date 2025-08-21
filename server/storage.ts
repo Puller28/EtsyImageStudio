@@ -164,6 +164,9 @@ export class MemStorage implements IStorage {
       
       console.log(`💾 Persisting user ${user.email} to database...`);
       
+      // First explicitly set the search path for this connection
+      await sql`SET search_path TO public, extensions`;
+      
       await sql`
         INSERT INTO public.users (
           id, email, name, avatar, credits, 
