@@ -1,0 +1,152 @@
+2025-08-21 16:42:09.35
+b539275d
+User
+📋 Health check available at http://localhost:5000/health
+2025-08-21 16:42:10.15
+b539275d
+User
+📥 Loaded 0 users into memory
+2025-08-21 16:42:10.51
+b539275d
+User
+✅ Database tables initialized successfully
+2025-08-21 16:42:39.45
+b539275d
+User
+⚠️ FastAPI startup timeout, continuing anyway...
+2025-08-21 16:43:29.86
+b539275d
+User
+[FastAPI Error] INFO: Started server process [47]
+2025-08-21 16:43:29.86
+b539275d
+User
+INFO: Waiting for application startup.
+2025-08-21 16:43:29.86
+b539275d
+User
+[FastAPI Error] INFO: Application startup complete.
+2025-08-21 16:43:30.25
+b539275d
+User
+[FastAPI Error] INFO: Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2025-08-21 16:54:13.02
+b539275d
+User
+2:54:13 PM [express] GET /api/projects 401 in 2ms :: {"error":"Authentication required"}
+2025-08-21 16:54:13.02
+b539275d
+User
+2:54:13 PM [express] GET /api/user 404 in 1ms :: {"error":"User not found"}
+2025-08-21 16:54:23.36
+b539275d
+User
+2:54:23 PM [express] POST /api/auth/login 401 in 1ms :: {"error":"Invalid email or password"}
+2025-08-21 16:54:44.72
+b539275d
+User
+💾 Persisting user llodewyks@inspiredtesting.co.za to database...
+2025-08-21 16:54:45.50
+b539275d
+User
+⚠️ Failed to persist user llodewyks@inspiredtesting.co.za to database: PostgresError: column "password" of relation "users" does not exist
+2025-08-21 16:54:45.50
+b539275d
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-21 16:54:45.50
+b539275d
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-21 16:54:45.50
+b539275d
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 16:54:45.50
+b539275d
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 16:54:45.50
+b539275d
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 16:54:45.50
+b539275d
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 16:54:45.50
+b539275d
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 16:54:45.50
+b539275d
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-21 16:54:45.50
+b539275d
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-21 16:54:45.50
+b539275d
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-21 16:54:45.50
+b539275d
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 16:54:45.50
+b539275d
+User
+at MemStorage.createUser (file:///home/runner/workspace/dist/index.js:344:21) {
+2025-08-21 16:54:45.50
+b539275d
+User
+severity_local: 'ERROR',
+2025-08-21 16:54:45.50
+b539275d
+User
+severity: 'ERROR',
+2025-08-21 16:54:45.50
+b539275d
+User
+code: '42703',
+2025-08-21 16:54:45.50
+b539275d
+User
+position: '219',
+2025-08-21 16:54:45.50
+b539275d
+User
+file: 'parse_target.c',
+2025-08-21 16:54:45.50
+b539275d
+User
+line: '1066',
+2025-08-21 16:54:45.50
+b539275d
+User
+routine: 'checkInsertTargets'
+2025-08-21 16:54:45.50
+b539275d
+User
+}
+2025-08-21 16:54:45.50
+b539275d
+User
+2:54:45 PM [express] POST /api/auth/register 201 in 1270ms :: {"user":{"name":"Test Test","email":"l…
+2025-08-21 16:54:45.89
+b539275d
+User
+🔍 API /projects called for user: 5a91e6f6-95f1-46be-98c2-a845301cf119
+2025-08-21 16:54:45.89
+b539275d
+User
+✅ Projects API completed in 0ms, found 0 projects
+2025-08-21 16:54:45.89
+b539275d
+User
+2:54:45 PM [express] GET /api/projects 304 in 79ms :: []
+2025-08-21 16:54:46.16
+b539275d
+User
+2:54:46 PM [express] GET /api/user 200 in 321ms :: {"name":"Test Test","email":"llodewyks@inspiredte…

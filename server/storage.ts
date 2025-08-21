@@ -157,30 +157,29 @@ export class MemStorage implements IStorage {
     // Save to memory for fast access
     this.users.set(id, user);
     
-    // ALSO PERSIST TO DATABASE - This was missing!
+    // ALSO PERSIST TO DATABASE using Drizzle ORM for better compatibility
     try {
-      const directDb = await import("./direct-db");
-      const sql = directDb.sql;
+      const { db } = await import("./db");
+      const { users } = await import("@shared/schema");
       
-      console.log(`💾 Persisting user ${user.email} to database...`);
+      console.log(`💾 Persisting user ${user.email} to database with Drizzle...`);
       
-      // First explicitly set the search path for this connection
-      await sql`SET search_path TO public, extensions`;
+      await db.insert(users).values({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        credits: user.credits,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionId: user.subscriptionId,
+        subscriptionStartDate: user.subscriptionStartDate,
+        subscriptionEndDate: user.subscriptionEndDate,
+        createdAt: user.createdAt,
+        password: user.password,
+      });
       
-      await sql`
-        INSERT INTO public.users (
-          id, email, name, avatar, credits, 
-          subscription_status, subscription_plan, subscription_id,
-          subscription_start_date, subscription_end_date, created_at, password
-        ) VALUES (
-          ${user.id}, ${user.email}, ${user.name}, ${user.avatar},
-          ${user.credits}, ${user.subscriptionStatus}, ${user.subscriptionPlan}, 
-          ${user.subscriptionId}, ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, 
-          ${user.createdAt}, ${user.password}
-        )
-      `;
-      
-      console.log(`✅ Successfully persisted user ${user.email} to database`);
+      console.log(`✅ Successfully persisted user ${user.email} to database with Drizzle`);
       
     } catch (dbError) {
       console.error(`⚠️ Failed to persist user ${user.email} to database:`, dbError);
