@@ -1,0 +1,286 @@
+2025-08-21 12:33:44.27
+98be2800
+User
+code: '42703',
+2025-08-21 12:33:44.27
+98be2800
+User
+position: '31',
+2025-08-21 12:33:44.27
+98be2800
+User
+file: 'parse_relation.c',
+2025-08-21 12:33:44.27
+98be2800
+User
+line: '3722',
+2025-08-21 12:33:44.27
+98be2800
+User
+routine: 'errorMissingColumn'
+2025-08-21 12:33:44.27
+98be2800
+User
+}
+2025-08-21 12:33:44.27
+98be2800
+User
+✅ Fallback operation completed in 32ms
+2025-08-21 12:33:44.27
+98be2800
+User
+10:33:44 AM [express] GET /api/user 200 in 33ms :: {"name":"Test Test","email":"llodewyks@inspiredtes…
+2025-08-21 12:33:51.20
+98be2800
+User
+🔄 Using fallback storage for operation
+2025-08-21 12:33:51.23
+98be2800
+User
+⚠️ Failed to refresh user from DB, using memory data: PostgresError: column u.password does not exist
+2025-08-21 12:33:51.23
+98be2800
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-21 12:33:51.23
+98be2800
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-21 12:33:51.23
+98be2800
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-21 12:33:51.23
+98be2800
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-21 12:33:51.23
+98be2800
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-21 12:33:51.23
+98be2800
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-21 12:33:51.23
+98be2800
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-21 12:33:51.23
+98be2800
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-21 12:33:51.23
+98be2800
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-21 12:33:51.23
+98be2800
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-21 12:33:51.23
+98be2800
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-21 12:33:51.23
+98be2800
+User
+at MemStorage.getUser (file:///home/runner/workspace/dist/index.js:382:40) {
+2025-08-21 12:33:51.23
+98be2800
+User
+severity_local: 'ERROR',
+2025-08-21 12:33:51.23
+98be2800
+User
+severity: 'ERROR',
+2025-08-21 12:33:51.23
+98be2800
+User
+code: '42703',
+2025-08-21 12:33:51.23
+98be2800
+User
+position: '31',
+2025-08-21 12:33:51.23
+98be2800
+User
+file: 'parse_relation.c',
+2025-08-21 12:33:51.23
+98be2800
+User
+line: '3722',
+2025-08-21 12:33:51.23
+98be2800
+User
+routine: 'errorMissingColumn'
+2025-08-21 12:33:51.23
+98be2800
+User
+}
+2025-08-21 12:33:51.23
+98be2800
+User
+✅ Fallback operation completed in 31ms
+2025-08-21 12:33:51.23
+98be2800
+User
+🔍 API /projects called for user: 6daef0c8-6d87-4c04-bfee-e245cebdcd3a
+2025-08-21 12:33:51.23
+98be2800
+User
+🔄 Using fallback storage for operation
+2025-08-21 12:33:51.23
+98be2800
+User
+🔍 Getting real projects for user: 6daef0c8-6d87-4c04-bfee-e245cebdcd3a from database
+2025-08-21 12:33:51.58
+98be2800
+User
+✅ Database query completed in 347ms, found 0 real projects
+2025-08-21 12:33:51.58
+98be2800
+User
+✅ Fallback operation completed in 347ms
+2025-08-21 12:33:51.58
+98be2800
+User
+✅ Projects API completed in 347ms, found 0 projects
+2025-08-21 12:33:51.58
+98be2800
+User
+10:33:51 AM [express] GET /api/projects 304 in 380ms :: []
+
+Wrap
+
+Colors
+Secrets are accessible to anyone who has access to this App. To restrict secret access, you must update App invite permissions. For more information, visit our documentation.
+SESSION_SECRET
+••••••••
+PGDATABASE
+••••••••
+PGHOST
+••••••••
+PGPORT
+••••••••
+PGUSER
+••••••••
+PGPASSWORD
+••••••••
+JWT_SECRET
+••••••••
+COMFYUI_API_KEY
+••••••••
+COMFYUI_RUNPOD_URL
+••••••••
+RUNPOD_API_KEY
+••••••••
+RUNPOD_ENDPOINT_BASE
+••••••••
+PAYSTACK_PUBLIC_KEY
+••••••••
+PAYSTACK_SECRET_KEY
+••••••••
+TEST_JWT_TOKEN
+••••••••
+TEST_EMAIL
+••••••••
+TEST_PASSWORD
+••••••••
+DEMO_USER_PASSWORD_HASH
+••••••••
+VITE_GA_MEASUREMENT_ID
+••••••••
+DATABASE_URL
+••••••••
+DATABASE_URL
+••••••••
+OPENAI_API_KEY
+••••••••
+SEGMIND_API_KEY
+••••••••
+
+SQL console
+
+Database studio
+
+schema:
+public
+Search...
+
+
+
+
+
+
+
+
+
+
+
+
+Powered by
+
+
+
+
+
+
+
+
+
+Add record
+
+
+50
+0
+
+
+
+No rows
+limit 50 offset 0
+Selection deleted
+modules = ["nodejs-20", "web", "postgresql-16", "python-3.11", "python3"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["freetype", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "util-linux", "zlib"]
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
+
+[env]
+PORT = "5000"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[agent]
+integrations = ["javascript_google_analytics==1.0.0", "javascript_stripe==1.0.0", "javascript_log_in_with_replit==1.0.0"]
+
