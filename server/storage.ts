@@ -203,6 +203,31 @@ export class MemStorage implements IStorage {
         console.log(`📥 Added ${demoProjects.length} demo projects for testing`);
       }
       
+      // Load credit transactions
+      try {
+        console.log('🔄 Attempting to load credit transactions...');
+        const transactions = await sql`SELECT * FROM credit_transactions ORDER BY created_at DESC LIMIT 100`;
+        console.log(`📥 Loaded ${transactions.length} credit transactions into memory`);
+        
+        transactions.forEach((transaction: any) => {
+          this.creditTransactions.set(transaction.id, {
+            id: transaction.id,
+            userId: transaction.user_id,
+            transactionType: transaction.transaction_type || transaction.type,
+            amount: transaction.amount,
+            description: transaction.description,
+            balanceAfter: transaction.balance_after,
+            projectId: transaction.project_id,
+            createdAt: new Date(transaction.created_at)
+          });
+        });
+        
+        console.log(`✅ Successfully loaded ${transactions.length} credit transactions into memory storage`);
+        
+      } catch (transactionError) {
+        console.warn('⚠️ Failed to load credit transactions:', transactionError);
+      }
+      
     } catch (error) {
       console.warn('⚠️ Complete data loading failed:', error);
       
