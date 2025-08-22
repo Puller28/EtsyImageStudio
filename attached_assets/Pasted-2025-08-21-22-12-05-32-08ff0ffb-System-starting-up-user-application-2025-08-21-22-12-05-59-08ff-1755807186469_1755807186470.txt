@@ -1,0 +1,140 @@
+2025-08-21 22:12:05.32
+08ff0ffb
+System
+starting up user application
+2025-08-21 22:12:05.59
+08ff0ffb
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2025-08-21 22:12:07.51
+08ff0ffb
+User
+> rest-express@1.0.0 start
+2025-08-21 22:12:07.51
+08ff0ffb
+User
+> NODE_ENV=production node dist/index.js
+2025-08-21 22:12:10.90
+08ff0ffb
+User
+🔄 Loading real user data into memory storage...
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+🔐 OpenAI Environment Debug: {
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+hasOPENAI_API_KEY: true,
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+OPENAI_API_KEY_length: 164,
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+OPENAI_API_KEY_preview: 'sk-proj-bM...',
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+allEnvKeys: [ 'OPENAI_API_KEY' ]
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+}
+2025-08-21 22:12:10.91
+08ff0ffb
+User
+🔑 JWT Secret configured: { hasCustomSecret: true, secretLength: 46, environment: 'production' }
+2025-08-21 22:12:10.92
+08ff0ffb
+User
+🔗 Connecting to database with URL: postgresql://postgres.kkdzbtopouozsniuzghf:***@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+2025-08-21 22:12:10.93
+08ff0ffb
+User
+🔄 Initializing database tables...
+2025-08-21 22:12:10.93
+08ff0ffb
+User
+🚀 Starting FastAPI server...
+2025-08-21 22:12:11.12
+08ff0ffb
+User
+8:12:10 PM [express] serving on port 5000
+2025-08-21 22:12:11.12
+08ff0ffb
+User
+🚀 Application ready on port 5000
+2025-08-21 22:12:11.12
+08ff0ffb
+User
+📋 Health check available at http://localhost:5000/health
+2025-08-21 22:12:11.50
+08ff0ffb
+User
+📥 Loaded 40 users into memory
+2025-08-21 22:12:11.50
+08ff0ffb
+User
+🔗 Creating fresh DB connection for projects...
+2025-08-21 22:12:16.08
+feb132cd
+User
+⚠️ Project load attempt 3 failed: canceling statement due to statement timeout
+2025-08-21 22:12:16.09
+feb132cd
+User
+🔄 Retrying project load in 8s (attempt 3/10)
+2025-08-21 22:12:24.18
+feb132cd
+User
+🔗 Creating fresh DB connection for projects...
+2025-08-21 22:12:26.43
+08ff0ffb
+User
+🔄 Refreshed user 98efacf6-7be0-4adf-88c2-0823a53d9d23 from DB - Credits: 97
+2025-08-21 22:12:26.43
+08ff0ffb
+User
+🔍 API /projects called for user: 98efacf6-7be0-4adf-88c2-0823a53d9d23
+2025-08-21 22:12:26.43
+08ff0ffb
+User
+🔍 Memory empty, querying database for user 98efacf6-7be0-4adf-88c2-0823a53d9d23 projects...
+2025-08-21 22:12:26.49
+08ff0ffb
+User
+🔄 Refreshed user 98efacf6-7be0-4adf-88c2-0823a53d9d23 from DB - Credits: 97
+2025-08-21 22:12:26.50
+08ff0ffb
+User
+8:12:26 PM [express] GET /api/user 304 in 353ms :: {"id":"98efacf6-7be0-4adf-88c2-0823a53d9d23","ema…
+2025-08-21 22:12:28.85
+08ff0ffb
+User
+[FastAPI Error] INFO: Started server process [50]
+2025-08-21 22:12:28.85
+08ff0ffb
+User
+INFO: Waiting for application startup.
+2025-08-21 22:12:28.85
+08ff0ffb
+User
+[FastAPI Error] INFO: Application startup complete.
+2025-08-21 22:12:28.85
+08ff0ffb
+User
+[FastAPI Error] INFO: Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2025-08-21 22:12:40.93
+08ff0ffb
+User
+❌ Database initialization failed: Database initialization timeout
+2025-08-21 22:12:40.93
+08ff0ffb
+User
+⚠️ Application will continue with limited functionality
+2025-08-21 22:12:40.96
+08ff0ffb
+User
+⚠️ FastAPI startup timeout, continuing anyway...
