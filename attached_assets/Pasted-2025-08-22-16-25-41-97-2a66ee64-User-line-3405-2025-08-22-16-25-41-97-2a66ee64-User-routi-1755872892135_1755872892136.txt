@@ -1,0 +1,112 @@
+2025-08-22 16:25:41.97
+2a66ee64
+User
+line: '3405',
+2025-08-22 16:25:41.97
+2a66ee64
+User
+routine: 'ProcessInterrupts'
+2025-08-22 16:25:41.97
+2a66ee64
+User
+}
+2025-08-22 16:25:41.97
+2a66ee64
+User
+✅ Projects API completed in 148442ms, found 0 projects
+2025-08-22 16:25:41.97
+2a66ee64
+User
+2:25:41 PM [express] GET /api/projects 200 in 148447ms :: []
+2025-08-22 16:23:13.53
+2a66ee64
+User
+🔍 API /projects called for user: 98efacf6-7be0-4adf-88c2-0823a53d9d23
+2025-08-22 16:23:13.53
+2a66ee64
+User
+🔍 Fetching projects for user 98efacf6-7be0-4adf-88c2-0823a53d9d23 from production database...
+2025-08-22 16:23:13.53
+2a66ee64
+User
+📊 Executing production query for user 98efacf6-7be0-4adf-88c2-0823a53d9d23...
+2025-08-22 16:25:41.97
+2a66ee64
+User
+❌ Database access failed for user 98efacf6-7be0-4adf-88c2-0823a53d9d23: PostgresError: canceling statement due to statement timeout
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-22 16:25:41.97
+2a66ee64
+User
+at MemStorage.getProjectsByUserId (file:///home/runner/workspace/dist/index.js:227:39) {
+2025-08-22 16:25:41.97
+2a66ee64
+User
+severity_local: 'ERROR',
+2025-08-22 16:25:41.97
+2a66ee64
+User
+severity: 'ERROR',
+2025-08-22 16:25:41.97
+2a66ee64
+User
+code: '57014',
+2025-08-22 16:25:41.97
+2a66ee64
+User
+file: 'postgres.c',
+2025-08-22 16:25:41.97
+2a66ee64
+User
+line: '3405',
+2025-08-22 16:25:41.97
+2a66ee64
+User
+routine: 'ProcessInterrupts'
+2025-08-22 16:25:41.97
+2a66ee64
+User
+}

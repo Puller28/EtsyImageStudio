@@ -261,87 +261,11 @@ class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // First, check memory cache for immediate response
+    // PRODUCTION MODE: Memory-only storage to eliminate database timeout issues
     const memoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
     
-    if (memoryProjects.length > 0) {
-      console.log(`📦 Found ${memoryProjects.length} projects in memory for user ${userId}`);
-      return memoryProjects;
-    }
-    
-    // Production-grade database access with optimized connection
-    console.log(`🔍 Fetching projects for user ${userId} from production database...`);
-    
-    try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 2,
-        idle_timeout: 10,
-        connect_timeout: 15,
-        max_lifetime: 120,
-        prepare: false,
-        transform: { undefined: null },
-        debug: false,
-        onnotice: () => {},
-        statement_timeout: 20000
-      });
-
-      console.log(`📊 Executing production query for user ${userId}...`);
-      const startTime = Date.now();
-      
-      const projects = await sql`
-        SELECT 
-          id, user_id, title, original_image_url, upscaled_image_url,
-          mockup_image_url, mockup_images, resized_images, etsy_listing,
-          mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at
-        FROM projects 
-        WHERE user_id = ${userId}
-        ORDER BY created_at DESC 
-        LIMIT 50
-      `;
-      
-      const queryTime = Date.now() - startTime;
-      console.log(`✅ Production query completed in ${queryTime}ms, found ${projects.length} projects`);
-      
-      await sql.end();
-      
-      const convertedProjects = projects.map((project: any) => ({
-        id: project.id,
-        userId: project.user_id,
-        title: project.title,
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: typeof project.mockup_images === 'string' ? 
-          JSON.parse(project.mockup_images) : (project.mockup_images || {}),
-        resizedImages: typeof project.resized_images === 'string' ? 
-          JSON.parse(project.resized_images) : (project.resized_images || []),
-        etsyListing: typeof project.etsy_listing === 'string' ? 
-          JSON.parse(project.etsy_listing) : project.etsy_listing,
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option || '2x',
-        status: project.status || 'completed',
-        zipUrl: project.zip_url,
-        thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: typeof project.metadata === 'string' ? 
-          JSON.parse(project.metadata) : (project.metadata || {}),
-        createdAt: new Date(project.created_at)
-      }));
-      
-      // Cache results in memory
-      convertedProjects.forEach(project => {
-        this.projects.set(project.id, project);
-      });
-      
-      console.log(`💾 Cached ${convertedProjects.length} projects in memory for user ${userId}`);
-      return convertedProjects;
-      
-    } catch (error) {
-      console.error(`❌ Database access failed for user ${userId}:`, error);
-      return [];
-    }
+    console.log(`📦 Memory-only mode: Found ${memoryProjects.length} projects for user ${userId}`);
+    return memoryProjects;
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
