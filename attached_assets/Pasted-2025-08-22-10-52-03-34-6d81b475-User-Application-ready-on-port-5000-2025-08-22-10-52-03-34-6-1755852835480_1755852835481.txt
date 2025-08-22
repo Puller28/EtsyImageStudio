@@ -1,0 +1,152 @@
+2025-08-22 10:52:03.34
+6d81b475
+User
+🚀 Application ready on port 5000
+2025-08-22 10:52:03.34
+6d81b475
+User
+📋 Health check available at http://localhost:5000/health
+2025-08-22 10:52:03.79
+6d81b475
+User
+📥 Loaded 40 users into memory
+2025-08-22 10:52:04.13
+6d81b475
+User
+✅ Database tables initialized successfully
+2025-08-22 10:52:04.65
+6d81b475
+User
+[FastAPI Error] INFO: Started server process [48]
+2025-08-22 10:52:04.65
+6d81b475
+User
+INFO: Waiting for application startup.
+2025-08-22 10:52:04.65
+6d81b475
+User
+INFO: Application startup complete.
+2025-08-22 10:52:04.65
+6d81b475
+User
+[FastAPI Error] INFO: Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2025-08-22 10:52:05.63
+6d81b475
+User
+🔄 Refreshed user 98efacf6-7be0-4adf-88c2-0823a53d9d23 from DB - Credits: 97
+2025-08-22 10:52:05.63
+6d81b475
+User
+🔍 API /projects called for user: 98efacf6-7be0-4adf-88c2-0823a53d9d23
+2025-08-22 10:52:05.63
+6d81b475
+User
+🌐 Using REST API for user 98efacf6-7be0-4adf-88c2-0823a53d9d23 projects...
+2025-08-22 10:52:05.63
+6d81b475
+User
+🌐 Using REST API to fetch projects for user 98efacf6-7be0-4adf-88c2-0823a53d9d23...
+2025-08-22 10:52:18.64
+6d81b475
+User
+✅ REST API returned 8 projects
+2025-08-22 10:52:18.79
+6d81b475
+User
+✅ REST API found 8 projects
+2025-08-22 10:52:18.79
+6d81b475
+User
+✅ Projects API completed in 13160ms, found 8 projects
+2025-08-22 10:52:20.03
+6d81b475
+System
+system: received signal terminated
+2025-08-22 10:52:20.72
+6d81b475
+User
+8:52:20 AM [express] GET /api/projects 200 in 14717ms :: [{"id":"d7f5ccba-fd6b-48c6-bca1-d9a14d343ba…
+2025-08-22 10:52:54.92
+6d81b475
+System
+starting up user application
+2025-08-22 10:52:55.14
+6d81b475
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2025-08-22 10:52:57.38
+6d81b475
+User
+> rest-express@1.0.0 start
+2025-08-22 10:52:57.38
+6d81b475
+User
+> NODE_ENV=production node dist/index.js
+2025-08-22 10:52:58.78
+6d81b475
+User
+🔄 Loading real user data into memory storage...
+2025-08-22 10:52:58.79
+6d81b475
+User
+🔐 OpenAI Environment Debug: {
+2025-08-22 10:52:58.79
+6d81b475
+User
+hasOPENAI_API_KEY: true,
+2025-08-22 10:52:58.79
+6d81b475
+User
+OPENAI_API_KEY_length: 164,
+2025-08-22 10:52:58.79
+6d81b475
+User
+OPENAI_API_KEY_preview: 'sk-proj-bM...',
+2025-08-22 10:52:58.79
+6d81b475
+User
+allEnvKeys: [ 'OPENAI_API_KEY' ]
+2025-08-22 10:52:58.79
+6d81b475
+User
+}
+2025-08-22 10:52:58.79
+6d81b475
+User
+🔑 JWT Secret configured: { hasCustomSecret: true, secretLength: 46, environment: 'production' }
+2025-08-22 10:52:58.79
+6d81b475
+User
+🔗 Connecting to database with URL: postgresql://postgres.kkdzbtopouozsniuzghf:***@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+2025-08-22 10:52:58.80
+6d81b475
+User
+🔄 Initializing database tables...
+2025-08-22 10:52:58.80
+6d81b475
+User
+🚀 Starting FastAPI server...
+2025-08-22 10:52:58.92
+6d81b475
+User
+8:52:58 AM [express] serving on port 5000
+2025-08-22 10:52:58.92
+6d81b475
+User
+🚀 Application ready on port 5000
+2025-08-22 10:52:58.92
+6d81b475
+User
+📋 Health check available at http://localhost:5000/health
+2025-08-22 10:52:59.33
+6d81b475
+User
+📥 Loaded 40 users into memory
+2025-08-22 10:52:59.73
+6d81b475
+User
+✅ Database tables initialized successfully
+2025-08-22 10:53:28.87
+6d81b475
+User
+⚠️ FastAPI startup timeout, continuing anyway...
