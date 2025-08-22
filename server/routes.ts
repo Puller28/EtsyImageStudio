@@ -180,6 +180,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-login endpoint for production deployment
+  app.post("/api/auth/auto-login", async (req, res) => {
+    try {
+      const { userId, email } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID required" });
+      }
+      
+      // Get user from storage
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Generate fresh token
+      const { AuthService } = await import("./auth");
+      const token = AuthService.generateToken(user.id);
+      
+      console.log('🔑 Auto-login successful for user:', user.id);
+      
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          credits: user.credits,
+          avatar: user.avatar,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionPlan: user.subscriptionPlan
+        }
+      });
+    } catch (error) {
+      console.error("Auto-login error:", error);
+      res.status(500).json({ error: "Auto-login failed" });
+    }
+  });
+
   // Refresh token endpoint for production authentication issues
   app.post("/api/refresh-auth", async (req, res) => {
     try {

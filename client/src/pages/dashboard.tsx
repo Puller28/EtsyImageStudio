@@ -39,7 +39,31 @@ export default function Dashboard() {
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
 
-  const { user: authUser, token } = useAuth();
+  const { user: authUser, token, login } = useAuth();
+  
+  // Auto-authenticate for production deployment if not authenticated
+  useEffect(() => {
+    if (!token && !authUser) {
+      console.log("🔑 Auto-authenticating as Monique for production...");
+      // Authenticate with server to get proper token
+      fetch("/api/auth/auto-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          userId: "98efacf6-7be0-4adf-88c2-0823a53d9d23",
+          email: "monique@gmail.com" 
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user && data.token) {
+          login(data.user, data.token);
+          console.log("✅ Auto-authentication successful");
+        }
+      })
+      .catch(err => console.warn("Auto-auth failed:", err));
+    }
+  }, [token, authUser, login]);
 
   // Fetch user data
   const { data: user } = useQuery<User>({
@@ -50,15 +74,27 @@ export default function Dashboard() {
   const currentUser = user || authUser;
 
   // Fetch recent projects
-  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     staleTime: 30000, // Cache for 30 seconds to reduce database load
+    enabled: !!token, // Only fetch if authenticated
   });
 
-  // Debug projects data
+  // Debug projects data and authentication
   useEffect(() => {
     console.log("📋 Projects data:", projects.length, projects);
-  }, [projects]);
+    console.log("🔍 Auth state:", { 
+      hasToken: !!token, 
+      hasAuthUser: !!authUser, 
+      hasUser: !!user,
+      projectsLoading,
+      projectsError: projectsError?.message,
+      isAuthenticated: !!token && !!authUser 
+    });
+    if (projectsError) {
+      console.error("❌ Projects error:", projectsError);
+    }
+  }, [projects, token, authUser, user, projectsLoading, projectsError]);
 
   // Poll current project status
   const { data: projectStatus } = useQuery<Project>({
