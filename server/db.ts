@@ -10,26 +10,13 @@ if (!process.env.DATABASE_URL) {
 console.log('🔗 Connecting to database with URL:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':***@'));
 
 const sql = postgres(process.env.DATABASE_URL, { 
-  ssl: 'prefer', // More flexible SSL handling
-  max: 2, // Fewer connections to avoid pooling issues
-  idle_timeout: 10, // Shorter idle timeout
-  connect_timeout: 5, // Faster timeout
-  max_lifetime: 60 * 5, // 5 minutes
-  debug: false,
-  prepare: false,
+  ssl: 'require', // Supabase requires SSL
+  max: 10, // Standard connection pool size
+  idle_timeout: 20,
+  connect_timeout: 10,
+  prepare: false, // Important for Supabase compatibility
   transform: {
     undefined: null,
-  },
-  onnotice: () => {},
-  // Add connection retry logic
-  connection: {
-    application_name: 'etsy-art-upscaler'
-  },
-  // Force search path to exclude auth schema completely
-  onconnect: async (connection) => {
-    console.log('🔧 Setting database search path to exclude auth schema...');
-    await connection.unsafe('SET search_path TO public, extensions, drizzle');
-    console.log('✅ Database search path set to exclude auth schema');
   }
 });
 

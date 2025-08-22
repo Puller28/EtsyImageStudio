@@ -148,10 +148,10 @@ class MemStorage implements IStorage {
     try {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
-        max: 2,
+        max: 10,
         idle_timeout: 20,
-        connect_timeout: 30,
-        statement_timeout: 30000
+        connect_timeout: 10,
+        prepare: false
       });
 
       await sql`
@@ -182,10 +182,10 @@ class MemStorage implements IStorage {
     try {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
-        max: 2,
+        max: 10,
         idle_timeout: 20,
-        connect_timeout: 30,
-        statement_timeout: 30000
+        connect_timeout: 10,
+        prepare: false
       });
 
       await sql`
@@ -225,10 +225,10 @@ class MemStorage implements IStorage {
     try {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
-        max: 2,
+        max: 10,
         idle_timeout: 20,
-        connect_timeout: 30,
-        statement_timeout: 30000
+        connect_timeout: 10,
+        prepare: false
       });
 
       await sql`
@@ -261,11 +261,69 @@ class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // PRODUCTION MODE: Memory-only storage to eliminate database timeout issues
+    // Check memory cache first for performance
     const memoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
     
-    console.log(`📦 Memory-only mode: Found ${memoryProjects.length} projects for user ${userId}`);
-    return memoryProjects;
+    if (memoryProjects.length > 0) {
+      console.log(`📦 Found ${memoryProjects.length} projects in memory for user ${userId}`);
+      return memoryProjects;
+    }
+    
+    // Use standard Supabase connection
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
+        prepare: false
+      });
+
+      const projects = await sql`
+        SELECT 
+          id, user_id, title, original_image_url, upscaled_image_url,
+          mockup_image_url, mockup_images, resized_images, etsy_listing,
+          mockup_template, upscale_option, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at
+        FROM projects 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+      `;
+      
+      await sql.end();
+      
+      const convertedProjects = projects.map((project: any) => ({
+        id: project.id,
+        userId: project.user_id,
+        title: project.title,
+        originalImageUrl: project.original_image_url,
+        upscaledImageUrl: project.upscaled_image_url,
+        mockupImageUrl: project.mockup_image_url,
+        mockupImages: project.mockup_images || [],
+        resizedImages: project.resized_images || [],
+        etsyListing: project.etsy_listing || {},
+        mockupTemplate: project.mockup_template,
+        upscaleOption: project.upscale_option,
+        status: project.status,
+        zipUrl: project.zip_url,
+        thumbnailUrl: project.thumbnail_url,
+        aiPrompt: project.ai_prompt,
+        metadata: project.metadata || {},
+        createdAt: new Date(project.created_at)
+      }));
+      
+      // Cache in memory for future requests
+      convertedProjects.forEach(project => {
+        this.projects.set(project.id, project);
+      });
+      
+      console.log(`✅ Retrieved ${convertedProjects.length} projects from database for user ${userId}`);
+      return convertedProjects;
+      
+    } catch (error) {
+      console.error(`❌ Database query failed for user ${userId}:`, error);
+      return [];
+    }
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
