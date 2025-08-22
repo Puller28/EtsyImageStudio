@@ -280,6 +280,15 @@ process.on('exit', cleanup);
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
+    // Add cache-busting middleware for production
+    app.use((req, res, next) => {
+      if (req.url.includes('.js') || req.url.includes('.css') || req.url.includes('.html')) {
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+      }
+      next();
+    });
     serveStatic(app);
   }
 
