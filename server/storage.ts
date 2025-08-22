@@ -119,22 +119,9 @@ export class MemStorage implements IStorage {
   }
 
   private async loadProjectsFromDatabase() {
-    // Use the same connection pattern as the working SQL tool
-    const postgres = (await import('postgres')).default;
-    
-    // Ultra-aggressive connection settings optimized for production deployment
-    const sql = postgres(process.env.DATABASE_URL!, {
-      ssl: 'require',
-      max: 1, // Single connection only
-      idle_timeout: 3, // Ultra-fast cleanup
-      connect_timeout: 5, // Very short connection timeout
-      max_lifetime: 15, // Very short lifetime for fresh connections
-      prepare: false,
-      transform: { undefined: null },
-      onnotice: () => {},
-      // Production-optimized settings
-      fetch_types: false // Skip type fetching for speed
-    });
+    // Emergency fallback to direct API calls when memory loading fails
+    console.log('⚡ Using direct database queries instead of memory loading...');
+    return; // Skip memory loading, use direct queries in API calls
 
     try {
       console.log('🔗 Creating fresh DB connection for projects...');
@@ -434,13 +421,15 @@ export class MemStorage implements IStorage {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
         max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10,
-        max_lifetime: 30,
+        idle_timeout: 1, // Extremely fast cleanup
+        connect_timeout: 3, // Ultra-short connection timeout
+        max_lifetime: 5, // Very short lifetime
         prepare: false,
         transform: { undefined: null },
         onnotice: () => {},
-        backoff: false
+        fetch_types: false,
+        // Production emergency settings
+        statement_timeout: 10000 // 10 second statement timeout
       });
 
       try {
