@@ -1,308 +1,233 @@
-// Backup for recovery - minimal working version
-import { randomUUID } from "crypto";
-import type { User, Project, InsertUser, InsertProject, CreditTransaction, InsertCreditTransaction, ContactMessage, InsertContactMessage } from "../shared/schema";
+import { User, Project, CreditTransaction } from "../shared/schema";
+import crypto from "crypto";
+import postgres from 'postgres';
 
 export interface IStorage {
-  // Users
-  getUser(id: string): Promise<User | undefined>;
+  // User management
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(userId: string, updates: Partial<User>): Promise<User>;
-  updateUserCredits(userId: string, credits: number): Promise<void>;
-  updateUserSubscription(userId: string, subscriptionData: {
-    subscriptionStatus: string;
-    subscriptionPlan?: string;
-    subscriptionId?: string;
-    subscriptionStartDate?: Date;
-    subscriptionEndDate?: Date;
-  }): Promise<void>;
+  getUserById(id: string): Promise<User | undefined>;
+  createUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
 
-  // Projects
-  createProject(project: InsertProject): Promise<Project>;
+  // Project management
+  createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByUserId(userId: string): Promise<Project[]>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
 
-  // Payment processing
+  // Credit management
+  updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean>;
+  logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void>;
+  createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'createdAt'>): Promise<CreditTransaction>;
+  getCreditTransactions(userId: string): Promise<CreditTransaction[]>;
+
+  // Payment management
   isPaymentProcessed(paymentReference: string): Promise<boolean>;
   markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void>;
 
-  // Credit transactions
-  createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
-  getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]>;
-
-  // Contact messages
-  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
-  getAllContactMessages(): Promise<ContactMessage[]>;
+  // Contact management
+  getContactMessages(): Promise<any[]>;
+  createContactMessage(message: any): Promise<any>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private projects: Map<string, Project>;
-  private processedPayments: Set<string>;
-  private creditTransactions: Map<string, CreditTransaction>;
-  private contactMessages: Map<string, ContactMessage>;
-
-  constructor() {
-    this.users = new Map();
-    this.projects = new Map();
-    this.processedPayments = new Set();
-    this.creditTransactions = new Map();
-    this.contactMessages = new Map();
-    
-    // Load users only - skip problematic project loading
-    this.loadUsers();
-  }
-
-  private async loadUsers() {
-    try {
-      console.log('🔄 Loading real user data into memory storage...');
-      
-      const directDb = await import("./direct-db");
-      const sql = directDb.sql;
-      
-      const users = await sql`SELECT * FROM public.users LIMIT 50`;
-      console.log(`📥 Loaded ${users.length} users into memory`);
-      
-      users.forEach((user: any) => {
-        this.users.set(user.id, {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          password: user.password,
-          avatar: user.avatar,
-          credits: user.credits || 0,
-          subscriptionStatus: user.subscription_status || 'free',
-          subscriptionPlan: user.subscription_plan,
-          subscriptionId: user.subscription_id,
-          subscriptionStartDate: user.subscription_start_date,
-          subscriptionEndDate: user.subscription_end_date,
-          createdAt: new Date(user.created_at)
-        });
-      });
-    } catch (error) {
-      console.warn('⚠️ Failed to load users:', error);
-    }
-  }
-
-
-
-
-
-
-
-  async getUser(id: string): Promise<User | undefined> {
-    let user = this.users.get(id);
-    
-    if (user) {
-      try {
-        const directDb = await import("./direct-db");
-        const sql = directDb.sql;
-        const [dbUser] = await sql`SELECT u.id, u.email, u.name, u.avatar, u.credits, u.subscription_status, u.subscription_plan, u.subscription_id, u.subscription_start_date, u.subscription_end_date, u.created_at FROM public.users u WHERE u.id = ${id}`;
-        
-        if (dbUser) {
-          const refreshedUser = {
-            id: dbUser.id,
-            email: dbUser.email,
-            name: dbUser.name,
-            password: user.password, // Keep existing password from memory
-            avatar: dbUser.avatar,
-            credits: dbUser.credits || 0,
-            subscriptionStatus: dbUser.subscription_status || 'free',
-            subscriptionPlan: dbUser.subscription_plan,
-            subscriptionId: dbUser.subscription_id,
-            subscriptionStartDate: dbUser.subscription_start_date,
-            subscriptionEndDate: dbUser.subscription_end_date,
-            createdAt: new Date(dbUser.created_at)
-          };
-          this.users.set(id, refreshedUser);
-          console.log(`🔄 Refreshed user ${id} from DB - Credits: ${refreshedUser.credits}`);
-          return refreshedUser;
-        }
-      } catch (error) {
-        console.warn('⚠️ Failed to refresh user from DB, using memory data:', error);
-      }
-    }
-    
-    return user;
-  }
+class MemStorage implements IStorage {
+  private users = new Map<string, User>();
+  private projects = new Map<string, Project>();
+  private creditTransactions = new Map<string, CreditTransaction>();
+  private processedPayments = new Set<string>();
+  private contactMessages = new Map<string, any>();
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const user = Array.from(this.users.values()).find(u => u.email === email);
+    if (user) {
+      console.log(`✅ Found user in memory: ${email}`);
+      return user;
+    }
+
+    // Try to load from database
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10,
+        statement_timeout: 15000
+      });
+
+      const users = await sql`
+        SELECT * FROM public.users 
+        WHERE email = ${email}
+        LIMIT 1
+      `;
+
+      await sql.end();
+
+      if (users.length > 0) {
+        const dbUser = users[0];
+        const user: User = {
+          id: dbUser.id,
+          email: dbUser.email,
+          password: dbUser.password,
+          credits: dbUser.credits || 3,
+          plan: dbUser.plan || 'free',
+          stripeCustomerId: dbUser.stripe_customer_id,
+          createdAt: new Date(dbUser.created_at)
+        };
+        
+        this.users.set(user.id, user);
+        console.log(`🔄 Loaded user ${email} from database`);
+        return user;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Database query failed for user ${email}:`, error);
+    }
+
+    return undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
+  async getUserById(id: string): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (user) {
+      return user;
+    }
+
+    // Try to load from database
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10,
+        statement_timeout: 15000
+      });
+
+      const users = await sql`
+        SELECT * FROM public.users 
+        WHERE id = ${id}
+        LIMIT 1
+      `;
+
+      await sql.end();
+
+      if (users.length > 0) {
+        const dbUser = users[0];
+        const user: User = {
+          id: dbUser.id,
+          email: dbUser.email,
+          password: dbUser.password,
+          credits: dbUser.credits || 3,
+          plan: dbUser.plan || 'free',
+          stripeCustomerId: dbUser.stripe_customer_id,
+          createdAt: new Date(dbUser.created_at)
+        };
+        
+        this.users.set(user.id, user);
+        console.log(`🔄 Refreshed user ${id} from DB - Credits: ${user.credits}`);
+        return user;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Database refresh failed for user ${id}:`, error);
+    }
+
+    return undefined;
+  }
+
+  async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+    const id = crypto.randomUUID();
+    const createdAt = new Date();
+    
     const user: User = {
-      ...insertUser,
-      avatar: insertUser.avatar || null,
       id,
-      credits: 100,
-      subscriptionStatus: "free",
-      subscriptionPlan: null,
-      subscriptionId: null,
-      subscriptionStartDate: null,
-      subscriptionEndDate: null,
-      createdAt: new Date(),
+      ...userData,
+      createdAt
     };
     
-    // FORCED PUBLIC SCHEMA - Multiple connection attempts
-    console.log(`💾 Forcing connection to public.users table for ${user.email}...`);
-    
-    let attempts = [
-      // Attempt 1: Direct connection to public schema
-      async () => {
-        const postgres = (await import('postgres')).default;
-        const sql = postgres(process.env.DATABASE_URL!, {
-          ssl: 'require',
-          prepare: false,
-          transform: { undefined: null }
-        });
-        
+    this.users.set(id, user);
 
-        
-        await sql`
-          INSERT INTO users (
-            id, email, name, password, avatar, credits, 
-            subscription_status, subscription_plan, subscription_id,
-            subscription_start_date, subscription_end_date, created_at
-          ) VALUES (
-            ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
-            ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
-            ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
-          )
-        `;
-        
-        await sql.end();
-        return 'onconnect search_path';
-      },
+    // Persist to database
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10
+      });
+
+      await sql`
+        INSERT INTO public.users (id, email, password, credits, plan, stripe_customer_id, created_at)
+        VALUES (${user.id}, ${user.email}, ${user.password}, ${user.credits}, ${user.plan}, ${user.stripeCustomerId}, ${user.createdAt})
+      `;
       
-      // Attempt 2: Explicit public.users in query
-      async () => {
-        const postgres = (await import('postgres')).default;
-        const sql = postgres(process.env.DATABASE_URL!, {
-          ssl: 'require',
-          prepare: false,
-          transform: { undefined: null }
-        });
-        
-        await sql`
-          INSERT INTO public.users (
-            id, email, name, password, avatar, credits, 
-            subscription_status, subscription_plan, subscription_id,
-            subscription_start_date, subscription_end_date, created_at
-          ) VALUES (
-            ${user.id}, ${user.email}, ${user.name}, ${user.password}, ${user.avatar}, ${user.credits},
-            ${user.subscriptionStatus}, ${user.subscriptionPlan}, ${user.subscriptionId},
-            ${user.subscriptionStartDate}, ${user.subscriptionEndDate}, ${user.createdAt}
-          )
-        `;
-        
-        await sql.end();
-        return 'explicit public.users';
-      }
-    ];
-    
-    let lastError: Error | null = null;
-    
-    for (let i = 0; i < attempts.length; i++) {
-      try {
-        const method = await attempts[i]();
-        console.log(`✅ SUCCESS: User ${user.email} persisted using ${method}`);
-        
-        // Save to memory after successful database persistence
-        this.users.set(id, user);
-        console.log(`🧠 User ${user.email} saved to memory after DB success`);
-        return user;
-        
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        console.warn(`⚠️ Attempt ${i + 1} failed: ${lastError.message}`);
-      }
+      await sql.end();
+      console.log(`✅ Persisted user ${user.email} to database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to persist user ${user.email} to database:`, dbError);
     }
-    
-    throw new Error(`All connection attempts failed: ${lastError?.message || 'Unknown error'}`);
     
     return user;
   }
 
-  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
-    const user = this.users.get(userId);
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
     if (!user) {
-      throw new Error("User not found");
+      return undefined;
     }
     
     const updatedUser = { ...user, ...updates };
-    this.users.set(userId, updatedUser);
+    this.users.set(id, updatedUser);
+    
+    // Persist to database
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10
+      });
+
+      await sql`
+        UPDATE public.users 
+        SET 
+          email = ${updatedUser.email},
+          password = ${updatedUser.password},
+          credits = ${updatedUser.credits},
+          plan = ${updatedUser.plan},
+          stripe_customer_id = ${updatedUser.stripeCustomerId}
+        WHERE id = ${id}
+      `;
+      
+      await sql.end();
+      console.log(`✅ Updated user ${id} in database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to update user ${id} in database:`, dbError);
+    }
+    
     return updatedUser;
   }
 
-  async updateUserCredits(userId: string, credits: number): Promise<void> {
-    const user = this.users.get(userId);
-    if (user) {
-      user.credits = credits;
-      this.users.set(userId, user);
-    }
-  }
-
-  async updateUserSubscription(userId: string, subscriptionData: {
-    subscriptionStatus: string;
-    subscriptionPlan?: string;
-    subscriptionId?: string;
-    subscriptionStartDate?: Date;
-    subscriptionEndDate?: Date;
-  }): Promise<void> {
-    const user = this.users.get(userId);
-    if (user) {
-      const updatedUser = { 
-        ...user, 
-        subscriptionStatus: subscriptionData.subscriptionStatus,
-        subscriptionPlan: subscriptionData.subscriptionPlan || null,
-        subscriptionId: subscriptionData.subscriptionId || null,
-        subscriptionStartDate: subscriptionData.subscriptionStartDate || null,
-        subscriptionEndDate: subscriptionData.subscriptionEndDate || null,
-      };
-      this.users.set(userId, updatedUser);
-    }
-  }
-
-  async createProject(insertProject: InsertProject): Promise<Project> {
-    const id = randomUUID();
+  async createProject(projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
+    const id = crypto.randomUUID();
+    const createdAt = new Date();
+    
     const project: Project = {
-      ...insertProject,
-      mockupTemplate: insertProject.mockupTemplate || null,
-      mockupImages: insertProject.mockupImages || {},
       id,
-      status: insertProject.status || "uploading",
-      resizedImages: insertProject.resizedImages || [],
-      upscaledImageUrl: insertProject.upscaledImageUrl || null,
-      mockupImageUrl: insertProject.mockupImageUrl || null,
-      etsyListing: insertProject.etsyListing || null,
-      zipUrl: insertProject.zipUrl || null,
-      thumbnailUrl: insertProject.thumbnailUrl || null,
-      aiPrompt: insertProject.aiPrompt || null,
-      metadata: insertProject.metadata || {},
-      createdAt: new Date(),
-      upscaleOption: insertProject.upscaleOption || "2x",
+      ...projectData,
+      createdAt
     };
     
-    // Save to memory for fast access
     this.projects.set(id, project);
-    
-    // PERSIST TO DATABASE WITH USER CHECK
+
+    // Persist to database
     try {
-      const directDb = await import("./direct-db");
-      const sql = directDb.sql;
-      
-      // First ensure the user exists in the database
-      const [existingUser] = await sql`SELECT id FROM public.users WHERE id = ${project.userId}`;
-      if (!existingUser) {
-        console.warn(`⚠️ User ${project.userId} not found in database, skipping project persistence`);
-        return project; // Return project but don't persist to DB
-      }
-      
-      console.log(`💾 Persisting project ${id} to database...`);
-      
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10
+      });
+
       await sql`
         INSERT INTO projects (
           id, user_id, title, original_image_url, upscaled_image_url, 
@@ -318,11 +243,11 @@ export class MemStorage implements IStorage {
         )
       `;
       
+      await sql.end();
       console.log(`✅ Successfully persisted project ${id} to database`);
       
     } catch (dbError) {
       console.error(`⚠️ Failed to persist project ${id} to database:`, dbError);
-      // Continue anyway - project is still in memory
     }
     
     return project;
@@ -333,146 +258,85 @@ export class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // Critical fix: Return cached data for Monique to bypass database timeout issues
-    if (userId === "98efacf6-7be0-4adf-88c2-0823a53d9d23") {
-      console.log(`🔧 Database bypass: Using cached data for user ${userId}`);
-      
-      // Return the exact project structure that exists in the database but cached locally
-      const cachedProjects: Project[] = [
-        {
-          id: "d7f5ccba-fd6b-48c6-bca1-d9a14d343ba5",
-          userId: "98efacf6-7be0-4adf-88c2-0823a53d9d23",
-          title: "Mockup Set - bedroom_bedroom_02, bedroom_bedroom_01, gallery_gallery_01",
-          originalImageUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          upscaledImageUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          mockupImageUrl: null,
-          mockupImages: {
-            "bedroom_bedroom_02": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/bedroom_bedroom_02_d7f5ccba.jpg",
-            "bedroom_bedroom_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/bedroom_bedroom_01_d7f5ccba.jpg", 
-            "gallery_gallery_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/gallery_gallery_01_d7f5ccba.jpg"
-          },
-          resizedImages: [
-            { format: "8x10", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/8x10_d7f5ccba.jpg" },
-            { format: "11x14", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/11x14_d7f5ccba.jpg" },
-            { format: "16x20", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/16x20_d7f5ccba.jpg" },
-            { format: "18x24", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/18x24_d7f5ccba.jpg" },
-            { format: "24x36", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/24x36_d7f5ccba.jpg" }
-          ],
-          etsyListing: {
-            title: "Beautiful Bedroom Art Print Set - Digital Download",
-            description: "Transform your bedroom with this stunning art print collection...",
-            tags: ["bedroom art", "wall decor", "printable art", "digital download", "home decor", "interior design", "modern art", "bedroom decor", "gallery wall", "instant download", "art prints", "decorative prints", "wall art set"]
-          },
-          mockupTemplate: "bedroom_bedroom_02",
-          upscaleOption: "2x",
-          status: "completed",
-          zipUrl: "https://res.cloudinary.com/upscaler/archive/v1/projects/d7f5ccba-fd6b-48c6-bca1-d9a14d343ba5.zip",
-          thumbnailUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          aiPrompt: null,
-          metadata: { templates: ["bedroom_bedroom_02", "bedroom_bedroom_01", "gallery_gallery_01"], creditsCost: 3 },
-          createdAt: new Date("2024-08-15T14:30:00Z")
-        },
-        {
-          id: "891f99b5-8900-435c-98c4-bb6eb8df7bf6",
-          userId: "98efacf6-7be0-4adf-88c2-0823a53d9d23",
-          title: "Mockup Set - bedroom_bedroom_02, bedroom_bedroom_01, gallery_gallery_01, kids_room_kids_room_01, living_room_living_01",
-          originalImageUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          upscaledImageUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          mockupImageUrl: null,
-          mockupImages: {
-            "bedroom_bedroom_02": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/bedroom_bedroom_02_891f99b5.jpg",
-            "bedroom_bedroom_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/bedroom_bedroom_01_891f99b5.jpg",
-            "gallery_gallery_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/gallery_gallery_01_891f99b5.jpg",
-            "kids_room_kids_room_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/kids_room_kids_room_01_891f99b5.jpg",
-            "living_room_living_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/living_room_living_01_891f99b5.jpg"
-          },
-          resizedImages: [
-            { format: "8x10", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/8x10_891f99b5.jpg" },
-            { format: "11x14", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/11x14_891f99b5.jpg" },
-            { format: "16x20", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/16x20_891f99b5.jpg" },
-            { format: "18x24", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/18x24_891f99b5.jpg" },
-            { format: "24x36", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/24x36_891f99b5.jpg" }
-          ],
-          etsyListing: {
-            title: "Multi-Room Art Print Collection - 5 Mockup Set",
-            description: "Versatile art collection perfect for any room in your home...",
-            tags: ["multi room art", "home decor", "printable art", "digital download", "wall art", "interior design", "bedroom art", "living room art", "kids room art", "gallery wall", "art prints", "home decorating", "modern art"]
-          },
-          mockupTemplate: "bedroom_bedroom_01",
-          upscaleOption: "4x",
-          status: "completed",
-          zipUrl: "https://res.cloudinary.com/upscaler/archive/v1/projects/891f99b5-8900-435c-98c4-bb6eb8df7bf6.zip",
-          thumbnailUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          aiPrompt: null,
-          metadata: { templates: ["bedroom_bedroom_02", "bedroom_bedroom_01", "gallery_gallery_01", "kids_room_kids_room_01", "living_room_living_01"], creditsCost: 5 },
-          createdAt: new Date("2024-08-14T16:45:00Z")
-        },
-        {
-          id: "e944b6a5-1701-4c1a-890b-5c3b64756a7e",
-          userId: "98efacf6-7be0-4adf-88c2-0823a53d9d23",
-          title: "Mockup Set - bedroom_bedroom_02, bedroom_bedroom_01",
-          originalImageUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAivr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          upscaledImageUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAAvr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          mockupImageUrl: null,
-          mockupImages: {
-            "bedroom_bedroom_02": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/bedroom_bedroom_02_e944b6a5.jpg",
-            "bedroom_bedroom_01": "https://res.cloudinary.com/upscaler/image/upload/v1/mockups/bedroom_bedroom_01_e944b6a5.jpg"
-          },
-          resizedImages: [
-            { format: "8x10", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/8x10_e944b6a5.jpg" },
-            { format: "11x14", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/11x14_e944b6a5.jpg" },
-            { format: "16x20", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/16x20_e944b6a5.jpg" },
-            { format: "18x24", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/18x24_e944b6a5.jpg" },
-            { format: "24x36", url: "https://res.cloudinary.com/upscaler/image/upload/v1/resized/24x36_e944b6a5.jpg" }
-          ],
-          etsyListing: {
-            title: "Bedroom Art Print Duo - Digital Download Set",
-            description: "Perfect pair of bedroom art prints to enhance your space...",
-            tags: ["bedroom art", "art prints", "digital download", "printable art", "wall decor", "home decor", "bedroom decor", "modern art", "interior design", "instant download", "gallery wall", "decorative prints", "wall art"]
-          },
-          mockupTemplate: "bedroom_bedroom_02",
-          upscaleOption: "2x",
-          status: "completed",
-          zipUrl: "https://res.cloudinary.com/upscaler/archive/v1/projects/e944b6a5-1701-4c1a-890b-5c3b64756a7e.zip",
-          thumbnailUrl: "data:image/webp;base64,UklGRn4NAABXRUJQVlA4THINAAivr8ErAP/BqG0kyZGjON7/P1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tb",
-          aiPrompt: null,
-          metadata: { templates: ["bedroom_bedroom_02", "bedroom_bedroom_01"], creditsCost: 2 },
-          createdAt: new Date("2024-08-13T11:20:00Z")
-        }
-      ];
-      
-      console.log(`✅ Database bypass: Returning ${cachedProjects.length} cached projects for user ${userId}`);
-      
-      // Store in memory for consistency
-      cachedProjects.forEach(project => {
-        this.projects.set(project.id, project);
-      });
-      
-      return cachedProjects;
-    }
-
-    // For other users, try the original database approach
+    // First, check memory cache for immediate response
     const memoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
     
     if (memoryProjects.length > 0) {
+      console.log(`📦 Found ${memoryProjects.length} projects in memory for user ${userId}`);
       return memoryProjects;
     }
     
+    // Production-grade database access with optimized connection
+    console.log(`🔍 Fetching projects for user ${userId} from production database...`);
+    
     try {
-      console.log(`🌐 Using REST API for user ${userId} projects...`);
-      const { getProjectsByUserIdRest } = await import('./supabase-rest');
-      const projects = await getProjectsByUserIdRest(userId);
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 2,
+        idle_timeout: 10,
+        connect_timeout: 15,
+        max_lifetime: 120,
+        prepare: false,
+        transform: { undefined: null },
+        debug: false,
+        onnotice: () => {},
+        statement_timeout: 20000
+      });
+
+      console.log(`📊 Executing production query for user ${userId}...`);
+      const startTime = Date.now();
       
-      if (projects.length > 0) {
-        console.log(`✅ REST API found ${projects.length} projects`);
-        projects.forEach(project => {
-          this.projects.set(project.id, project);
-        });
-        return projects;
-      }
+      const projects = await sql`
+        SELECT 
+          id, user_id, title, original_image_url, upscaled_image_url,
+          mockup_image_url, mockup_images, resized_images, etsy_listing,
+          mockup_template, upscale_option, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at
+        FROM projects 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC 
+        LIMIT 50
+      `;
+      
+      const queryTime = Date.now() - startTime;
+      console.log(`✅ Production query completed in ${queryTime}ms, found ${projects.length} projects`);
+      
+      await sql.end();
+      
+      const convertedProjects = projects.map((project: any) => ({
+        id: project.id,
+        userId: project.user_id,
+        title: project.title,
+        originalImageUrl: project.original_image_url,
+        upscaledImageUrl: project.upscaled_image_url,
+        mockupImageUrl: project.mockup_image_url,
+        mockupImages: typeof project.mockup_images === 'string' ? 
+          JSON.parse(project.mockup_images) : (project.mockup_images || {}),
+        resizedImages: typeof project.resized_images === 'string' ? 
+          JSON.parse(project.resized_images) : (project.resized_images || []),
+        etsyListing: typeof project.etsy_listing === 'string' ? 
+          JSON.parse(project.etsy_listing) : project.etsy_listing,
+        mockupTemplate: project.mockup_template,
+        upscaleOption: project.upscale_option || '2x',
+        status: project.status || 'completed',
+        zipUrl: project.zip_url,
+        thumbnailUrl: project.thumbnail_url,
+        aiPrompt: project.ai_prompt,
+        metadata: typeof project.metadata === 'string' ? 
+          JSON.parse(project.metadata) : (project.metadata || {}),
+        createdAt: new Date(project.created_at)
+      }));
+      
+      // Cache results in memory
+      convertedProjects.forEach(project => {
+        this.projects.set(project.id, project);
+      });
+      
+      console.log(`💾 Cached ${convertedProjects.length} projects in memory for user ${userId}`);
+      return convertedProjects;
       
     } catch (error) {
-      console.warn(`⚠️ Database access failed for user ${userId}:`, error);
+      console.error(`❌ Database access failed for user ${userId}:`, error);
       return [];
     }
   }
@@ -497,10 +361,8 @@ export class MemStorage implements IStorage {
   }
 
   async logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void> {
-    // Log to console for debugging
     console.log(`💰 Credit Transaction - User: ${userId}, Type: ${type}, Amount: ${amount}, Description: ${description}`);
     
-    // Also create a credit transaction record for audit trail
     await this.createCreditTransaction({
       userId,
       transactionType: type as 'earn' | 'spend' | 'refund' | 'purchase',
@@ -517,91 +379,77 @@ export class MemStorage implements IStorage {
       return false;
     }
 
-    // Check if user has enough credits for deductions
     if (creditChange < 0 && user.credits + creditChange < 0) {
       console.warn(`⚠️ Insufficient credits for user ${userId}. Current: ${user.credits}, Required: ${Math.abs(creditChange)}`);
       return false;
     }
 
-    // Update credits in memory
     user.credits += creditChange;
     this.users.set(userId, user);
 
-    // CRITICAL: Update database immediately to prevent refresh overwrites
-    try {
-      const directDb = await import("./direct-db");
-      const sql = directDb.sql;
-      
-      await sql`
-        UPDATE public.users 
-        SET credits = ${user.credits} 
-        WHERE id = ${userId}
-      `;
-      
-      console.log(`💾 Updated user ${userId} credits in database: ${user.credits}`);
-      
-    } catch (dbError) {
-      console.error(`⚠️ Failed to update credits in database for user ${userId}:`, dbError);
-      // Revert memory change if DB update fails
-      user.credits -= creditChange;
-      this.users.set(userId, user);
-      return false;
-    }
+    console.log(`💰 Updated credits for user ${userId}: ${user.credits - creditChange} → ${user.credits} (${creditChange >= 0 ? '+' : ''}${creditChange})`);
 
-    // Log the transaction with proper parameters
     await this.logCreditTransaction(userId, transactionType, creditChange, description);
 
-    // Also create detailed audit trail with projectId if provided
-    if (projectId) {
-      await this.createCreditTransaction({
-        userId,
-        transactionType: transactionType as 'earn' | 'spend' | 'refund' | 'purchase',
-        amount: creditChange,
-        description,
-        balanceAfter: user.credits,
-        projectId
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10
       });
+
+      await sql`
+        UPDATE public.users 
+        SET credits = ${user.credits}
+        WHERE id = ${userId}
+      `;
+
+      await sql.end();
+      console.log(`✅ Successfully synced credits to database for user ${userId}`);
+
+    } catch (dbError) {
+      console.warn(`⚠️ Failed to sync credits to database for user ${userId}:`, dbError);
     }
 
-    console.log(`✅ Credit update successful - User: ${userId}, New Balance: ${user.credits}`);
     return true;
   }
 
-  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
-    const id = randomUUID();
-    const fullTransaction: CreditTransaction = {
-      ...transaction,
+  async createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'createdAt'>): Promise<CreditTransaction> {
+    const id = crypto.randomUUID();
+    const createdAt = new Date();
+    
+    const creditTransaction: CreditTransaction = {
       id,
-      createdAt: new Date(),
-      projectId: transaction.projectId || null,
+      ...transaction,
+      createdAt
     };
     
-    this.creditTransactions.set(id, fullTransaction);
-    return fullTransaction;
+    this.creditTransactions.set(id, creditTransaction);
+    return creditTransaction;
   }
 
-  async getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]> {
+  async getCreditTransactions(userId: string): Promise<CreditTransaction[]> {
     return Array.from(this.creditTransactions.values())
       .filter(transaction => transaction.userId === userId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async createContactMessage(insertMessage: InsertContactMessage): Promise<ContactMessage> {
-    const id = randomUUID();
-    const message: ContactMessage = {
-      ...insertMessage,
+  async getContactMessages(): Promise<any[]> {
+    return Array.from(this.contactMessages.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createContactMessage(message: any): Promise<any> {
+    const id = crypto.randomUUID();
+    const contactMessage = {
       id,
-      createdAt: new Date(),
-      status: "unread",
+      ...message,
+      createdAt: new Date().toISOString()
     };
     
-    this.contactMessages.set(id, message);
-    return message;
-  }
-
-  async getAllContactMessages(): Promise<ContactMessage[]> {
-    return Array.from(this.contactMessages.values())
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    this.contactMessages.set(id, contactMessage);
+    return contactMessage;
   }
 }
 

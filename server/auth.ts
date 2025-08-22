@@ -133,7 +133,7 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
   }
 
   try {
-    const user = await storage.getUser(decoded.userId);
+    const user = await storage.getUserById(decoded.userId);
     if (!user) {
       return res.status(403).json({ error: 'User not found' });
     }
@@ -164,7 +164,7 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
     const decoded = AuthService.verifyToken(token);
     if (decoded) {
       try {
-        const user = await storage.getUser(decoded.userId);
+        const user = await storage.getUserById(decoded.userId);
         if (process.env.NODE_ENV !== 'production') {
           console.log('🔍 User lookup result:', { userId: decoded.userId, found: !!user });
         }

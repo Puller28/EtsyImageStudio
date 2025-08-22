@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid credits amount" });
       }
       
-      const user = await storage.getUser(req.userId!);
+      const user = await storage.getUserById(req.userId!);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const transactions = await storage.getCreditTransactionsByUserId(req.userId);
+      const transactions = await storage.getCreditTransactions(req.userId);
       res.json(transactions);
     } catch (error) {
       console.error("Failed to get credit transactions:", error);
@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get user from storage
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -230,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get user from storage
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Process through the same logic as the webhook
       const { SubscriptionService } = await import("./subscription");
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -528,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('🔍 Payment metadata:', metadata);
         
         if (metadata && typeof metadata === 'object' && 'userId' in metadata && 'credits' in metadata) {
-          let user = await storage.getUser(metadata.userId);
+          let user = await storage.getUserById(metadata.userId);
           
           // Handle demo user case - create fallback user if not found
           if (!user && metadata.userId === 'demo-user-1') {
@@ -724,7 +724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (metadata && metadata.userId) {
           // Get current user
-          const user = await storage.getUser(metadata.userId);
+          const user = await storage.getUserById(metadata.userId);
           if (user) {
             // Handle subscription activation - check for both recurring and one-time subscription payments
             if (metadata.planId && (metadata.planId.includes('monthly') || metadata.planId.includes('yearly'))) {
@@ -805,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const user = await storage.getUser(req.userId);
+      const user = await storage.getUserById(req.userId);
       if (!user || !user.subscriptionId) {
         return res.status(400).json({ error: "No active subscription found" });
       }
@@ -889,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (metadata && metadata.userId && metadata.credits) {
           // Get current user credits
-          const user = await storage.getUser(metadata.userId);
+          const user = await storage.getUserById(metadata.userId);
           if (user) {
             // Add credits to user account
             const newCredits = user.credits + parseInt(metadata.credits);
@@ -1014,7 +1014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { artworkTitle, styleKeywords, upscaleOption } = req.body;
       
       // Check user credits before project creation
-      const user = await storage.getUser(req.userId);
+      const user = await storage.getUserById(req.userId);
       const creditsRequired = (upscaleOption === '4x') ? 2 : 1;
       
       if (!user || user.credits < creditsRequired) {
@@ -1095,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user has enough credits
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user || user.credits < 1) {
         return res.status(402).json({ error: "Insufficient credits. Need 1 credit for Etsy listing generation." });
       }
@@ -1133,7 +1133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ UserId:", userId);
 
       // Check if user has enough credits
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       console.log("👤 User lookup:", { found: !!user, credits: user?.credits });
       if (!user || user.credits < 1) {
         return res.status(402).json({ error: "Insufficient credits. Need 1 credit for Etsy listing generation." });
@@ -1281,7 +1281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-art", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       // Check user credits first (AI generation costs 2 credits)
-      const user = await storage.getUser(req.userId!);
+      const user = await storage.getUserById(req.userId!);
       if (!user || user.credits < 2) {
         return res.status(400).json({ 
           error: user && user.credits === 1 
@@ -1820,7 +1820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedTemplates = JSON.parse(req.body.templates || "[]");
       
       // Get user and check subscription status
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
