@@ -52,7 +52,7 @@ function getAuthToken(): string | null {
       }
       
       // Check if token is expired
-      if (token) {
+      if (token && typeof token === 'string' && token.includes('.')) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const isExpired = payload.exp * 1000 < Date.now();
@@ -82,6 +82,10 @@ function getAuthToken(): string | null {
           }
         } catch (error) {
           console.error('🔍 Token decode error:', error);
+          // Clear invalid token data
+          localStorage.removeItem('auth-storage');
+          localStorage.removeItem('auth-storage-backup');
+          sessionStorage.clear();
           return null;
         }
       }
