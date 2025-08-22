@@ -50,16 +50,8 @@ export class MemStorage implements IStorage {
     this.creditTransactions = new Map();
     this.contactMessages = new Map();
     
-    // Load real data from database immediately (non-blocking for projects)
-    this.loadRealData();
-  }
-
-  private async loadRealData() {
-    // Load users synchronously (this works reliably)
-    await this.loadUsers();
-    
-    // Load projects asynchronously with persistent retry
-    this.ensureProjectsLoaded();
+    // Load users only - skip problematic project loading
+    this.loadUsers();
   }
 
   private async loadUsers() {
@@ -93,72 +85,9 @@ export class MemStorage implements IStorage {
     }
   }
 
-  private async ensureProjectsLoaded() {
-    const maxRetries = 10;
-    let retryCount = 0;
-    
-    while (retryCount < maxRetries && this.projects.size === 0) {
-      try {
-        await this.loadProjectsFromDatabase();
-        if (this.projects.size > 0) {
-          console.log(`✅ Successfully loaded projects on attempt ${retryCount + 1}`);
-          return;
-        }
-      } catch (error) {
-        console.warn(`⚠️ Project load attempt ${retryCount + 1} failed:`, (error as Error).message);
-      }
-      
-      retryCount++;
-      // Exponential backoff: 2s, 4s, 8s, 16s, etc., capped at 30s
-      const delay = Math.min(2000 * Math.pow(2, retryCount - 1), 30000);
-      console.log(`🔄 Retrying project load in ${delay/1000}s (attempt ${retryCount}/${maxRetries})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-    
-    console.error(`❌ Failed to load projects after ${maxRetries} attempts`);
-  }
 
-  private async loadProjectsFromDatabase() {
-    // Emergency fallback to direct API calls when memory loading fails
-    console.log('⚡ Using direct database queries instead of memory loading...');
-    return; // Skip memory loading, use direct queries in API calls
 
-    try {
-      console.log('🔗 Creating fresh DB connection for projects...');
-      
-      // Simple, fast query without complex operations
-      const projects = await sql`SELECT * FROM projects ORDER BY created_at DESC LIMIT 200`;
-      console.log(`📋 Loaded ${projects.length} projects into memory`);
-      
-      projects.forEach((project: any) => {
-        this.projects.set(project.id, {
-          id: project.id,
-          userId: project.user_id,
-          title: project.title,
-          originalImageUrl: project.original_image_url,
-          upscaledImageUrl: project.upscaled_image_url,
-          mockupImageUrl: project.mockup_image_url,
-          mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
-          resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
-          etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
-          mockupTemplate: project.mockup_template,
-          upscaleOption: project.upscale_option || '2x',
-          status: project.status || 'uploading',
-          zipUrl: project.zip_url,
-          thumbnailUrl: project.thumbnail_url,
-          aiPrompt: project.ai_prompt,
-          metadata: typeof project.metadata === 'string' ? JSON.parse(project.metadata) : (project.metadata || {}),
-          createdAt: new Date(project.created_at)
-        });
-      });
 
-    } catch (error) {
-      throw error;
-    } finally {
-      // Always close the connection
-      await sql.end();
-    }
-  }
 
 
 
