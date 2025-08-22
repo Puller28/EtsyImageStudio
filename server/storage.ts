@@ -261,7 +261,7 @@ class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // Check memory cache first for performance
+    // Always check memory cache first for performance
     const memoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
     
     if (memoryProjects.length > 0) {
@@ -269,62 +269,79 @@ class MemStorage implements IStorage {
       return memoryProjects;
     }
     
-    // Use standard Supabase connection with transaction timeout
+    // If no memory projects, try a quick database load with timeout protection
+    console.log(`🔍 No memory projects found, attempting database load for user ${userId}`);
+    
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        prepare: false
-      });
-
-      const projects = await sql`
-        SELECT 
-          id, user_id, title, original_image_url, upscaled_image_url,
-          mockup_image_url, mockup_images, resized_images, etsy_listing,
-          mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at
-        FROM projects 
-        WHERE user_id = ${userId}
-        ORDER BY created_at DESC
-        LIMIT 50
-      `;
-      
-      await sql.end();
-      
-      const convertedProjects = projects.map((project: any) => ({
-        id: project.id,
-        userId: project.user_id,
-        title: project.title,
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: project.mockup_images || [],
-        resizedImages: project.resized_images || [],
-        etsyListing: project.etsy_listing || {},
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option,
-        status: project.status,
-        zipUrl: project.zip_url,
-        thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: project.metadata || {},
-        createdAt: new Date(project.created_at)
-      }));
-      
-      // Cache in memory for future requests
-      convertedProjects.forEach(project => {
-        this.projects.set(project.id, project);
+      // Use a timeout race to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Database query timeout - using fallback')), 5000);
       });
       
-      console.log(`✅ Retrieved ${convertedProjects.length} projects from database for user ${userId}`);
-      return convertedProjects;
+      const queryPromise = this.loadProjectsFromDatabase(userId);
+      
+      const projects = await Promise.race([queryPromise, timeoutPromise]);
+      return projects;
       
     } catch (error) {
-      console.error(`❌ Database query failed for user ${userId}:`, error);
+      console.log(`⚠️ Database query failed for user ${userId}, using empty fallback:`, error.message);
       return [];
     }
+  }
+  
+  private async loadProjectsFromDatabase(userId: string): Promise<Project[]> {
+    const sql = postgres(process.env.DATABASE_URL!, {
+      ssl: 'require',
+      max: 10,
+      idle_timeout: 60,
+      connect_timeout: 60,
+      prepare: false,
+      transform: {
+        undefined: null
+      }
+    });
+
+    const projects = await sql`
+      SELECT 
+        id, user_id, title, original_image_url, upscaled_image_url,
+        mockup_image_url, mockup_images, resized_images, etsy_listing,
+        mockup_template, upscale_option, status, zip_url, thumbnail_url,
+        ai_prompt, metadata, created_at
+      FROM projects 
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT 50
+    `;
+    
+    await sql.end();
+    
+    const convertedProjects = projects.map((project: any) => ({
+      id: project.id,
+      userId: project.user_id,
+      title: project.title,
+      originalImageUrl: project.original_image_url,
+      upscaledImageUrl: project.upscaled_image_url,
+      mockupImageUrl: project.mockup_image_url,
+      mockupImages: project.mockup_images || [],
+      resizedImages: project.resized_images || [],
+      etsyListing: project.etsy_listing || {},
+      mockupTemplate: project.mockup_template,
+      upscaleOption: project.upscale_option,
+      status: project.status,
+      zipUrl: project.zip_url,
+      thumbnailUrl: project.thumbnail_url,
+      aiPrompt: project.ai_prompt,
+      metadata: project.metadata || {},
+      createdAt: new Date(project.created_at)
+    }));
+    
+    // Cache in memory for future requests
+    convertedProjects.forEach(project => {
+      this.projects.set(project.id, project);
+    });
+    
+    console.log(`✅ Retrieved ${convertedProjects.length} projects from database for user ${userId}`);
+    return convertedProjects;
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
