@@ -935,7 +935,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);
-      res.status(500).json({ error: "Failed to get projects" });
+      
+      // Return 503 Service Unavailable instead of 200 [] to indicate database issues
+      res.status(503).json({ 
+        error: "Database temporarily unavailable", 
+        retry: true,
+        duration: duration 
+      });
     }
   });
 
