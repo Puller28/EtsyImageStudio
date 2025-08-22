@@ -51,10 +51,11 @@ function getAuthToken(): string | null {
         });
       }
       
-      // Check if token is expired
-      if (token && typeof token === 'string' && token.includes('.')) {
+      // Check if token is expired - enhanced safety checks
+      if (token && typeof token === 'string' && token.includes('.') && token.split('.').length === 3) {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
+          const tokenParts = token.split('.');
+          const payload = JSON.parse(atob(tokenParts[1]));
           const isExpired = payload.exp * 1000 < Date.now();
           if (import.meta.env.DEV) {
             console.log('🔍 Token Status:', {
