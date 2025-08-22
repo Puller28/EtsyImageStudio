@@ -412,24 +412,40 @@ export class MemStorage implements IStorage {
       return memoryProjects;
     }
     
-    // If memory is empty, try direct database query as fallback
+    // Try REST API first (most reliable for production)
     try {
-      console.log(`🔍 Memory empty, querying database for user ${userId} projects...`);
+      console.log(`🌐 Using REST API for user ${userId} projects...`);
+      const { getProjectsByUserIdRest } = await import('./supabase-rest');
+      const projects = await getProjectsByUserIdRest(userId);
       
-      // Use the same reliable connection pattern
+      if (projects.length > 0) {
+        console.log(`✅ REST API found ${projects.length} projects`);
+        projects.forEach(project => {
+          this.projects.set(project.id, project);
+        });
+        return projects;
+      }
+      
+    } catch (restError) {
+      console.warn(`⚠️ REST API failed:`, restError);
+    }
+    
+    // Fallback to direct database connection
+    try {
+      console.log(`🔍 REST failed, trying direct database for user ${userId}...`);
+      
       const postgres = (await import('postgres')).default;
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
         max: 1,
-        idle_timeout: 1, // Extremely fast cleanup
-        connect_timeout: 3, // Ultra-short connection timeout
-        max_lifetime: 5, // Very short lifetime
+        idle_timeout: 1,
+        connect_timeout: 3,
+        max_lifetime: 5,
         prepare: false,
         transform: { undefined: null },
         onnotice: () => {},
         fetch_types: false,
-        // Production emergency settings
-        statement_timeout: 10000 // 10 second statement timeout
+        statement_timeout: 10000
       });
 
       try {
@@ -440,9 +456,8 @@ export class MemStorage implements IStorage {
           LIMIT 50
         `;
         
-        console.log(`📋 Found ${projects.length} projects in database for user ${userId}`);
+        console.log(`📋 Direct DB found ${projects.length} projects`);
         
-        // Convert and store in memory for future use
         const convertedProjects = projects.map((project: any) => ({
           id: project.id,
           userId: project.user_id,
@@ -463,7 +478,6 @@ export class MemStorage implements IStorage {
           createdAt: new Date(project.created_at)
         }));
         
-        // Store in memory for future use
         convertedProjects.forEach(project => {
           this.projects.set(project.id, project);
         });
@@ -475,8 +489,8 @@ export class MemStorage implements IStorage {
       }
       
     } catch (error) {
-      console.warn(`⚠️ Failed to query database for user ${userId} projects:`, error);
-      return memoryProjects; // Return empty array if both memory and DB fail
+      console.warn(`⚠️ All methods failed for user ${userId}:`, error);
+      return [];
     }
   }
 

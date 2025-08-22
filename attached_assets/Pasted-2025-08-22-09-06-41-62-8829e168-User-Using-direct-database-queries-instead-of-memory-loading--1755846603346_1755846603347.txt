@@ -1,0 +1,156 @@
+2025-08-22 09:06:41.62
+8829e168
+User
+⚡ Using direct database queries instead of memory loading...
+2025-08-22 09:06:41.63
+8829e168
+User
+🔄 Retrying project load in 30s (attempt 7/10)
+2025-08-22 09:06:48.93
+08ff0ffb
+User
+⚠️ Project load attempt 3 failed: canceling statement due to statement timeout
+2025-08-22 09:06:48.93
+08ff0ffb
+User
+🔄 Retrying project load in 8s (attempt 3/10)
+2025-08-22 09:06:56.94
+08ff0ffb
+User
+🔗 Creating fresh DB connection for projects...
+2025-08-22 09:07:11.63
+8829e168
+User
+⚡ Using direct database queries instead of memory loading...
+2025-08-22 09:07:11.63
+8829e168
+User
+🔄 Retrying project load in 30s (attempt 8/10)
+2025-08-22 09:07:41.63
+8829e168
+User
+⚡ Using direct database queries instead of memory loading...
+2025-08-22 09:07:41.63
+8829e168
+User
+🔄 Retrying project load in 30s (attempt 9/10)
+2025-08-22 09:07:48.20
+8829e168
+User
+⚠️ Failed to query database for user 98efacf6-7be0-4adf-88c2-0823a53d9d23 projects: PostgresError: canceling statement due to statement timeout
+2025-08-22 09:07:48.20
+8829e168
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-22 09:07:48.20
+8829e168
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-22 09:07:48.20
+8829e168
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-22 09:07:48.20
+8829e168
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-22 09:07:48.20
+8829e168
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-22 09:07:48.20
+8829e168
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-22 09:07:48.20
+8829e168
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-22 09:07:48.20
+8829e168
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-22 09:07:48.20
+8829e168
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-22 09:07:48.20
+8829e168
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-22 09:07:48.20
+8829e168
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-22 09:07:48.20
+8829e168
+User
+at MemStorage.getProjectsByUserId (file:///home/runner/workspace/dist/index.js:374:41) {
+2025-08-22 09:07:48.20
+8829e168
+User
+severity_local: 'ERROR',
+2025-08-22 09:07:48.20
+8829e168
+User
+severity: 'ERROR',
+2025-08-22 09:07:48.20
+8829e168
+User
+code: '57014',
+2025-08-22 09:07:48.20
+8829e168
+User
+file: 'postgres.c',
+2025-08-22 09:07:48.20
+8829e168
+User
+line: '3405',
+2025-08-22 09:07:48.20
+8829e168
+User
+routine: 'ProcessInterrupts'
+2025-08-22 09:07:48.20
+8829e168
+User
+}
+2025-08-22 09:07:48.20
+8829e168
+User
+✅ Projects API completed in 132582ms, found 0 projects
+2025-08-22 09:07:48.21
+8829e168
+User
+7:07:48 AM [express] GET /api/projects 200 in 132980ms :: []
+2025-08-22 09:08:11.63
+8829e168
+User
+⚡ Using direct database queries instead of memory loading...
+2025-08-22 09:08:11.63
+8829e168
+User
+🔄 Retrying project load in 30s (attempt 10/10)
+2025-08-22 09:08:41.63
+8829e168
+User
+❌ Failed to load projects after 10 attempts
+2025-08-22 09:08:42.08
+08ff0ffb
+System
+system: received signal terminated
+2025-08-22 09:08:55.81
+8829e168
+User
+🔄 Refreshed user 98efacf6-7be0-4adf-88c2-0823a53d9d23 from DB - Credits: 97
+2025-08-22 09:08:55.81
+8829e168
+User
+🔍 API /projects called for user: 98efacf6-7be0-4adf-88c2-0823a53d9d23
+2025-08-22 09:08:55.81
+8829e168
+User
+🔍 Memory empty, querying database for user 98efacf6-7be0-4adf-88c2-0823a53d9d23 projects...
+
+Wrap
+
+Colors
