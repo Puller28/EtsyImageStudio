@@ -279,22 +279,17 @@ class MemStorage implements IStorage {
         prepare: false
       });
 
-      const projects = await sql.begin(async tx => {
-        // Set statement timeout even behind PgBouncer
-        await tx.unsafe('SET LOCAL statement_timeout = 20000');
-        
-        return await tx`
-          SELECT 
-            id, user_id, title, original_image_url, upscaled_image_url,
-            mockup_image_url, mockup_images, resized_images, etsy_listing,
-            mockup_template, upscale_option, status, zip_url, thumbnail_url,
-            ai_prompt, metadata, created_at
-          FROM projects 
-          WHERE user_id = ${userId}
-          ORDER BY created_at DESC
-          LIMIT 50
-        `;
-      });
+      const projects = await sql`
+        SELECT 
+          id, user_id, title, original_image_url, upscaled_image_url,
+          mockup_image_url, mockup_images, resized_images, etsy_listing,
+          mockup_template, upscale_option, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at
+        FROM projects 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+        LIMIT 50
+      `;
       
       await sql.end();
       
