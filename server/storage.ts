@@ -148,14 +148,15 @@ class MemStorage implements IStorage {
     try {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10
+        max: 2,
+        idle_timeout: 20,
+        connect_timeout: 30,
+        statement_timeout: 30000
       });
 
       await sql`
-        INSERT INTO public.users (id, email, password, credits, plan, stripe_customer_id, created_at)
-        VALUES (${user.id}, ${user.email}, ${user.password}, ${user.credits}, ${user.plan}, ${user.stripeCustomerId}, ${user.createdAt})
+        INSERT INTO public.users (id, email, password, credits, subscription_plan, stripe_customer_id, created_at)
+        VALUES (${user.id}, ${user.email}, ${user.password}, ${user.credits}, ${user.subscriptionPlan || 'free'}, ${user.subscriptionId || null}, ${user.createdAt})
       `;
       
       await sql.end();
@@ -181,9 +182,10 @@ class MemStorage implements IStorage {
     try {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10
+        max: 2,
+        idle_timeout: 20,
+        connect_timeout: 30,
+        statement_timeout: 30000
       });
 
       await sql`
@@ -192,8 +194,8 @@ class MemStorage implements IStorage {
           email = ${updatedUser.email},
           password = ${updatedUser.password},
           credits = ${updatedUser.credits},
-          plan = ${updatedUser.plan},
-          stripe_customer_id = ${updatedUser.stripeCustomerId}
+          subscription_plan = ${updatedUser.subscriptionPlan || 'free'},
+          stripe_customer_id = ${updatedUser.subscriptionId || null}
         WHERE id = ${id}
       `;
       
@@ -223,9 +225,10 @@ class MemStorage implements IStorage {
     try {
       const sql = postgres(process.env.DATABASE_URL!, {
         ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10
+        max: 2,
+        idle_timeout: 20,
+        connect_timeout: 30,
+        statement_timeout: 30000
       });
 
       await sql`
@@ -235,11 +238,11 @@ class MemStorage implements IStorage {
           mockup_template, upscale_option, status, zip_url, thumbnail_url,
           ai_prompt, metadata, created_at
         ) VALUES (
-          ${project.id}, ${project.userId}, ${project.title}, ${project.originalImageUrl},
-          ${project.upscaledImageUrl}, ${project.mockupImageUrl}, ${JSON.stringify(project.mockupImages)},
-          ${JSON.stringify(project.resizedImages)}, ${JSON.stringify(project.etsyListing)},
-          ${project.mockupTemplate}, ${project.upscaleOption}, ${project.status}, ${project.zipUrl},
-          ${project.thumbnailUrl}, ${project.aiPrompt}, ${JSON.stringify(project.metadata)}, ${project.createdAt}
+          ${project.id}, ${project.userId}, ${project.title || ''}, ${project.originalImageUrl || null},
+          ${project.upscaledImageUrl || null}, ${project.mockupImageUrl || null}, ${JSON.stringify(project.mockupImages || [])},
+          ${JSON.stringify(project.resizedImages || [])}, ${JSON.stringify(project.etsyListing || {})},
+          ${project.mockupTemplate || null}, ${project.upscaleOption || '2x'}, ${project.status || 'pending'}, ${project.zipUrl || null},
+          ${project.thumbnailUrl || null}, ${project.aiPrompt || null}, ${JSON.stringify(project.metadata || {})}, ${project.createdAt}
         )
       `;
       

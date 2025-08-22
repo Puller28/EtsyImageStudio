@@ -1,0 +1,84 @@
+2025-08-22 15:49:04.40
+0a130e84
+User
+📁 Creating project for mockup set with 2 mockups
+2025-08-22 15:49:04.73
+0a130e84
+User
+⚠️ Failed to persist project 2a9088a3-8ab8-4a0d-ae31-42a1ce2745c6 to database: Error: UNDEFINED_VALUE: Undefined values are not allowed
+2025-08-22 15:49:04.73
+0a130e84
+User
+at handleValue (file:///home/runner/workspace/node_modules/postgres/src/types.js:83:20)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at stringifyValue (file:///home/runner/workspace/node_modules/postgres/src/types.js:113:5)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at stringify (file:///home/runner/workspace/node_modules/postgres/src/types.js:100:16)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at build (file:///home/runner/workspace/node_modules/postgres/src/connection.js:223:20)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at execute (file:///home/runner/workspace/node_modules/postgres/src/connection.js:167:7)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at ReadyForQuery (file:///home/runner/workspace/node_modules/postgres/src/connection.js:545:38)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-22 15:49:04.73
+0a130e84
+User
+at MemStorage.createProject (file:///home/runner/workspace/dist/index.js:177:21) {
+2025-08-22 15:49:04.73
+0a130e84
+User
+code: 'UNDEFINED_VALUE'
+2025-08-22 15:49:04.73
+0a130e84
+User
+}
