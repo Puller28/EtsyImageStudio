@@ -164,7 +164,7 @@ async function initializeDatabase() {
 async function startFastApiServer() {
   return new Promise<void>((resolve, reject) => {
     // Skip FastAPI in production deployment to avoid port conflicts
-    if (process.env.NODE_ENV === 'production' && process.env.REPLIT_DEV_DOMAIN === undefined) {
+    if (process.env.NODE_ENV === 'production') {
       console.log('🚀 Skipping FastAPI server in production deployment');
       fastApiReady = false;
       resolve();
