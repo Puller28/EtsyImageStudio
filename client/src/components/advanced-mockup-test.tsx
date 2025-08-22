@@ -274,7 +274,7 @@ export default function AdvancedMockupTest() {
                       disabled={!results[method.key]}
                       className="text-xs"
                     >
-                      {method.name.split(' ')[0]}
+                      {method.name ? method.name.split(' ')[0] : method.key}
                     </TabsTrigger>
                   ))}
                 </TabsList>

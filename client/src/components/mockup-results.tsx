@@ -44,7 +44,7 @@ export function MockupResults({ mockups, onReset }: MockupResultsProps) {
     
     for (const mockup of mockups) {
       // Convert base64 to blob
-      const base64Data = mockup.image_data.split(',')[1];
+      const base64Data = mockup.image_data ? mockup.image_data.split(',')[1] : '';
       const binaryData = atob(base64Data);
       const arrayBuffer = new ArrayBuffer(binaryData.length);
       const uint8Array = new Uint8Array(arrayBuffer);

@@ -82,7 +82,7 @@ export default function Navigation({ user }: NavigationProps) {
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user.avatar} alt={user.name} />
                       <AvatarFallback className="bg-purple-100 text-purple-600">
-                        {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
