@@ -31,7 +31,7 @@ export const useAuth = create<AuthState>()(
       isAuthenticated: false,
       
       login: (user: User, token: string) => {
-        console.log('🔐 Auth login called with:', { userId: user.id, token: token.substring(0, 20) + '...' });
+        console.log('🔐 Auth login called with:', { userId: user.id, token: token ? token.substring(0, 20) + '...' : 'null' });
         
         // Store authentication data with backup for production compatibility
         const authData = { user, token, isAuthenticated: true };
