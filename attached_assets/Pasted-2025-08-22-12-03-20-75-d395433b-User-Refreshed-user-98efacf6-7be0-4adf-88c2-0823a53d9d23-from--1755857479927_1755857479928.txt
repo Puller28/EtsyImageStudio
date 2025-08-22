@@ -1,0 +1,92 @@
+2025-08-22 12:03:20.75
+d395433b
+User
+🔄 Refreshed user 98efacf6-7be0-4adf-88c2-0823a53d9d23 from DB - Credits: 97
+2025-08-22 12:03:20.75
+d395433b
+User
+10:03:20 AM [express] GET /api/user 304 in 358ms :: {"id":"98efacf6-7be0-4adf-88c2-0823a53d9d23","ema…
+2025-08-22 12:03:24.51
+d395433b
+User
+❌ Supabase REST API error 500: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+2025-08-22 12:03:24.51
+d395433b
+User
+❌ REST API failed for user 98efacf6-7be0-4adf-88c2-0823a53d9d23: Error: Supabase REST API error: 500 - {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+2025-08-22 12:03:24.51
+d395433b
+User
+at getProjectsByUserIdRest (file:///home/runner/workspace/dist/index.js:71:13)
+2025-08-22 12:03:24.51
+d395433b
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-08-22 12:03:24.51
+d395433b
+User
+at async MemStorage.getProjectsByUserId (file:///home/runner/workspace/dist/index.js:393:29)
+2025-08-22 12:03:24.51
+d395433b
+User
+at async file:///home/runner/workspace/dist/index.js:3919:25
+2025-08-22 12:03:24.51
+d395433b
+User
+🔍 REST failed, trying direct database for user 98efacf6-7be0-4adf-88c2-0823a53d9d23...
+2025-08-22 12:03:39.63
+d395433b
+User
+⚠️ FastAPI startup timeout, continuing anyway...
+2025-08-22 12:05:31.46
+d395433b
+User
+⚠️ All methods failed for user 98efacf6-7be0-4adf-88c2-0823a53d9d23: PostgresError: canceling statement due to statement timeout
+2025-08-22 12:05:31.46
+d395433b
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-22 12:05:31.46
+d395433b
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-22 12:05:31.46
+d395433b
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-22 12:05:31.46
+d395433b
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-22 12:05:31.46
+d395433b
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-22 12:05:31.46
+d395433b
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-22 12:05:31.46
+d395433b
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-22 12:05:31.46
+d395433b
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-22 12:05:31.46
+d395433b
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-22 12:05:31.46
+d395433b
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-22 12:05:31.46
+d395433b
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-22 12:05:31.46
+d395433b
+User
+at MemStorage.getProjectsByUserId (file:///home/runner/workspace/dist/index.js:421:41) {
