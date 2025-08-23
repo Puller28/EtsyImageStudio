@@ -28,8 +28,9 @@ interface UploadedImage {
 }
 
 export default function Dashboard() {
+  const { user: authUser, token, login } = useAuth();
+  
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | undefined>();
-
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
 
   // Debug currentProject changes
@@ -52,8 +53,6 @@ export default function Dashboard() {
 
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
-
-  const { user: authUser, token, login } = useAuth();
   
   // Auto-authenticate for production deployment if not authenticated
   useEffect(() => {
