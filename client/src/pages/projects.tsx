@@ -75,11 +75,24 @@ export default function ProjectsPage() {
     
     const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || status === statusFilter;
+    
+    console.log("🔍 Project filter check:", {
+      projectId: project.id,
+      title: project.title,
+      status: project.status,
+      searchTerm,
+      statusFilter,
+      matchesSearch,
+      matchesStatus,
+      passes: matchesSearch && matchesStatus
+    });
+    
     return matchesSearch && matchesStatus;
   });
   
   // Debug filtered results
   console.log("🔍 Filtered projects:", filteredProjects.length, "from", projects.length, "total");
+  console.log("🔍 Search/Filter state:", { searchTerm, statusFilter });
   console.log("🔍 Auth state:", { hasToken: !!authUser, hasAuthUser: !!authUser, hasUser: !!user, projectsLoading: isLoading, isAuthenticated: !!authUser || !!user });
 
   if (isLoading) {
