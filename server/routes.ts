@@ -919,7 +919,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     const startTime = Date.now();
     try {
+      console.log('🔍 PRODUCTION DEBUG - /api/projects endpoint called');
+      console.log('🔍 Request details:', {
+        hasAuthHeader: !!req.headers.authorization,
+        authHeader: req.headers.authorization ? `Bearer ${req.headers.authorization.substring(7, 15)}...` : 'missing',
+        userId: req.userId,
+        user: req.user ? { id: req.user.id, email: req.user.email } : 'missing',
+        host: req.headers.host,
+        userAgent: req.headers['user-agent']?.substring(0, 50)
+      });
+      
       if (!req.userId) {
+        console.error('❌ PRODUCTION ERROR: No userId found in request');
+        console.error('❌ Auth middleware result:', { userId: req.userId, user: req.user });
         return res.status(401).json({ error: "Authentication required" });
       }
       
@@ -936,11 +948,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);
+      console.error(`❌ Error stack:`, error instanceof Error ? error.stack : 'No stack available');
       
-      // Return 503 Service Unavailable instead of 200 [] to indicate database issues
-      res.status(503).json({ 
-        error: "Database temporarily unavailable", 
-        retry: true,
+      // Return 500 with detailed error for debugging
+      res.status(500).json({ 
+        error: "Failed to get projects", 
+        details: error instanceof Error ? error.message : 'Unknown error',
         duration: duration 
       });
     }

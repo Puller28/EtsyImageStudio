@@ -1,0 +1,102 @@
+ Auth Debug: {isAuthenticated: false, hasUser: false, currentPath: '/'}
+index-C4qhEJND.js:380 ✅ Google Analytics initialized with ID: G-76NNNZG1MW
+index-C4qhEJND.js:1308 🔍 Auth Debug: {isAuthenticated: false, hasUser: false, currentPath: '/auth'}
+index-C4qhEJND.js:328 🔐 Auth login called with: {userId: 'c0fd0ad7-2f71-4563-9b9d-3f12dfeed1f0', token: 'eyJhbGciOiJIUzI1NiIs...'}
+index-C4qhEJND.js:328 ✅ Auth state updated with backup storage
+index-C4qhEJND.js:328 ✅ Auth state updated successfully
+index-C4qhEJND.js:1308 🔍 Auth Debug: {isAuthenticated: true, hasUser: true, currentPath: '/'}
+index-C4qhEJND.js:387 🎯 Current project cleared
+index-C4qhEJND.js:387 📋 Projects data: 0 []
+index-C4qhEJND.js:387 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: false, projectsLoading: true, projectsError: undefined, …}
+index-C4qhEJND.js:387 📋 Projects data: 0 []
+index-C4qhEJND.js:387 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: true, projectsError: undefined, …}
+index-C4qhEJND.js:387 📋 Projects data: 0 []
+index-C4qhEJND.js:387 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: true, projectsError: undefined, …}
+index-C4qhEJND.js:53  GET https://etsy-image-studio-lml.replit.app/api/projects 500 (Internal Server Error)
+(anonymous) @ index-C4qhEJND.js:53
+i @ index-C4qhEJND.js:48
+w @ index-C4qhEJND.js:48
+start @ index-C4qhEJND.js:48
+fetch @ index-C4qhEJND.js:48
+Vo @ index-C4qhEJND.js:48
+onSubscribe @ index-C4qhEJND.js:48
+subscribe @ index-C4qhEJND.js:48
+(anonymous) @ index-C4qhEJND.js:48
+xk @ index-C4qhEJND.js:38
+Pd @ index-C4qhEJND.js:40
+_a @ index-C4qhEJND.js:40
+W4 @ index-C4qhEJND.js:40
+pi @ index-C4qhEJND.js:40
+cv @ index-C4qhEJND.js:40
+ci @ index-C4qhEJND.js:38
+(anonymous) @ index-C4qhEJND.js:40Understand this error
+index-C4qhEJND.js:387 📋 RecentProjects render: 0 []
+index-C4qhEJND.js:387 📋 Projects data: 0 []
+index-C4qhEJND.js:387 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: false, projectsError: '500: ', …}
+index-C4qhEJND.js:387 ❌ Projects error: Error: 500: 
+    at A_ (index-C4qhEJND.js:48:42839)
+    at async index-C4qhEJND.js:53:1098
+(anonymous) @ index-C4qhEJND.js:387
+Pd @ index-C4qhEJND.js:40
+_a @ index-C4qhEJND.js:40
+W4 @ index-C4qhEJND.js:40
+pi @ index-C4qhEJND.js:40
+cv @ index-C4qhEJND.js:40
+ci @ index-C4qhEJND.js:38
+(anonymous) @ index-C4qhEJND.js:40
+setTimeout
+s @ index-C4qhEJND.js:48
+o @ index-C4qhEJND.js:48
+batch @ index-C4qhEJND.js:48
+Hr @ index-C4qhEJND.js:48
+l @ index-C4qhEJND.js:48
+p @ index-C4qhEJND.js:48
+(anonymous) @ index-C4qhEJND.js:48
+Promise.catch
+w @ index-C4qhEJND.js:48
+start @ index-C4qhEJND.js:48
+fetch @ index-C4qhEJND.js:48
+Vo @ index-C4qhEJND.js:48
+onSubscribe @ index-C4qhEJND.js:48
+subscribe @ index-C4qhEJND.js:48
+(anonymous) @ index-C4qhEJND.js:48
+xk @ index-C4qhEJND.js:38
+Pd @ index-C4qhEJND.js:40
+_a @ index-C4qhEJND.js:40
+W4 @ index-C4qhEJND.js:40
+pi @ index-C4qhEJND.js:40
+cv @ index-C4qhEJND.js:40
+ci @ index-C4qhEJND.js:38
+(anonymous) @ index-C4qhEJND.js:40Understand this error
+index-C4qhEJND.js:1308 🔍 Auth Debug: {isAuthenticated: true, hasUser: true, currentPath: '/projects'}
+index-C4qhEJND.js:1308 🔍 Projects page initial state: {searchTerm: '', statusFilter: 'all'}
+index-C4qhEJND.js:1308 🔍 Query state: {isLoading: true, hasError: false, dataLength: 0}
+index-C4qhEJND.js:1308 📋 Projects data: 0 []
+index-C4qhEJND.js:1308 🔍 Filtered projects: 0 from 0 total
+index-C4qhEJND.js:1308 🔍 Search/Filter state: {searchTerm: '', statusFilter: 'all'}
+index-C4qhEJND.js:1308 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: true, isAuthenticated: true}
+index-C4qhEJND.js:53  GET https://etsy-image-studio-lml.replit.app/api/projects 500 (Internal Server Error)
+(anonymous) @ index-C4qhEJND.js:53
+i @ index-C4qhEJND.js:48
+w @ index-C4qhEJND.js:48
+start @ index-C4qhEJND.js:48
+fetch @ index-C4qhEJND.js:48
+Vo @ index-C4qhEJND.js:48
+onSubscribe @ index-C4qhEJND.js:48
+subscribe @ index-C4qhEJND.js:48
+(anonymous) @ index-C4qhEJND.js:48
+xk @ index-C4qhEJND.js:38
+Pd @ index-C4qhEJND.js:40
+_a @ index-C4qhEJND.js:40
+W4 @ index-C4qhEJND.js:40
+pi @ index-C4qhEJND.js:40
+cv @ index-C4qhEJND.js:40
+ci @ index-C4qhEJND.js:38
+(anonymous) @ index-C4qhEJND.js:40Understand this error
+index-C4qhEJND.js:1308 🔍 Projects page initial state: {searchTerm: '', statusFilter: 'all'}
+index-C4qhEJND.js:1308 🔍 Query state: {isLoading: false, hasError: true, dataLength: 0}
+index-C4qhEJND.js:1308 📋 Projects data: 0 []
+index-C4qhEJND.js:1308 🔍 Filtered projects: 0 from 0 total
+index-C4qhEJND.js:1308 🔍 Search/Filter state: {searchTerm: '', statusFilter: 'all'}
+index-C4qhEJND.js:1308 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: false, isAuthenticated: true}
+index-C4qhEJND.js:1308 🎯 Rendering decision: {filteredProjectsLength: 0, totalProjects: 0, isLoading: false, showingEmptyState: true}
