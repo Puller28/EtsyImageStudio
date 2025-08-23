@@ -305,7 +305,19 @@ class MemStorage implements IStorage {
           originalImageUrl: project.original_image_url,
           upscaledImageUrl: project.upscaled_image_url,
           mockupImageUrl: project.mockup_image_url,
-          mockupImages: project.mockup_images || [],
+          mockupImages: (() => {
+            try {
+              const mockupData = project.mockup_images;
+              if (typeof mockupData === 'string') {
+                const parsed = JSON.parse(mockupData);
+                return Array.isArray(parsed) ? {} : (parsed || {});
+              }
+              return Array.isArray(mockupData) ? {} : (mockupData || {});
+            } catch (e) {
+              console.warn('Failed to parse mockupImages in getProject:', project.mockup_images);
+              return {};
+            }
+          })(),
           resizedImages: project.resized_images || [],
           etsyListing: project.etsy_listing || {},
           mockupTemplate: project.mockup_template,
@@ -391,7 +403,19 @@ class MemStorage implements IStorage {
         originalImageUrl: project.original_image_url,
         upscaledImageUrl: project.upscaled_image_url,
         mockupImageUrl: project.mockup_image_url,
-        mockupImages: project.mockup_images || [],
+        mockupImages: (() => {
+          try {
+            const mockupData = project.mockup_images;
+            if (typeof mockupData === 'string') {
+              const parsed = JSON.parse(mockupData);
+              return Array.isArray(parsed) ? {} : (parsed || {});
+            }
+            return Array.isArray(mockupData) ? {} : (mockupData || {});
+          } catch (e) {
+            console.warn('Failed to parse mockupImages in loadProjectsFromDatabase:', project.mockup_images);
+            return {};
+          }
+        })(),
         resizedImages: project.resized_images || [],
         etsyListing: project.etsy_listing || {},
         mockupTemplate: project.mockup_template,

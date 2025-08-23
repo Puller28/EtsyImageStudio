@@ -58,7 +58,20 @@ export async function getProjectsByUserIdRest(userId: string): Promise<any[]> {
       originalImageUrl: project.original_image_url,
       upscaledImageUrl: project.upscaled_image_url,
       mockupImageUrl: project.mockup_image_url,
-      mockupImages: typeof project.mockup_images === 'string' ? JSON.parse(project.mockup_images) : (project.mockup_images || {}),
+      mockupImages: (() => {
+        try {
+          if (typeof project.mockup_images === 'string') {
+            const parsed = JSON.parse(project.mockup_images);
+            // If it's an array (like []), convert to empty object
+            return Array.isArray(parsed) ? {} : (parsed || {});
+          }
+          // If it's already an object, use it; if it's an array, convert to empty object
+          return Array.isArray(project.mockup_images) ? {} : (project.mockup_images || {});
+        } catch (e) {
+          console.warn('Failed to parse mockupImages:', project.mockup_images);
+          return {};
+        }
+      })(),
       resizedImages: typeof project.resized_images === 'string' ? JSON.parse(project.resized_images) : (project.resized_images || []),
       etsyListing: typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing,
       mockupTemplate: project.mockup_template,
