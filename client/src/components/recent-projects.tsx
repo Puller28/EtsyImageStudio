@@ -11,12 +11,14 @@ interface Project {
 }
 
 interface RecentProjectsProps {
-  projects: Project[];
+  projects?: Project[]; // Make projects optional to handle undefined cases
   onViewProject: (projectId: string) => void;
 }
 
 export default function RecentProjects({ projects, onViewProject }: RecentProjectsProps) {
-  console.log("📋 RecentProjects render:", projects.length, projects);
+  // Safety check: ensure projects is always an array
+  const safeProjects = projects || [];
+  console.log("📋 RecentProjects render:", safeProjects.length, safeProjects);
   
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -29,7 +31,7 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
     return `${Math.ceil(diffDays / 7)} weeks ago`;
   };
 
-  if (projects.length === 0) {
+  if (safeProjects.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm">
         <div className="p-6">
@@ -62,7 +64,7 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {projects.slice(0, 4).map((project) => (
+          {safeProjects.slice(0, 4).map((project) => (
             <div
               key={project.id}
               className="group cursor-pointer"
