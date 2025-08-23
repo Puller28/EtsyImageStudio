@@ -376,6 +376,18 @@ class MemStorage implements IStorage {
         createdAt: new Date(project.created_at)
       }));
       
+      // Debug the converted projects before caching
+      console.log(`🔍 PRODUCTION Raw DB projects:`, projects.length);
+      console.log(`🔍 PRODUCTION Converted projects:`, convertedProjects.length);
+      if (convertedProjects.length > 0) {
+        console.log(`🔍 PRODUCTION First converted project:`, {
+          id: convertedProjects[0].id,
+          title: convertedProjects[0].title,
+          status: convertedProjects[0].status,
+          createdAt: convertedProjects[0].createdAt
+        });
+      }
+      
       // Cache in memory for future requests
       convertedProjects.forEach(project => {
         this.projects.set(project.id, project);

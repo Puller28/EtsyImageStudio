@@ -948,6 +948,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const duration = Date.now() - startTime;
       console.log(`✅ Projects API completed in ${duration}ms, found ${projects.length} projects`);
       
+      // Debug what we're actually sending to frontend
+      console.log('🔍 PRODUCTION Projects data being sent:', {
+        count: projects.length,
+        firstProject: projects[0] ? {
+          id: projects[0].id,
+          title: projects[0].title,
+          status: projects[0].status,
+          hasCreatedAt: !!projects[0].createdAt
+        } : 'no projects'
+      });
+      
       res.json(projects);
       
     } catch (error) {
