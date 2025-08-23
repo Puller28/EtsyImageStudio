@@ -70,7 +70,7 @@ class MemStorage implements IStorage {
           name: dbUser.name,
           password: dbUser.password,
           avatar: dbUser.avatar,
-          credits: dbUser.credits || 3,
+          credits: dbUser.credits || 100,
           subscriptionStatus: dbUser.subscription_status || 'free',
           subscriptionPlan: dbUser.subscription_plan,
           subscriptionId: dbUser.subscription_id,
@@ -122,7 +122,7 @@ class MemStorage implements IStorage {
           name: dbUser.name,
           password: dbUser.password,
           avatar: dbUser.avatar,
-          credits: dbUser.credits || 3,
+          credits: dbUser.credits || 100,
           subscriptionStatus: dbUser.subscription_status || 'free',
           subscriptionPlan: dbUser.subscription_plan,
           subscriptionId: dbUser.subscription_id,
@@ -166,7 +166,7 @@ class MemStorage implements IStorage {
 
       await sql`
         INSERT INTO public.users (id, email, name, password, credits, subscription_status, subscription_plan, created_at)
-        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.password}, ${user.credits || 3}, ${'free'}, ${null}, ${user.createdAt})
+        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.password}, ${user.credits || 100}, ${'free'}, ${null}, ${user.createdAt})
       `;
       
       await sql.end();
