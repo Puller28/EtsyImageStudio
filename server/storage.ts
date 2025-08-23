@@ -58,13 +58,7 @@ class MemStorage implements IStorage {
 
     // Try to load from database
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10,
-        statement_timeout: 15000
-      });
+      const sql = createDbConnection();
 
       const users = await sql`
         SELECT * FROM public.users 
@@ -110,13 +104,7 @@ class MemStorage implements IStorage {
 
     // Try to load from database
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10,
-        statement_timeout: 15000
-      });
+      const sql = createDbConnection();
 
       const users = await sql`
         SELECT * FROM public.users 
@@ -168,13 +156,7 @@ class MemStorage implements IStorage {
 
     // Persist to database
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        prepare: false
-      });
+      const sql = createDbConnection();
 
       await sql`
         INSERT INTO public.users (id, email, name, password, credits, subscription_status, subscription_plan, created_at)
@@ -202,13 +184,7 @@ class MemStorage implements IStorage {
     
     // Persist to database
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        prepare: false
-      });
+      const sql = createDbConnection();
 
       await sql`
         UPDATE public.users 
@@ -245,13 +221,7 @@ class MemStorage implements IStorage {
 
     // Persist to database
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        prepare: false
-      });
+      const sql = createDbConnection();
 
       await sql`
         INSERT INTO projects (
@@ -287,13 +257,7 @@ class MemStorage implements IStorage {
 
     // Try to load from database if not in memory
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 5,
-        prepare: false
-      });
+      const sql = createDbConnection();
 
       const projects = await sql`
         SELECT 
@@ -366,9 +330,9 @@ class MemStorage implements IStorage {
     console.log(`🔍 No memory projects found, attempting database load for user ${userId}`);
     
     try {
-      // Use a shorter timeout for faster fallback
+      // Use a longer timeout to allow database connection to complete
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout - using fallback')), 3000);
+        setTimeout(() => reject(new Error('Database query timeout - using fallback')), 10000);
       });
       
       const queryPromise = this.loadProjectsFromDatabase(userId);
@@ -383,16 +347,7 @@ class MemStorage implements IStorage {
   }
   
   private async loadProjectsFromDatabase(userId: string): Promise<Project[]> {
-    const sql = postgres(process.env.DATABASE_URL!, {
-      ssl: 'require',
-      max: 1, // Use single connection for this query
-      idle_timeout: 5,
-      connect_timeout: 5,
-      prepare: false,
-      transform: {
-        undefined: null
-      }
-    });
+    const sql = createDbConnection();
 
     try {
       // Use a much simpler query first to test connectivity
@@ -504,12 +459,7 @@ class MemStorage implements IStorage {
     await this.logCreditTransaction(userId, transactionType, creditChange, description);
 
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10
-      });
+      const sql = createDbConnection();
 
       await sql`
         UPDATE public.users 
@@ -542,12 +492,7 @@ class MemStorage implements IStorage {
     
     // Persist to database
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: 'require',
-        max: 1,
-        idle_timeout: 5,
-        connect_timeout: 10
-      });
+      const sql = createDbConnection();
 
       await sql`
         INSERT INTO credit_transactions (
@@ -581,12 +526,7 @@ class MemStorage implements IStorage {
     // Only load from database when specifically requested (like settings page)
     if (forceDbLoad) {
       try {
-        const sql = postgres(process.env.DATABASE_URL!, {
-          ssl: 'require',
-          max: 1,
-          idle_timeout: 5,
-          connect_timeout: 10
-        });
+        const sql = createDbConnection();
 
         const dbTransactions = await sql`
           SELECT id, user_id, amount, transaction_type, description, balance_after, project_id, created_at
