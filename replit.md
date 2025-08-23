@@ -18,7 +18,7 @@ The backend is an Express.js-based REST API with TypeScript, optimized for Repli
 The application utilizes a hybrid storage approach with automatic failover. Supabase PostgreSQL with Drizzle ORM serves as primary storage, with an automatic fallback to in-memory storage if database connections fail. User and project entities use JSONB fields for flexible metadata.
 
 ### Authentication and Authorization
-The system uses JWT-based authentication for user registration, login, and secure token management. It includes a comprehensive subscription management system integrated with Paystack, managing credit allocation, and preventing credit duplication. User-scoped data access and project ownership validation are implemented.
+The system uses JWT-based authentication for user registration, login, and secure token management. It includes a comprehensive subscription management system integrated with Paystack, managing credit allocation, and preventing credit duplication. User-scoped data access and project ownership validation are implemented. New users receive 100 starting credits upon registration with explicit credit allocation in the registration flow.
 
 ### Core Technical Implementations
 - **AI Art Generation**: Integration with Imagen 3.
