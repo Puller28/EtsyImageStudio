@@ -253,7 +253,7 @@ export default function ProjectDetailPage() {
             )}
 
             {/* Mockup Images */}
-            {(displayMockup || mockupKeys.length > 0) && (
+            {(displayMockup || (project.mockupImages && mockupKeys.length > 0)) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -265,13 +265,24 @@ export default function ProjectDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {displayMockup && (
+                  {displayMockup ? (
                     <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
                       <img
                         src={displayMockup}
                         alt="Mockup"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.warn('Mockup image failed to load:', displayMockup);
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
+                    </div>
+                  ) : (
+                    <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                      <div className="text-center text-gray-500">
+                        <Image className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No mockups generated yet</p>
+                      </div>
                     </div>
                   )}
                   
@@ -290,6 +301,10 @@ export default function ProjectDetailPage() {
                             src={project.mockupImages![key]}
                             alt={`Mockup ${key}`}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.warn('Mockup thumbnail failed to load:', key, project.mockupImages![key]);
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         </button>
                       ))}
