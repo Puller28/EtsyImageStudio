@@ -357,11 +357,11 @@ export default function ProjectDetailPage() {
                     </div>
                   )}
                   
-                  {project.etsyListing.tags && project.etsyListing.tags.length > 0 && (
+                  {project.etsyListing?.tags && Array.isArray(project.etsyListing.tags) && project.etsyListing.tags.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Tags</h4>
                       <div className="flex flex-wrap gap-2">
-                        {project.etsyListing.tags.map((tag, index) => (
+                        {(Array.isArray(project.etsyListing?.tags) ? project.etsyListing.tags : []).map((tag, index) => (
                           <Badge key={index} variant="outline">{tag}</Badge>
                         ))}
                       </div>
@@ -379,7 +379,7 @@ export default function ProjectDetailPage() {
             )}
 
             {/* Resized Images */}
-            {project.resizedImages && project.resizedImages.length > 0 && (
+            {project.resizedImages && Array.isArray(project.resizedImages) && project.resizedImages.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -389,7 +389,7 @@ export default function ProjectDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {project.resizedImages.map((resized, index) => (
+                    {(Array.isArray(project.resizedImages) ? project.resizedImages : []).map((resized, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="font-medium">{resized.size}</span>
                         <Button 
