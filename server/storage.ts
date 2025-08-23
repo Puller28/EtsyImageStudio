@@ -285,17 +285,6 @@ class MemStorage implements IStorage {
       
     } catch (error) {
       console.log(`⚠️ Database query failed for user ${userId}, using empty fallback:`, error.message);
-      
-      // Try to populate from startup data if available
-      await this.initializeFromStartupData();
-      
-      // Check memory again after initialization attempt
-      const retryMemoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
-      if (retryMemoryProjects.length > 0) {
-        console.log(`🔄 Found ${retryMemoryProjects.length} projects in memory after initialization retry`);
-        return retryMemoryProjects;
-      }
-      
       return [];
     }
   }
