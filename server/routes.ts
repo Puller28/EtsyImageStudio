@@ -915,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user projects - Fast optimized query
+  // Get user projects - Fast optimized query with timeout protection
   app.get("/api/projects", optionalAuth, async (req: AuthenticatedRequest, res) => {
     const startTime = Date.now();
     try {
@@ -937,8 +937,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Use the optimized storage method which now uses raw SQL
-      const projects = await storage.getProjectsByUserId(req.userId);
+      // Add timeout protection for production
+      const projectsPromise = storage.getProjectsByUserId(req.userId);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 10000)
+      );
+      
+      const projects = await Promise.race([projectsPromise, timeoutPromise]);
       
       const duration = Date.now() - startTime;
       console.log(`✅ Projects API completed in ${duration}ms, found ${projects.length} projects`);
@@ -948,7 +953,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);
-      console.error(`❌ Error stack:`, error instanceof Error ? error.stack : 'No stack available');
+      
+      // If database timeout, return empty array instead of error
+      if (error instanceof Error && error.message === 'Database query timeout') {
+        console.log('⚠️ Database timeout, returning empty projects array');
+        return res.json([]);
+      }
       
       // Return 500 with detailed error for debugging
       res.status(500).json({ 

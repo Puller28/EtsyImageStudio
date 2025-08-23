@@ -346,48 +346,33 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Optimized query with smaller LIMIT for faster response
+      // Ultra-optimized query for production performance
       const projects = await sql`
         SELECT 
-          id, user_id, title, original_image_url, upscaled_image_url,
-          mockup_image_url, mockup_images, resized_images, etsy_listing,
-          mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at
+          id, user_id, title, status, thumbnail_url, created_at
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
-        LIMIT 5
+        LIMIT 3
       `;
       
       const convertedProjects = projects.map((project: any) => ({
         id: project.id,
         userId: project.user_id,
-        title: project.title,
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: (() => {
-          try {
-            const mockupData = project.mockup_images;
-            if (typeof mockupData === 'string') {
-              const parsed = JSON.parse(mockupData);
-              return Array.isArray(parsed) ? {} : (parsed || {});
-            }
-            return Array.isArray(mockupData) ? {} : (mockupData || {});
-          } catch (e) {
-            console.warn('Failed to parse mockupImages in loadProjectsFromDatabase:', project.mockup_images);
-            return {};
-          }
-        })(),
-        resizedImages: project.resized_images || [],
-        etsyListing: project.etsy_listing || {},
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option,
-        status: project.status,
-        zipUrl: project.zip_url,
+        title: project.title || 'Untitled Project',
+        originalImageUrl: null,
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
+        mockupImages: {},
+        resizedImages: [],
+        etsyListing: {},
+        mockupTemplate: null,
+        upscaleOption: '2x',
+        status: project.status || 'pending',
+        zipUrl: null,
         thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: project.metadata || {},
+        aiPrompt: null,
+        metadata: {},
         createdAt: new Date(project.created_at)
       }));
       

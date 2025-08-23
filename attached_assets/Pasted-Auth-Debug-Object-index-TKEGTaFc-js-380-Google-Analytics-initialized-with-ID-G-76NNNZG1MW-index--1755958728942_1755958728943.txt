@@ -1,0 +1,70 @@
+Auth Debug: Object
+index-TKEGTaFc.js:380 ✅ Google Analytics initialized with ID: G-76NNNZG1MW
+index-TKEGTaFc.js:1308 🔍 Auth Debug: Object
+index-TKEGTaFc.js:328 🔐 Auth login called with: Object
+index-TKEGTaFc.js:328 ✅ Auth state updated with backup storage
+index-TKEGTaFc.js:328 ✅ Auth state updated successfully
+index-TKEGTaFc.js:1308 🔍 Auth Debug: Object
+index-TKEGTaFc.js:387 🎯 Current project cleared
+index-TKEGTaFc.js:387 📋 Projects data: 0 Array(0)
+index-TKEGTaFc.js:387 🔍 Auth state: Object
+index-TKEGTaFc.js:387 📋 Projects data: 0 Array(0)
+index-TKEGTaFc.js:387 🔍 Auth state: Object
+index-TKEGTaFc.js:387 📋 Projects data: 0 Array(0)
+index-TKEGTaFc.js:387 🔍 Auth state: Object
+projects:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-TKEGTaFc.js:387 📋 RecentProjects render: 0 []length: 0[[Prototype]]: Array(0)
+index-TKEGTaFc.js:387 📋 Projects data: 0 []length: 0[[Prototype]]: Array(0)
+index-TKEGTaFc.js:387 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: false, projectsError: '500: ', …}
+index-TKEGTaFc.js:387 ❌ Projects error: Error: 500: 
+    at A_ (index-TKEGTaFc.js:48:42839)
+    at async index-TKEGTaFc.js:53:1098
+(anonymous) @ index-TKEGTaFc.js:387
+Pd @ index-TKEGTaFc.js:40
+_a @ index-TKEGTaFc.js:40
+W4 @ index-TKEGTaFc.js:40
+pi @ index-TKEGTaFc.js:40
+cv @ index-TKEGTaFc.js:40
+ci @ index-TKEGTaFc.js:38
+(anonymous) @ index-TKEGTaFc.js:40
+setTimeout
+s @ index-TKEGTaFc.js:48
+o @ index-TKEGTaFc.js:48
+batch @ index-TKEGTaFc.js:48
+Hr @ index-TKEGTaFc.js:48
+l @ index-TKEGTaFc.js:48
+p @ index-TKEGTaFc.js:48
+(anonymous) @ index-TKEGTaFc.js:48Understand this error
+index-TKEGTaFc.js:1308 🔍 Auth Debug: {isAuthenticated: true, hasUser: true, currentPath: '/projects'}
+index-TKEGTaFc.js:1308 🔍 Projects page initial state: {searchTerm: '', statusFilter: 'all'}
+index-TKEGTaFc.js:1308 🔍 Query state: {isLoading: true, hasError: false, dataLength: 0}
+index-TKEGTaFc.js:1308 📋 Projects data: 0 []
+index-TKEGTaFc.js:1308 🔍 Filtered projects: 0 from 0 total
+index-TKEGTaFc.js:1308 🔍 Search/Filter state: {searchTerm: '', statusFilter: 'all'}
+index-TKEGTaFc.js:1308 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: true, projectsError: null, …}
+index-TKEGTaFc.js:53  GET https://etsy-image-studio-lml.replit.app/api/projects 500 (Internal Server Error)
+(anonymous) @ index-TKEGTaFc.js:53
+i @ index-TKEGTaFc.js:48
+w @ index-TKEGTaFc.js:48
+start @ index-TKEGTaFc.js:48
+fetch @ index-TKEGTaFc.js:48
+Vo @ index-TKEGTaFc.js:48
+onSubscribe @ index-TKEGTaFc.js:48
+subscribe @ index-TKEGTaFc.js:48
+(anonymous) @ index-TKEGTaFc.js:48
+xk @ index-TKEGTaFc.js:38
+Pd @ index-TKEGTaFc.js:40
+_a @ index-TKEGTaFc.js:40
+W4 @ index-TKEGTaFc.js:40
+pi @ index-TKEGTaFc.js:40
+cv @ index-TKEGTaFc.js:40
+ci @ index-TKEGTaFc.js:38
+(anonymous) @ index-TKEGTaFc.js:40Understand this error
+index-TKEGTaFc.js:1308 🔍 Projects page initial state: {searchTerm: '', statusFilter: 'all'}
+index-TKEGTaFc.js:1308 🔍 Query state: {isLoading: false, hasError: true, dataLength: 0}
+index-TKEGTaFc.js:1308 📋 Projects data: 0 []
+index-TKEGTaFc.js:1308 🔍 Filtered projects: 0 from 0 total
+index-TKEGTaFc.js:1308 🔍 Search/Filter state: {searchTerm: '', statusFilter: 'all'}
+index-TKEGTaFc.js:1308 🔍 Auth state: {hasToken: true, hasAuthUser: true, hasUser: true, projectsLoading: false, projectsError: Error: 500: 
+    at A_ (https://etsy-image-studio-lml.replit.app/assets/index-TKEGTaFc.js:48:42839)…, …}
+index-TKEGTaFc.js:1308 🎯 Rendering decision: {filteredProjectsLength: 0, totalProjects: 0, isLoading: false, showingEmptyState: true}
