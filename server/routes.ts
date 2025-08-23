@@ -937,13 +937,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Add timeout protection for production
-      const projectsPromise = storage.getProjectsByUserId(req.userId);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout')), 10000)
-      );
-      
-      const projects = await Promise.race([projectsPromise, timeoutPromise]);
+      // Use direct call without race condition for now to debug
+      const projects = await storage.getProjectsByUserId(req.userId);
       
       const duration = Date.now() - startTime;
       console.log(`✅ Projects API completed in ${duration}ms, found ${projects.length} projects`);
