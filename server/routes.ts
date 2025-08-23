@@ -954,17 +954,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const projectId = req.params.id;
+      console.log(`🔍 Fetching project ${projectId} for user ${userId}`);
       const project = await storage.getProject(projectId);
       
       if (!project) {
+        console.log(`❌ Project ${projectId} not found in database`);
         return res.status(404).json({ error: 'Project not found' });
       }
       
       // Verify project belongs to user
       if (project.userId !== userId) {
-        return res.status(403).json({ error: 'Access denied' });
+        console.log(`🚫 Access denied: Project ${projectId} belongs to user ${project.userId}, requested by user ${userId}`);
+        return res.status(403).json({ error: 'Access denied to project from different user' });
       }
 
+      console.log(`✅ Successfully fetched project ${projectId} for user ${userId}`);
       res.json(project);
     } catch (error) {
       console.error('❌ Error fetching project:', error);
