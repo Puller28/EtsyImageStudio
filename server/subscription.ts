@@ -15,7 +15,7 @@ export class SubscriptionService {
     try {
       const user = await storage.getUser(userId);
       if (!user) {
-        return { subscriptionStatus: 'free', isActive: false };
+        return { subscriptionStatus: 'free', isActive: true };
       }
 
       // Check if user has a cancelled subscription that's still active FIRST
@@ -96,11 +96,11 @@ export class SubscriptionService {
         subscriptionPlan: undefined,
         subscriptionId: undefined,
         nextBillingDate: undefined,
-        isActive: false
+        isActive: true // Free plans are active - users get 100 credits monthly
       };
     } catch (error) {
       console.error('Error getting subscription status:', error);
-      return { subscriptionStatus: 'free', isActive: false };
+      return { subscriptionStatus: 'free', isActive: true };
     }
   }
 
