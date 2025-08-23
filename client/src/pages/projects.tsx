@@ -16,7 +16,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   
   // Debug initial state
-  console.log("🔍 Projects page initial state:", { searchTerm, statusFilter });
+  console.log("🎯 PROJECTS PAGE LOADED - Debug initial state:", { searchTerm, statusFilter });
   const { user: authUser } = useAuth();
 
   const { data: user } = useQuery<User>({
