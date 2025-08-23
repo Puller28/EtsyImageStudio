@@ -16,7 +16,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   
   // Debug initial state
-  console.log("🎯 PROJECTS PAGE LOADED - Debug initial state:", { searchTerm, statusFilter });
+  console.log("🔍 Projects page initial state:", { searchTerm, statusFilter });
   const { user: authUser } = useAuth();
 
   const { data: user } = useQuery<User>({
@@ -76,24 +76,11 @@ export default function ProjectsPage() {
     const title = project.title || '';
     const status = project.status || '';
     
-    // Fix search logic: empty search should match everything
+    // Search logic: empty search should match everything
     const matchesSearch = searchTerm.trim() === '' || title.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Fix status logic: normalize status comparison
-    const normalizedStatus = status.toLowerCase();
-    const normalizedFilter = statusFilter.toLowerCase();
-    const matchesStatus = statusFilter === "all" || normalizedStatus === normalizedFilter;
-    
-    console.log("🔍 Project filter check:", {
-      projectId: project.id,
-      title: project.title,
-      status: project.status,
-      searchTerm,
-      statusFilter,
-      matchesSearch,
-      matchesStatus,
-      passes: matchesSearch && matchesStatus
-    });
+    // Status logic: 'all' should match everything, otherwise exact match (case-insensitive)
+    const matchesStatus = statusFilter === "all" || status.toLowerCase() === statusFilter.toLowerCase();
     
     return matchesSearch && matchesStatus;
   });
@@ -101,7 +88,26 @@ export default function ProjectsPage() {
   // Debug filtered results
   console.log("🔍 Filtered projects:", filteredProjects.length, "from", projects.length, "total");
   console.log("🔍 Search/Filter state:", { searchTerm, statusFilter });
-  console.log("🔍 Auth state:", { hasToken: !!authUser, hasAuthUser: !!authUser, hasUser: !!user, projectsLoading: isLoading, isAuthenticated: !!authUser || !!user });
+  console.log("🔍 Auth state:", { hasToken: !!authUser, hasAuthUser: !!authUser, hasUser: !!user, projectsLoading: isLoading, projectsError: error, isAuthenticated: !!authUser || !!user });
+  
+  // Debug each project's filtering
+  if (projects.length > 0) {
+    projects.forEach((project, index) => {
+      const title = project.title || '';
+      const status = project.status || '';
+      const matchesSearch = searchTerm.trim() === '' || title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || status.toLowerCase() === statusFilter.toLowerCase();
+      
+      console.log(`🔍 Project ${index + 1}:`, {
+        id: project.id?.substring(0, 8),
+        title: title,
+        status: status,
+        matchesSearch,
+        matchesStatus,
+        passes: matchesSearch && matchesStatus
+      });
+    });
+  }
 
   if (isLoading) {
     return (
