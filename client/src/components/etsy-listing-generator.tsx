@@ -107,30 +107,30 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(generatedListing.title)}
+                  onClick={() => copyToClipboard(generatedListing?.title || "")}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg text-sm">
-                <p>{generatedListing.title}</p>
+                <p>{generatedListing?.title || ""}</p>
               </div>
             </div>
             
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-gray-900">Tags ({generatedListing.tags.length})</h4>
+                <h4 className="font-medium text-gray-900">Tags ({generatedListing?.tags?.length || 0})</h4>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(generatedListing.tags.join(", "))}
+                  onClick={() => copyToClipboard(generatedListing?.tags?.join(", ") || "")}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-wrap gap-1 text-xs">
-                  {generatedListing.tags.map((tag, index) => (
+                  {(generatedListing?.tags || []).map((tag, index) => (
                     <span key={index} className="bg-primary text-white px-2 py-1 rounded">
                       {tag}
                     </span>
@@ -145,13 +145,13 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(generatedListing.description)}
+                  onClick={() => copyToClipboard(generatedListing?.description || "")}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg text-sm space-y-2">
-                {generatedListing.description.split('\n\n').map((paragraph, index) => (
+                {(generatedListing?.description || "").split('\n\n').map((paragraph, index) => (
                   <p key={index}>{paragraph}</p>
                 ))}
               </div>
