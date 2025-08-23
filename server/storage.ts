@@ -2,6 +2,18 @@ import { User, Project, CreditTransaction } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 
+// Centralized database connection configuration
+function createDbConnection() {
+  return postgres(process.env.DATABASE_URL!, {
+    ssl: 'require',
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 30,
+    statement_timeout: 30000,
+    prepare: false
+  });
+}
+
 export interface IStorage {
   // User management
   getUserByEmail(email: string): Promise<User | undefined>;
