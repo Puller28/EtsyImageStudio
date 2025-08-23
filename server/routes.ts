@@ -1347,6 +1347,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createProject(project);
       console.log(`📁 Created project ${projectId} for AI-generated artwork`);
       
+      // Automatically trigger upscaling for AI-generated images
+      console.log(`🔧 Auto-triggering upscaling for AI project: ${projectId}`);
+      processProjectAsync(project).catch(error => {
+        console.error(`🔧❌ Auto-processing failed for AI project ${projectId}:`, error);
+        // Update status to failed if processing fails
+        storage.updateProject(projectId, { status: "failed" }).catch(e => 
+          console.error(`Failed to update status for ${projectId}:`, e)
+        );
+      });
+      
       res.json({ 
         image: base64Image,
         prompt: optimizedPrompt,
