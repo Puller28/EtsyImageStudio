@@ -172,7 +172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const transactions = await storage.getCreditTransactions(req.userId);
+      // Force database load to ensure complete transaction history
+      const transactions = await storage.getCreditTransactions(req.userId, true);
       res.json(transactions);
     } catch (error) {
       console.error("Failed to get credit transactions:", error);
