@@ -164,8 +164,20 @@ async function initializeDatabase() {
 async function startFastApiServer() {
   return new Promise<void>((resolve, reject) => {
     // Skip FastAPI in production deployment to avoid port conflicts
-    if (process.env.NODE_ENV === 'production') {
+    // Check for production environment using multiple indicators
+    const isProduction = process.env.NODE_ENV === 'production' || 
+                        process.env.REPLIT_DEPLOYMENT === '1' ||
+                        process.env.REPL_DEPLOYMENT === '1' ||
+                        !process.env.REPLIT_DEV_DOMAIN;
+    
+    if (isProduction) {
       console.log('🚀 Skipping FastAPI server in production deployment');
+      console.log('🔍 Production Environment Detected:', {
+        NODE_ENV: process.env.NODE_ENV,
+        REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+        REPL_DEPLOYMENT: process.env.REPL_DEPLOYMENT,
+        has_REPLIT_DEV_DOMAIN: !!process.env.REPLIT_DEV_DOMAIN
+      });
       fastApiReady = false;
       resolve();
       return;
