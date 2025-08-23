@@ -107,8 +107,13 @@ export class AuthService {
       name: registerData.name,
       email: registerData.email,
       password: hashedPassword,
+      avatar: null,
       credits: 100,
       subscriptionStatus: 'free',
+      subscriptionPlan: null,
+      subscriptionId: null,
+      subscriptionStartDate: null,
+      subscriptionEndDate: null,
     });
 
     const token = this.generateToken(user.id);
