@@ -85,6 +85,7 @@ function Router() {
           <Route path="/" component={HomePage} />
           {/* Redirect protected routes to auth for unauthenticated users */}
           <Route path="/projects" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+          <Route path="/projects/:id" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/settings" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/buy-credits" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
           <Route path="/template-mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />

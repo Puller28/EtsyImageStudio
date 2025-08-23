@@ -71,6 +71,9 @@ export const useAuth = create<AuthState>()(
         });
         
         console.log('✅ All authentication data cleared');
+        
+        // Redirect to home page after logout
+        window.location.href = '/';
       },
       
       updateUser: (updatedUser: Partial<User>) => {
