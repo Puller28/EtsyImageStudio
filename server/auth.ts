@@ -158,29 +158,25 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
-  // Reduced logging for production security
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('🔍 OptionalAuth Debug:', { 
-      hasToken: !!token, 
-      hasAuthHeader: !!authHeader,
-      endpoint: `${req.method} ${req.path}`
-    });
-  }
+  // Enhanced logging for production debugging
+  console.log('🔍 PRODUCTION OptionalAuth Debug:', { 
+    hasToken: !!token, 
+    hasAuthHeader: !!authHeader,
+    endpoint: `${req.method} ${req.path}`,
+    host: req.headers.host,
+    tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
+  });
 
   if (token) {
     const decoded = AuthService.verifyToken(token);
     if (decoded) {
       try {
         const user = await storage.getUserById(decoded.userId);
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('🔍 User lookup result:', { userId: decoded.userId, found: !!user });
-        }
+        console.log('🔍 PRODUCTION User lookup result:', { userId: decoded.userId, found: !!user });
         if (user) {
           req.userId = decoded.userId;
           req.user = user;
-          if (process.env.NODE_ENV !== 'production') {
-            console.log('🔍 Token auth successful:', req.userId);
-          }
+          console.log('✅ PRODUCTION Token auth successful:', req.userId);
           return next();
         } else {
           if (process.env.NODE_ENV !== 'production') {
