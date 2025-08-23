@@ -13,7 +13,7 @@ export class SubscriptionService {
     isActive: boolean;
   }> {
     try {
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user) {
         return { subscriptionStatus: 'free', isActive: true };
       }
@@ -112,7 +112,7 @@ export class SubscriptionService {
     message: string;
   }> {
     try {
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user) {
         return { success: false, message: 'User not found' };
       }
