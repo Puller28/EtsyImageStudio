@@ -31,6 +31,20 @@ export default function Dashboard() {
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | undefined>();
 
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
+
+  // Debug currentProject changes
+  useEffect(() => {
+    if (currentProject) {
+      console.log("🎯 Current project changed:", {
+        id: currentProject.id,
+        userId: currentProject.userId,
+        authUserId: authUser?.id,
+        isValidUser: currentProject.userId === authUser?.id
+      });
+    } else {
+      console.log("🎯 Current project cleared");
+    }
+  }, [currentProject, authUser]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
@@ -97,13 +111,21 @@ export default function Dashboard() {
   }, [projects, token, authUser, user, projectsLoading, projectsError]);
 
   // Poll current project status
-  const { data: projectStatus } = useQuery<Project>({
+  const { data: projectStatus, error: projectStatusError } = useQuery<Project>({
     queryKey: ["/api/projects", currentProject?.id],
     enabled: !!currentProject?.id,
     refetchInterval: 2000, // Poll every 2 seconds for active projects
     staleTime: 0, // Always consider data stale
     retry: false, // Don't retry failed requests to avoid spam
   });
+
+  // Clear currentProject if access is denied (cross-user project)
+  useEffect(() => {
+    if (projectStatusError && projectStatusError.message?.includes('403')) {
+      console.log("🚫 Access denied to current project, clearing state");
+      setCurrentProject(null);
+    }
+  }, [projectStatusError]);
 
   // Debug project status updates
   useEffect(() => {
@@ -118,7 +140,14 @@ export default function Dashboard() {
         hasMockup: !!projectStatus.mockupImageUrl
       });
     }
-  }, [projectStatus]);
+    if (projectStatusError) {
+      console.error("❌ Project status error:", {
+        currentProjectId: currentProject?.id,
+        error: projectStatusError.message,
+        isAccessDenied: projectStatusError.message?.includes('403')
+      });
+    }
+  }, [projectStatus, projectStatusError, currentProject]);
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -705,8 +734,17 @@ export default function Dashboard() {
                 console.log("🔍 Selecting project:", id);
                 const selectedProject = projects.find(p => p.id === id);
                 if (selectedProject) {
-                  setCurrentProject(selectedProject);
-                  console.log("✅ Current project set:", selectedProject.id);
+                  // Verify project belongs to current user before setting
+                  if (selectedProject.userId === authUser?.id) {
+                    setCurrentProject(selectedProject);
+                    console.log("✅ Current project set:", selectedProject.id);
+                  } else {
+                    console.error("🚫 Cannot set project from different user:", {
+                      projectId: id,
+                      projectUserId: selectedProject.userId,
+                      currentUserId: authUser?.id
+                    });
+                  }
                 } else {
                   console.error("❌ Project not found:", id);
                 }

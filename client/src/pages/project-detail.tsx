@@ -47,6 +47,7 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading, error } = useQuery<Project>({
     queryKey: ["/api/projects", projectId],
     enabled: !!projectId,
+    retry: false, // Don't retry on 403/404 errors
   });
 
   // Use auth user data as fallback if API user data is not available
