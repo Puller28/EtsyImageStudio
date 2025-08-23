@@ -2,15 +2,18 @@ import { User, Project, CreditTransaction } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 
-// Centralized database connection configuration
+// Optimized database connection for production performance
 function createDbConnection() {
   return postgres(process.env.DATABASE_URL!, {
     ssl: 'require',
-    max: 10,
-    idle_timeout: 20,
-    connect_timeout: 30,
-    statement_timeout: 30000,
-    prepare: false
+    max: 1, // Single connection for faster performance
+    idle_timeout: 2,
+    connect_timeout: 5, // Faster connection timeout
+    statement_timeout: 8000, // 8 second timeout for queries
+    prepare: false,
+    transform: { undefined: null },
+    onnotice: () => {}, // Suppress notices
+    fetch_types: false // Disable type fetching for speed
   });
 }
 
@@ -326,16 +329,15 @@ class MemStorage implements IStorage {
       return memoryProjects;
     }
     
-    // If no memory projects, try a quick database load with timeout protection
-    console.log(`🔍 No memory projects found, attempting database load for user ${userId}`);
+    // For production optimization, limit database calls unless explicitly needed
+    console.log(`🔍 No memory projects found, attempting optimized database load for user ${userId}`);
     
     try {
-      // Remove the artificial timeout completely and rely on database connection settings
       const projects = await this.loadProjectsFromDatabase(userId);
       return projects;
       
     } catch (error) {
-      console.log(`⚠️ Database query failed for user ${userId}, using empty fallback:`, error.message);
+      console.log(`⚠️ Database query failed for user ${userId}, returning empty array:`, error.message);
       return [];
     }
   }
@@ -344,7 +346,7 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Use a much simpler query first to test connectivity
+      // Optimized query with smaller LIMIT for faster response
       const projects = await sql`
         SELECT 
           id, user_id, title, original_image_url, upscaled_image_url,
@@ -354,7 +356,7 @@ class MemStorage implements IStorage {
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
-        LIMIT 10
+        LIMIT 5
       `;
       
       const convertedProjects = projects.map((project: any) => ({
