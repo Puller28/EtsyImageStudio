@@ -267,7 +267,66 @@ class MemStorage implements IStorage {
   }
 
   async getProject(id: string): Promise<Project | undefined> {
-    return this.projects.get(id);
+    // Check memory cache first
+    const cachedProject = this.projects.get(id);
+    if (cachedProject) {
+      return cachedProject;
+    }
+
+    // Try to load from database if not in memory
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 5,
+        prepare: false
+      });
+
+      const projects = await sql`
+        SELECT 
+          id, user_id, title, original_image_url, upscaled_image_url,
+          mockup_image_url, mockup_images, resized_images, etsy_listing,
+          mockup_template, upscale_option, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at
+        FROM projects 
+        WHERE id = ${id}
+        LIMIT 1
+      `;
+      
+      await sql.end();
+      
+      if (projects.length > 0) {
+        const project = projects[0];
+        const convertedProject: Project = {
+          id: project.id,
+          userId: project.user_id,
+          title: project.title,
+          originalImageUrl: project.original_image_url,
+          upscaledImageUrl: project.upscaled_image_url,
+          mockupImageUrl: project.mockup_image_url,
+          mockupImages: project.mockup_images || [],
+          resizedImages: project.resized_images || [],
+          etsyListing: project.etsy_listing || {},
+          mockupTemplate: project.mockup_template,
+          upscaleOption: project.upscale_option,
+          status: project.status,
+          zipUrl: project.zip_url,
+          thumbnailUrl: project.thumbnail_url,
+          aiPrompt: project.ai_prompt,
+          metadata: project.metadata || {},
+          createdAt: new Date(project.created_at)
+        };
+        
+        // Cache for future requests
+        this.projects.set(convertedProject.id, convertedProject);
+        return convertedProject;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to load project ${id} from database:`, error);
+    }
+
+    return undefined;
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
