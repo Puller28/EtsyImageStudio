@@ -330,14 +330,8 @@ class MemStorage implements IStorage {
     console.log(`🔍 No memory projects found, attempting database load for user ${userId}`);
     
     try {
-      // Use a longer timeout to allow database connection to complete
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout - using fallback')), 10000);
-      });
-      
-      const queryPromise = this.loadProjectsFromDatabase(userId);
-      
-      const projects = await Promise.race([queryPromise, timeoutPromise]);
+      // Remove the artificial timeout completely and rely on database connection settings
+      const projects = await this.loadProjectsFromDatabase(userId);
       return projects;
       
     } catch (error) {
