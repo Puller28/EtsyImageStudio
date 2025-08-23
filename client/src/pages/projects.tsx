@@ -8,16 +8,7 @@ import { useState } from "react";
 import Navigation from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/useAuth";
-import type { User } from "@shared/schema";
-
-interface Project {
-  id: string;
-  title: string;
-  createdAt: Date;
-  status: string;
-  thumbnailUrl?: string;
-  originalImageUrl: string;
-}
+import type { User, Project } from "@shared/schema";
 
 export default function ProjectsPage() {
   const [, setLocation] = useLocation();
@@ -29,10 +20,28 @@ export default function ProjectsPage() {
     queryKey: ["/api/user"],
   });
 
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading, error } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     staleTime: 30000, // Cache for 30 seconds
   });
+
+  // Debug query state
+  console.log("🔍 Query state:", { isLoading, hasError: !!error, dataLength: projects?.length });
+
+  // Debug logging to understand data structure
+  console.log("📋 Projects data:", projects?.length || 0, projects);
+  
+  // Check if projects array has valid data
+  if (projects && projects.length > 0) {
+    console.log("🔍 First project structure:", projects[0]);
+    console.log("🔍 Required fields check:", {
+      hasId: !!projects[0]?.id,
+      hasTitle: !!projects[0]?.title,
+      hasCreatedAt: !!projects[0]?.createdAt,
+      hasStatus: !!projects[0]?.status,
+      hasOriginalImageUrl: !!projects[0]?.originalImageUrl
+    });
+  }
 
   // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser || undefined;
@@ -54,10 +63,17 @@ export default function ProjectsPage() {
 
   // Filter projects based on search term and status
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || project.status === statusFilter;
+    // Add safety checks for undefined/null values
+    const title = project.title || '';
+    const status = project.status || '';
+    
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+  
+  // Debug filtered results
+  console.log("🔍 Filtered projects:", filteredProjects.length, "from", projects.length, "total");
 
   if (isLoading) {
     return (
