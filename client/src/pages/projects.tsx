@@ -14,6 +14,9 @@ export default function ProjectsPage() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Debug initial state
+  console.log("🔍 Projects page initial state:", { searchTerm, statusFilter });
   const { user: authUser } = useAuth();
 
   const { data: user } = useQuery<User>({
@@ -73,8 +76,13 @@ export default function ProjectsPage() {
     const title = project.title || '';
     const status = project.status || '';
     
-    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || status === statusFilter;
+    // Fix search logic: empty search should match everything
+    const matchesSearch = searchTerm.trim() === '' || title.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Fix status logic: normalize status comparison
+    const normalizedStatus = status.toLowerCase();
+    const normalizedFilter = statusFilter.toLowerCase();
+    const matchesStatus = statusFilter === "all" || normalizedStatus === normalizedFilter;
     
     console.log("🔍 Project filter check:", {
       projectId: project.id,
@@ -161,6 +169,7 @@ export default function ProjectsPage() {
                   <SelectItem value="ai-generated">AI Generated</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="ready">Ready</SelectItem>
                 </SelectContent>
               </Select>
             </div>
