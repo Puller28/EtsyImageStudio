@@ -46,15 +46,21 @@ export default function ProjectsPage() {
   // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser || undefined;
 
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return "1 day ago";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 14) return "1 week ago";
-    return `${Math.ceil(diffDays / 7)} weeks ago`;
+  const formatDate = (date: Date | string) => {
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - dateObj.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) return "1 day ago";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 14) return "1 week ago";
+      return `${Math.ceil(diffDays / 7)} weeks ago`;
+    } catch (error) {
+      console.warn("Date formatting error:", error, date);
+      return "Unknown date";
+    }
   };
 
   const handleViewProject = (projectId: string) => {
@@ -74,6 +80,7 @@ export default function ProjectsPage() {
   
   // Debug filtered results
   console.log("🔍 Filtered projects:", filteredProjects.length, "from", projects.length, "total");
+  console.log("🔍 Auth state:", { hasToken: !!authUser, hasAuthUser: !!authUser, hasUser: !!user, projectsLoading: isLoading, isAuthenticated: !!authUser || !!user });
 
   if (isLoading) {
     return (
@@ -148,6 +155,12 @@ export default function ProjectsPage() {
         </div>
 
         {/* Projects Grid */}
+        {console.log("🎯 Rendering decision:", { 
+          filteredProjectsLength: filteredProjects.length, 
+          totalProjects: projects.length,
+          isLoading,
+          showingEmptyState: filteredProjects.length === 0 
+        })}
         {filteredProjects.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-12 text-center">
