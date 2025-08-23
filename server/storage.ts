@@ -67,10 +67,15 @@ class MemStorage implements IStorage {
         const user: User = {
           id: dbUser.id,
           email: dbUser.email,
+          name: dbUser.name,
           password: dbUser.password,
+          avatar: dbUser.avatar,
           credits: dbUser.credits || 3,
-          plan: dbUser.plan || 'free',
-          stripeCustomerId: dbUser.stripe_customer_id,
+          subscriptionStatus: dbUser.subscription_status || 'free',
+          subscriptionPlan: dbUser.subscription_plan,
+          subscriptionId: dbUser.subscription_id,
+          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : undefined,
+          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : undefined,
           createdAt: new Date(dbUser.created_at)
         };
         
@@ -114,10 +119,15 @@ class MemStorage implements IStorage {
         const user: User = {
           id: dbUser.id,
           email: dbUser.email,
+          name: dbUser.name,
           password: dbUser.password,
+          avatar: dbUser.avatar,
           credits: dbUser.credits || 3,
-          plan: dbUser.plan || 'free',
-          stripeCustomerId: dbUser.stripe_customer_id,
+          subscriptionStatus: dbUser.subscription_status || 'free',
+          subscriptionPlan: dbUser.subscription_plan,
+          subscriptionId: dbUser.subscription_id,
+          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : undefined,
+          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : undefined,
           createdAt: new Date(dbUser.created_at)
         };
         
@@ -155,8 +165,8 @@ class MemStorage implements IStorage {
       });
 
       await sql`
-        INSERT INTO public.users (id, email, password, credits, subscription_plan, stripe_customer_id, created_at)
-        VALUES (${user.id}, ${user.email}, ${user.password}, ${user.credits}, ${user.subscriptionPlan || 'free'}, ${user.subscriptionId || null}, ${user.createdAt})
+        INSERT INTO public.users (id, email, name, password, credits, subscription_status, subscription_plan, created_at)
+        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.password}, ${user.credits || 3}, ${'free'}, ${null}, ${user.createdAt})
       `;
       
       await sql.end();
