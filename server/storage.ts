@@ -525,14 +525,86 @@ class MemStorage implements IStorage {
       createdAt
     };
     
+    // Store in memory
     this.creditTransactions.set(id, creditTransaction);
+    
+    // Persist to database
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10
+      });
+
+      await sql`
+        INSERT INTO credit_transactions (
+          id, user_id, amount, transaction_type, description, balance_after, project_id, created_at
+        ) VALUES (
+          ${id}, ${transaction.userId}, ${transaction.amount}, ${transaction.transactionType}, 
+          ${transaction.description}, ${transaction.balanceAfter}, ${transaction.projectId || null}, ${createdAt}
+        )
+      `;
+
+      await sql.end();
+      console.log(`✅ Successfully persisted credit transaction ${id} to database`);
+
+    } catch (dbError) {
+      console.warn(`⚠️ Failed to persist credit transaction ${id} to database:`, dbError);
+    }
+    
     return creditTransaction;
   }
 
   async getCreditTransactions(userId: string): Promise<CreditTransaction[]> {
-    return Array.from(this.creditTransactions.values())
-      .filter(transaction => transaction.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // First check memory cache
+    const memoryTransactions = Array.from(this.creditTransactions.values())
+      .filter(transaction => transaction.userId === userId);
+    
+    // Always try to load from database to ensure complete history
+    try {
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 5,
+        connect_timeout: 10
+      });
+
+      const dbTransactions = await sql`
+        SELECT id, user_id, amount, transaction_type, description, balance_after, project_id, created_at
+        FROM credit_transactions 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+        LIMIT 50
+      `;
+
+      await sql.end();
+
+      const convertedTransactions = dbTransactions.map((tx: any) => ({
+        id: tx.id,
+        userId: tx.user_id,
+        amount: tx.amount,
+        transactionType: tx.transaction_type as 'earn' | 'spend' | 'refund' | 'purchase',
+        description: tx.description,
+        balanceAfter: tx.balance_after,
+        projectId: tx.project_id,
+        createdAt: new Date(tx.created_at)
+      }));
+
+      // Cache in memory for future requests
+      convertedTransactions.forEach(tx => {
+        this.creditTransactions.set(tx.id, tx);
+      });
+
+      console.log(`✅ Retrieved ${convertedTransactions.length} credit transactions from database for user ${userId}`);
+      return convertedTransactions;
+
+    } catch (dbError) {
+      console.warn(`⚠️ Failed to load credit transactions from database for user ${userId}:`, dbError);
+      
+      // Fallback to memory cache
+      return memoryTransactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
   }
 
   async getContactMessages(): Promise<any[]> {
