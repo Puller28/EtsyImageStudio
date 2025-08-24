@@ -933,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!res.headersSent) {
           res.json([]);
         }
-      }, 30000); // 30 second timeout to allow complete JSONB data loading
+      }, 45000); // 45 second timeout to allow complete JSONB data loading
       
       try {
         const projects = await storage.getProjectsByUserId(req.userId);
