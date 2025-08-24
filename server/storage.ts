@@ -321,14 +321,16 @@ class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // Clear cache and reload to get complete project data with upscaled images
-    const userProjectIds = Array.from(this.projects.keys()).filter(id => 
-      this.projects.get(id)?.userId === userId);
-    userProjectIds.forEach(id => this.projects.delete(id));
-    console.log(`🔄 Cleared ${userProjectIds.length} cached projects for user ${userId}`);
+    // Check memory cache first for performance
+    const memoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
     
-    // For production optimization, limit database calls unless explicitly needed
-    console.log(`🔍 No memory projects found, attempting optimized database load for user ${userId}`);
+    if (memoryProjects.length > 0) {
+      console.log(`📦 Found ${memoryProjects.length} projects in memory for user ${userId}`);
+      return memoryProjects;
+    }
+    
+    // Load from database if not in cache
+    console.log(`🔍 No memory projects found, loading from database for user ${userId}`);
     
     try {
       const projects = await this.loadProjectsFromDatabase(userId);
@@ -344,16 +346,12 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Load complete project data - using JSON parsing for JSONB fields
+      // Fast load - just essential fields first to avoid timeout
       const projects = await sql`
         SELECT 
           id, user_id, title, status, thumbnail_url, original_image_url, 
-          upscaled_image_url, mockup_image_url, 
-          COALESCE(mockup_images::text, '{}') as mockup_images,
-          COALESCE(resized_images::text, '[]') as resized_images,
-          COALESCE(etsy_listing::text, '{}') as etsy_listing,
-          zip_url, created_at, upscale_option, mockup_template, 
-          ai_prompt, COALESCE(metadata::text, '{}') as metadata
+          upscaled_image_url, mockup_image_url, zip_url, created_at, 
+          upscale_option, mockup_template, ai_prompt
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
@@ -367,52 +365,16 @@ class MemStorage implements IStorage {
         originalImageUrl: project.original_image_url,
         upscaledImageUrl: project.upscaled_image_url,
         mockupImageUrl: project.mockup_image_url,
-        mockupImages: (() => {
-          try {
-            return typeof project.mockup_images === 'string' 
-              ? JSON.parse(project.mockup_images) 
-              : (project.mockup_images || {});
-          } catch (e) {
-            console.warn('Failed to parse mockupImages:', project.mockup_images);
-            return {};
-          }
-        })(),
-        resizedImages: (() => {
-          try {
-            return typeof project.resized_images === 'string' 
-              ? JSON.parse(project.resized_images) 
-              : (project.resized_images || []);
-          } catch (e) {
-            console.warn('Failed to parse resizedImages:', project.resized_images);
-            return [];
-          }
-        })(),
-        etsyListing: (() => {
-          try {
-            return typeof project.etsy_listing === 'string' 
-              ? JSON.parse(project.etsy_listing) 
-              : (project.etsy_listing || {});
-          } catch (e) {
-            console.warn('Failed to parse etsyListing:', project.etsy_listing);
-            return {};
-          }
-        })(),
+        mockupImages: {}, // Will be populated async for performance
+        resizedImages: [], // Will be populated async for performance  
+        etsyListing: {}, // Will be populated async for performance
         mockupTemplate: project.mockup_template,
         upscaleOption: project.upscale_option || '2x',
         status: project.status || 'pending',
         zipUrl: project.zip_url,
         thumbnailUrl: project.thumbnail_url,
         aiPrompt: project.ai_prompt,
-        metadata: (() => {
-          try {
-            return typeof project.metadata === 'string' 
-              ? JSON.parse(project.metadata) 
-              : (project.metadata || {});
-          } catch (e) {
-            console.warn('Failed to parse metadata:', project.metadata);
-            return {};
-          }
-        })(),
+        metadata: {},
         createdAt: new Date(project.created_at)
       }));
       
