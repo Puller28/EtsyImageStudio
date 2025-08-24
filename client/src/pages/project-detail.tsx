@@ -48,6 +48,15 @@ export default function ProjectDetailPage() {
     queryKey: ["/api/projects", projectId],
     enabled: !!projectId,
     retry: false, // Don't retry on 403/404 errors
+    refetchInterval: (query) => {
+      // Poll every 3 seconds if project is processing
+      const data = query.state.data;
+      if (data?.status === 'processing' || data?.status === 'ai-generated') {
+        return 3000;
+      }
+      // Stop polling if completed or failed
+      return false;
+    },
   });
 
   // Use auth user data as fallback if API user data is not available

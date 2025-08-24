@@ -26,6 +26,12 @@ export default function ProjectsPage() {
   const { data: projects = [], isLoading, error } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     staleTime: 30000, // Cache for 30 seconds
+    refetchInterval: (query) => {
+      // Poll every 5 seconds if any project is still processing
+      const data = query.state.data;
+      const hasProcessingProjects = data?.some((p: Project) => p.status === 'processing' || p.status === 'ai-generated');
+      return hasProcessingProjects ? 5000 : false;
+    },
   });
 
   // Debug query state
