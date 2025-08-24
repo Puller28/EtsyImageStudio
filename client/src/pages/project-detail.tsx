@@ -153,7 +153,17 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const mockupKeys = project.mockupImages ? Object.keys(project.mockupImages) : [];
+  // Safely get mockup keys with error handling for large objects
+  const mockupKeys = (() => {
+    try {
+      return project.mockupImages && typeof project.mockupImages === 'object' 
+        ? Object.keys(project.mockupImages) 
+        : [];
+    } catch (error) {
+      console.warn('Could not enumerate mockup keys:', error);
+      return [];
+    }
+  })();
   
   // Initialize selectedMockup with first mockup key if not set and mockups exist
   const effectiveSelectedMockup = selectedMockup || (mockupKeys.length > 0 ? mockupKeys[0] : null);
