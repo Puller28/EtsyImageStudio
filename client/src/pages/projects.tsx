@@ -240,6 +240,11 @@ export default function ProjectsPage() {
                           src={project.thumbnailUrl}
                           alt={project.title}
                           className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            console.error('Thumbnail load error for project:', project.id, 'URL length:', project.thumbnailUrl?.length);
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"><span class="text-gray-400 text-sm">Preview unavailable</span></div>';
+                          }}
                         />
                       ) : (
                         <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
