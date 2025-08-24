@@ -83,7 +83,44 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
                   </div>
                 )}
               </div>
-              <h4 className="font-medium text-gray-900 text-sm truncate">{project.title}</h4>
+              <h4 className="font-medium text-gray-900 text-sm truncate mb-1">{project.title}</h4>
+              
+              {/* Content indicators */}
+              <div className="mb-2 flex flex-wrap gap-1">
+                {project.status === 'completed' && (
+                  <>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                      📸
+                    </span>
+                    {project.upscaledImageUrl && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">
+                        🔍
+                      </span>
+                    )}
+                    {project.mockupImageUrl && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+                        🖼️
+                      </span>
+                    )}
+                    {project.resizedImages && project.resizedImages.length > 0 && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-orange-100 text-orange-700">
+                        📏
+                      </span>
+                    )}
+                    {project.etsyListing && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-pink-100 text-pink-700">
+                        📝
+                      </span>
+                    )}
+                  </>
+                )}
+                {project.status === 'ai-generated' && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+                    🤖
+                  </span>
+                )}
+              </div>
+              
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500">
                   {formatDate(project.createdAt)}

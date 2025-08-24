@@ -247,6 +247,42 @@ export default function ProjectsPage() {
                         {project.title}
                       </h4>
                       
+                      {/* Content indicators showing what the project contains */}
+                      <div className="mb-3 flex flex-wrap gap-1">
+                        {project.status === 'completed' && (
+                          <>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
+                              📸 Original
+                            </span>
+                            {project.upscaledImageUrl && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                🔍 Upscaled
+                              </span>
+                            )}
+                            {project.mockupImageUrl && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
+                                🖼️ Mockups
+                              </span>
+                            )}
+                            {project.resizedImages && project.resizedImages.length > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-700">
+                                📏 Print Sizes
+                              </span>
+                            )}
+                            {project.etsyListing && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-pink-100 text-pink-700">
+                                📝 Etsy SEO
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {project.status === 'ai-generated' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
+                            🤖 AI Generated
+                          </span>
+                        )}
+                      </div>
+                      
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-gray-500">
                           {formatDate(new Date(project.createdAt))}

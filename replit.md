@@ -29,6 +29,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **Credit Transaction Tracking**: Comprehensive audit trail system for all credit usage with detailed transaction history, types, and balances. Credit costs are aligned for AI generation, upscaling, Etsy listings, and mockup generation.
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite`.
 - **Streamlined Mockup Interface**: Sequential mockup generation is the default with a simplified single "Generate" button. Template selection is integrated into the workflow rather than a separate dashboard step.
+- **Enhanced Project Display**: Project cards show visual content indicators (📸 Original, 🔍 Upscaled, 🖼️ Mockups, 📏 Print Sizes, 📝 Etsy SEO) to clearly communicate what assets each project contains, improving project organization and user understanding.
 
 ## External Dependencies
 
