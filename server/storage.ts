@@ -346,10 +346,10 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Fast initial load - no heavy image data, just metadata for project list
+      // Fast initial load - include original image for fallback thumbnails
       const projects = await sql`
         SELECT 
-          id, user_id, title, status, thumbnail_url, created_at,
+          id, user_id, title, status, thumbnail_url, original_image_url, created_at,
           upscale_option, mockup_template, ai_prompt
         FROM projects 
         WHERE user_id = ${userId}
@@ -361,7 +361,7 @@ class MemStorage implements IStorage {
         id: project.id,
         userId: project.user_id,
         title: project.title || 'Untitled Project',
-        originalImageUrl: null, // Will be loaded on-demand
+        originalImageUrl: project.original_image_url, // Include for fallback thumbnails
         upscaledImageUrl: null, // Will be loaded on-demand  
         mockupImageUrl: null, // Will be loaded on-demand
         mockupImages: {}, // Will be loaded on-demand

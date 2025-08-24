@@ -71,9 +71,9 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
               onClick={() => onViewProject(project.id)}
             >
               <div className="aspect-w-16 aspect-h-10 bg-gray-100 rounded-lg overflow-hidden mb-3">
-                {project.thumbnailUrl ? (
+                {project.thumbnailUrl || project.originalImageUrl ? (
                   <img
-                    src={project.thumbnailUrl}
+                    src={project.thumbnailUrl || project.originalImageUrl}
                     alt={project.title}
                     className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
                   />
