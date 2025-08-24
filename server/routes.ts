@@ -2492,13 +2492,37 @@ async function processProjectAsync(project: any) {
     
     console.log('✅ Created', resizedImages.length, 'print formats');
     
-    // Update project with processed assets
-    await storage.updateProject(project.id, {
-      upscaledImageUrl,
-      resizedImages,
-      zipUrl: `/api/projects/${project.id}/download-zip`,
-      status: "completed"
-    });
+    // Update project with processed assets - Direct database update
+    console.log('🔧 Updating project with processed results...');
+    console.log('🔧 Upscaled image size:', upscaledImageUrl.length);
+    console.log('🔧 Resized images count:', resizedImages.length);
+    
+    try {
+      // Update both memory storage and database directly to ensure consistency
+      await storage.updateProject(project.id, {
+        upscaledImageUrl,
+        resizedImages,
+        zipUrl: `/api/projects/${project.id}/download-zip`,
+        status: "completed"
+      });
+      
+      // Also update database directly to ensure persistence
+      console.log('🔧 Updating database directly...');
+      const dbUpdateResult = await db.update(projects)
+        .set({
+          upscaledImageUrl,
+          resizedImages,
+          zipUrl: `/api/projects/${project.id}/download-zip`,
+          status: "completed"
+        })
+        .where(eq(projects.id, project.id));
+      
+      console.log('🔧 Database update result:', dbUpdateResult);
+      console.log('✅ Project update successful (both memory and database)');
+    } catch (updateError) {
+      console.error('🔧❌ Failed to update project:', updateError);
+      throw updateError; // Re-throw to trigger the catch block
+    }
 
     const processingTime = Date.now() - startTime;
     console.log(`✅ Real processing completed successfully for project: ${project.id} in ${processingTime}ms`);
