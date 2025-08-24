@@ -920,58 +920,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const startTime = Date.now();
     try {
       console.log('🔍 PRODUCTION DEBUG - /api/projects endpoint called');
-      console.log('🔍 Request details:', {
-        hasAuthHeader: !!req.headers.authorization,
-        authHeader: req.headers.authorization ? `Bearer ${req.headers.authorization.substring(7, 15)}...` : 'missing',
-        userId: req.userId,
-        user: req.user ? { id: req.user.id, email: req.user.email } : 'missing',
-        host: req.headers.host,
-        userAgent: req.headers['user-agent']?.substring(0, 50)
-      });
       
       if (!req.userId) {
-        console.error('❌ PRODUCTION ERROR: No userId found in request');
-        console.error('❌ Auth middleware result:', { userId: req.userId, user: req.user });
         return res.status(401).json({ error: "Authentication required" });
       }
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Use direct call without race condition for now to debug
-      const projects = await storage.getProjectsByUserId(req.userId);
+      // Set response timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        console.log('⚠️ Projects API timeout, sending empty response');
+        if (!res.headersSent) {
+          res.json([]);
+        }
+      }, 15000); // 15 second timeout
       
-      const duration = Date.now() - startTime;
-      console.log(`✅ Projects API completed in ${duration}ms, found ${projects.length} projects`);
-      
-      // Debug what we're actually sending to frontend
-      console.log('🔍 PRODUCTION Projects data being sent:', {
-        count: projects.length,
-        firstProject: projects[0] ? {
-          id: projects[0].id,
-          title: projects[0].title,
-          status: projects[0].status,
-          hasCreatedAt: !!projects[0].createdAt
-        } : 'no projects'
-      });
-      
-      res.json(projects);
+      try {
+        const projects = await storage.getProjectsByUserId(req.userId);
+        clearTimeout(timeoutId);
+        
+        const duration = Date.now() - startTime;
+        console.log(`✅ Projects API completed in ${duration}ms, found ${projects.length} projects`);
+        
+        if (!res.headersSent) {
+          res.json(projects);
+        }
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
       
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ API /projects failed after ${duration}ms:`, error);
       
-      // If database timeout, return empty array instead of error
-      if (error instanceof Error && error.message === 'Database query timeout') {
-        console.log('⚠️ Database timeout, returning empty projects array');
-        return res.json([]);
+      if (!res.headersSent) {
+        // If database timeout, return empty array instead of error
+        if (error instanceof Error && error.message === 'Database query timeout') {
+          console.log('⚠️ Database timeout, returning empty projects array');
+          return res.json([]);
+        }
+        
+        res.status(500).json({ 
+          error: "Failed to get projects", 
+          details: error instanceof Error ? error.message : 'Unknown error',
+          duration: duration 
+        });
       }
-      
-      // Return 500 with detailed error for debugging
-      res.status(500).json({ 
-        error: "Failed to get projects", 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        duration: duration 
-      });
     }
   });
 

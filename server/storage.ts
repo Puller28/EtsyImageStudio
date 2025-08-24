@@ -346,8 +346,13 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Load complete project data including all image and processing results
-      const projects = await sql`
+      // Set shorter timeout for responsive UI
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database query timeout')), 10000); // 10 second timeout
+      });
+
+      // Load complete project data with pagination for performance
+      const queryPromise = sql`
         SELECT 
           id, user_id, title, original_image_url, upscaled_image_url, mockup_image_url,
           mockup_images, resized_images, etsy_listing, mockup_template,
@@ -355,8 +360,10 @@ class MemStorage implements IStorage {
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
-        LIMIT 50
+        LIMIT 10
       `;
+
+      const projects = await Promise.race([queryPromise, timeoutPromise]) as any[];
       
       const convertedProjects = projects.map((project: any) => ({
         id: project.id,
