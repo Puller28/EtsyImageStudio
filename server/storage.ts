@@ -321,19 +321,17 @@ class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // Check memory cache first for performance
-    const memoryProjects = Array.from(this.projects.values()).filter(project => project.userId === userId);
-    
-    if (memoryProjects.length > 0) {
-      console.log(`📦 Found ${memoryProjects.length} projects in memory for user ${userId}`);
-      return memoryProjects;
-    }
-    
-    // Load from database if not in cache
-    console.log(`🔍 No memory projects found, loading from database for user ${userId}`);
+    // Clear memory cache and reload from database to get complete JSONB data
+    console.log(`🔄 Reloading projects from database for user ${userId} to get complete JSONB data`);
     
     try {
       const projects = await this.loadProjectsFromDatabase(userId);
+      
+      // Cache the complete results for subsequent requests
+      projects.forEach(project => {
+        this.projects.set(project.id, project);
+      });
+      
       return projects;
       
     } catch (error) {
@@ -346,12 +344,16 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Fast load - just essential fields first to avoid timeout
+      // Load complete project data with optimized JSON handling
       const projects = await sql`
         SELECT 
           id, user_id, title, status, thumbnail_url, original_image_url, 
-          upscaled_image_url, mockup_image_url, zip_url, created_at, 
-          upscale_option, mockup_template, ai_prompt
+          upscaled_image_url, mockup_image_url, 
+          COALESCE(mockup_images, '{}') as mockup_images,
+          COALESCE(resized_images, '[]') as resized_images,
+          COALESCE(etsy_listing, '{}') as etsy_listing,
+          zip_url, created_at, upscale_option, mockup_template, 
+          ai_prompt, COALESCE(metadata, '{}') as metadata
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
@@ -365,16 +367,16 @@ class MemStorage implements IStorage {
         originalImageUrl: project.original_image_url,
         upscaledImageUrl: project.upscaled_image_url,
         mockupImageUrl: project.mockup_image_url,
-        mockupImages: {}, // Will be populated async for performance
-        resizedImages: [], // Will be populated async for performance  
-        etsyListing: {}, // Will be populated async for performance
+        mockupImages: project.mockup_images || {},
+        resizedImages: project.resized_images || [],
+        etsyListing: project.etsy_listing || {},
         mockupTemplate: project.mockup_template,
         upscaleOption: project.upscale_option || '2x',
         status: project.status || 'pending',
         zipUrl: project.zip_url,
         thumbnailUrl: project.thumbnail_url,
         aiPrompt: project.ai_prompt,
-        metadata: {},
+        metadata: project.metadata || {},
         createdAt: new Date(project.created_at)
       }));
       

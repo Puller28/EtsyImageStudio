@@ -927,13 +927,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 API /projects called for user: ${req.userId}`);
       
-      // Set response timeout to prevent hanging
+      // Set response timeout to prevent hanging - increased for JSONB data loading
       const timeoutId = setTimeout(() => {
         console.log('⚠️ Projects API timeout, sending empty response');
         if (!res.headersSent) {
           res.json([]);
         }
-      }, 15000); // 15 second timeout
+      }, 30000); // 30 second timeout to allow complete JSONB data loading
       
       try {
         const projects = await storage.getProjectsByUserId(req.userId);
