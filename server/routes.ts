@@ -1247,7 +1247,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "completed",
         zipUrl: "data:application/zip;base64,UEsDBAoAAAAAAItJJVkAAAAAAAAAAAAAAAAJAAAAbW9ja3VwLmpwZw==",
 
-        resizedImages: [project.originalImageUrl, project.originalImageUrl, project.originalImageUrl, project.originalImageUrl, project.originalImageUrl]
+        resizedImages: [
+          { size: "4x5", url: project.originalImageUrl },
+          { size: "3x4", url: project.originalImageUrl },
+          { size: "2x3", url: project.originalImageUrl },
+          { size: "11x14", url: project.originalImageUrl },
+          { size: "A4", url: project.originalImageUrl }
+        ]
       });
 
       const updatedProject = await storage.getProject(project.id);
@@ -1313,9 +1319,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add print format sizes
       const printFormats = ["4x5-8x10.jpg", "3x4-18x24.jpg", "2x3-12x18.jpg", "11x14.jpg", "A4-ISO.jpg"];
       printFormats.forEach((filename, index) => {
-        if (project.resizedImages?.[index] && project.resizedImages[index].startsWith('data:image/')) {
-          const base64Data = project.resizedImages[index].split(',')[1];
-          zip.file(`print-formats/${filename}`, base64Data, { base64: true });
+        if (project.resizedImages?.[index]) {
+          // Handle both old format (URL strings) and new format (objects with {size, url})
+          const resizedItem = project.resizedImages[index];
+          const imageData = typeof resizedItem === 'string' 
+            ? resizedItem 
+            : (resizedItem as any).url;
+          
+          if (imageData && typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+            const base64Data = imageData.split(',')[1];
+            zip.file(`print-formats/${filename}`, base64Data, { base64: true });
+          }
         }
       });
 
