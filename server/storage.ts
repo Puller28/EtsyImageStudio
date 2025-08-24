@@ -346,83 +346,34 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Set shorter timeout for responsive UI
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout')), 10000); // 10 second timeout
-      });
-
-      // Load complete project data with pagination for performance
-      const queryPromise = sql`
+      // Fast initial load - no heavy image data, just metadata for project list
+      const projects = await sql`
         SELECT 
-          id, user_id, title, original_image_url, upscaled_image_url, mockup_image_url,
-          mockup_images, resized_images, etsy_listing, mockup_template,
-          upscale_option, status, zip_url, thumbnail_url, ai_prompt, metadata, created_at
+          id, user_id, title, status, thumbnail_url, created_at,
+          upscale_option, mockup_template, ai_prompt
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
-        LIMIT 10
+        LIMIT 20
       `;
-
-      const projects = await Promise.race([queryPromise, timeoutPromise]) as any[];
       
       const convertedProjects = projects.map((project: any) => ({
         id: project.id,
         userId: project.user_id,
         title: project.title || 'Untitled Project',
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: (() => {
-          try {
-            if (typeof project.mockup_images === 'string') {
-              const parsed = JSON.parse(project.mockup_images);
-              return Array.isArray(parsed) ? {} : (parsed || {});
-            }
-            return Array.isArray(project.mockup_images) ? {} : (project.mockup_images || {});
-          } catch (e) {
-            console.warn('Failed to parse mockupImages:', project.mockup_images);
-            return {};
-          }
-        })(),
-        resizedImages: (() => {
-          try {
-            if (typeof project.resized_images === 'string') {
-              return JSON.parse(project.resized_images) || [];
-            }
-            return project.resized_images || [];
-          } catch (e) {
-            console.warn('Failed to parse resizedImages:', project.resized_images);
-            return [];
-          }
-        })(),
-        etsyListing: (() => {
-          try {
-            if (typeof project.etsy_listing === 'string') {
-              return JSON.parse(project.etsy_listing) || {};
-            }
-            return project.etsy_listing || {};
-          } catch (e) {
-            console.warn('Failed to parse etsyListing:', project.etsy_listing);
-            return {};
-          }
-        })(),
+        originalImageUrl: null, // Will be loaded on-demand
+        upscaledImageUrl: null, // Will be loaded on-demand  
+        mockupImageUrl: null, // Will be loaded on-demand
+        mockupImages: {}, // Will be loaded on-demand
+        resizedImages: [], // Will be loaded on-demand
+        etsyListing: {}, // Will be loaded on-demand
         mockupTemplate: project.mockup_template,
         upscaleOption: project.upscale_option || '2x',
         status: project.status || 'pending',
-        zipUrl: project.zip_url,
+        zipUrl: null, // Will be loaded on-demand
         thumbnailUrl: project.thumbnail_url,
         aiPrompt: project.ai_prompt,
-        metadata: (() => {
-          try {
-            if (typeof project.metadata === 'string') {
-              return JSON.parse(project.metadata) || {};
-            }
-            return project.metadata || {};
-          } catch (e) {
-            console.warn('Failed to parse metadata:', project.metadata);
-            return {};
-          }
-        })(),
+        metadata: {},
         createdAt: new Date(project.created_at)
       }));
       
