@@ -2486,9 +2486,11 @@ async function processProjectAsync(project: any) {
     const upscaledBuffer = Buffer.from(upscaledImageUrl.split(',')[1], 'base64');
     const resizedFormats = await resizeImageToFormats(upscaledBuffer);
     
-    const resizedImages = Object.values(resizedFormats).map(buffer => 
-      `data:image/jpeg;base64,${buffer.toString('base64')}`
-    );
+    // Create resized images with proper structure for frontend
+    const resizedImages = Object.entries(resizedFormats).map(([format, buffer]) => ({
+      size: format,
+      url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+    }));
     
     console.log('✅ Created', resizedImages.length, 'print formats');
     

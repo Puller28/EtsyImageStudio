@@ -153,6 +153,23 @@ export default function ProjectDetailPage() {
     ? project.mockupImages[effectiveSelectedMockup] 
     : project.mockupImageUrl;
 
+  // Transform resized images to handle both old and new formats
+  const normalizedResizedImages = project.resizedImages ? 
+    (Array.isArray(project.resizedImages) && project.resizedImages.length > 0 ?
+      // Check if first item is an object with size/url or just a URL string
+      (typeof project.resizedImages[0] === 'object' && 'size' in project.resizedImages[0] ?
+        project.resizedImages as Array<{ size: string; url: string }> :
+        // Transform old format (array of URLs) to new format
+        (project.resizedImages as string[]).map((url, index) => {
+          const formats = ['4x5', '3x4', '2x3', '11x14', 'A4'];
+          return {
+            size: formats[index] || `Format ${index + 1}`,
+            url: url
+          };
+        })
+      ) : []
+    ) : [];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation user={currentUser} />
@@ -393,20 +410,24 @@ export default function ProjectDetailPage() {
               </Card>
             )}
 
-            {/* Resized Images */}
-            {project.resizedImages && Array.isArray(project.resizedImages) && project.resizedImages.length > 0 && (
+            {/* Print-Ready Sizes */}
+            {normalizedResizedImages.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Image className="w-5 h-5 mr-2" />
                     Print-Ready Sizes
+                    <Badge variant="secondary" className="ml-2">{normalizedResizedImages.length}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {(Array.isArray(project.resizedImages) ? project.resizedImages : []).map((resized, index) => (
+                    {normalizedResizedImages.map((resized, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium">{resized.size}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{resized.size}</span>
+                          <span className="text-sm text-gray-500">Print format</span>
+                        </div>
                         <Button 
                           variant="outline" 
                           size="sm" 
