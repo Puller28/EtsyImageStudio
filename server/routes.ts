@@ -1092,12 +1092,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Process project (upscale, resize, mockup, SEO) - REAL PROCESSING
   app.post("/api/projects/:id/process", async (req, res) => {
     try {
-      const project = await storage.getProject(req.params.id);
-      if (!project) {
+      // Force reload from database to get fresh data including originalImageUrl
+      const dbProjects = await db.select().from(projects).where(eq(projects.id, req.params.id)).limit(1);
+      
+      if (dbProjects.length === 0) {
         return res.status(404).json({ error: "Project not found" });
       }
+      
+      const dbProject = dbProjects[0];
+      const project = {
+        id: dbProject.id,
+        userId: dbProject.userId,
+        title: dbProject.title,
+        originalImageUrl: dbProject.originalImageUrl,
+        upscaledImageUrl: dbProject.upscaledImageUrl,
+        mockupImageUrl: dbProject.mockupImageUrl,
+        mockupImages: dbProject.mockupImages || {},
+        resizedImages: dbProject.resizedImages || [],
+        etsyListing: dbProject.etsyListing || {},
+        mockupTemplate: dbProject.mockupTemplate,
+        upscaleOption: dbProject.upscaleOption,
+        status: dbProject.status,
+        zipUrl: dbProject.zipUrl,
+        thumbnailUrl: dbProject.thumbnailUrl,
+        aiPrompt: dbProject.aiPrompt,
+        metadata: dbProject.metadata || {},
+        createdAt: dbProject.createdAt
+      };
 
       console.log(`🔧 Starting REAL processing for project: ${project.id}`);
+      console.log(`🔧 Original image available: ${!!project.originalImageUrl} (${project.originalImageUrl ? 'length: ' + project.originalImageUrl.length : 'NULL'})`);
+      console.log(`🔧 DB Project originalImageUrl available: ${!!dbProject.originalImageUrl} (${dbProject.originalImageUrl ? 'length: ' + dbProject.originalImageUrl.length : 'NULL'})`);
+      
+      // Verify image data before processing
+      if (!project.originalImageUrl) {
+        console.error(`🔧❌ No original image data found for project ${project.id}`);
+        return res.status(400).json({ error: "No original image data found" });
+      }
       
       // Update status to processing
       await storage.updateProject(project.id, { status: "processing" });

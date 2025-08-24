@@ -26,6 +26,21 @@ export class SegmindService {
     }
 
     console.log('Starting Segmind upscaling with scale:', options.scale);
+    console.log('🔍 Image format check:', {
+      imageStart: options.image.substring(0, 50),
+      imageLength: options.image.length,
+      containsDataURL: options.image.includes('data:'),
+      containsBase64: options.image.includes('base64')
+    });
+    
+    // Clean the base64 data - remove data URL prefix if present
+    const cleanBase64 = options.image.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    console.log('🔍 Cleaned base64:', {
+      originalLength: options.image.length,
+      cleanedLength: cleanBase64.length,
+      cleanedStart: cleanBase64.substring(0, 50)
+    });
     
     try {
       const response = await fetch(`${this.baseUrl}/esrgan`, {
@@ -35,7 +50,7 @@ export class SegmindService {
           'x-api-key': this.apiKey,
         },
         body: JSON.stringify({
-          image: options.image,
+          image: cleanBase64,
           scale: options.scale
         }),
       });
