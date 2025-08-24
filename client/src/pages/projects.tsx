@@ -96,6 +96,20 @@ export default function ProjectsPage() {
   console.log("🔍 Search/Filter state:", { searchTerm, statusFilter });
   console.log("🔍 Auth state:", { hasToken: !!authUser, hasAuthUser: !!authUser, hasUser: !!user, projectsLoading: isLoading, projectsError: error, isAuthenticated: !!authUser || !!user });
   
+  // Debug thumbnail URLs for all projects
+  if (projects.length > 0) {
+    projects.forEach((project, index) => {
+      console.log(`🖼️ Project ${index + 1} thumbnail:`, {
+        id: project.id?.substring(0, 8),
+        title: project.title,
+        status: project.status,
+        hasThumbnail: !!project.thumbnailUrl,
+        thumbnailLength: project.thumbnailUrl?.length,
+        thumbnailValid: project.thumbnailUrl?.startsWith('data:image/')
+      });
+    });
+  }
+  
   // Debug each project's filtering
   if (projects.length > 0) {
     projects.forEach((project, index) => {
