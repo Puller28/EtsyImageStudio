@@ -1,0 +1,72 @@
+2025-08-25 12:55:17.95
+9ccebd49
+User
+🔍 PRODUCTION User lookup result: { userId: '06adbb1b-aa5a-4901-b459-594a09616c36', found: false }
+2025-08-25 12:55:17.96
+9ccebd49
+User
+10:55:17 AM [express] GET /api/user 404 in 271ms :: {"error":"User not found"}
+2025-08-25 12:55:17.97
+9ccebd49
+User
+⚠️ Database refresh failed for user 06adbb1b-aa5a-4901-b459-594a09616c36: Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at SASLFinal (file:///home/runner/workspace/node_modules/postgres/src/connection.js:725:20)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at Authentication (file:///home/runner/workspace/node_modules/postgres/src/connection.js:662:6)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-25 12:55:17.97
+9ccebd49
+User
+at MemStorage.getUserById (file:///home/runner/workspace/dist/index.js:89:36) {
+2025-08-25 12:55:17.97
+9ccebd49
+User
+code: 'SASL_SIGNATURE_MISMATCH'
+2025-08-25 12:55:17.97
+9ccebd49
+User
+}
