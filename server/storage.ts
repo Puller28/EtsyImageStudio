@@ -2,14 +2,13 @@ import { User, Project, CreditTransaction } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 
-// Optimized database connection for production performance
+// Robust database connection for production stability
 function createDbConnection() {
   return postgres(process.env.DATABASE_URL!, {
     ssl: 'require',
-    max: 1, // Single connection for faster performance
-    idle_timeout: 2,
-    connect_timeout: 5, // Faster connection timeout
-    statement_timeout: 8000, // 8 second timeout for queries
+    max: 5, // Allow more connections for stability
+    idle_timeout: 20, // 20 second idle timeout
+    connect_timeout: 30, // 30 second connection timeout
     prepare: false,
     transform: { undefined: null },
     onnotice: () => {}, // Suppress notices
