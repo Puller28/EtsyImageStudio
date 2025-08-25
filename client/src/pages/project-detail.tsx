@@ -172,22 +172,26 @@ export default function ProjectDetailPage() {
     ? project.mockupImages[effectiveSelectedMockup] 
     : project.mockupImageUrl;
 
-  // Transform resized images to handle both old and new formats
-  const normalizedResizedImages = project.resizedImages ? 
-    (Array.isArray(project.resizedImages) && project.resizedImages.length > 0 ?
-      // Check if first item is an object with size/url or just a URL string
-      (typeof project.resizedImages[0] === 'object' && 'size' in project.resizedImages[0] ?
-        project.resizedImages as Array<{ size: string; url: string }> :
-        // Transform old format (array of URLs) to new format
-        (project.resizedImages as string[]).map((url, index) => {
-          const formats = ['4x5', '3x4', '2x3', '11x14', 'A4'];
-          return {
-            size: formats[index] || `Format ${index + 1}`,
-            url: url
-          };
-        })
-      ) : []
-    ) : [];
+  // Transform resized images to handle both old and new formats  
+  const normalizedResizedImages: Array<{ size: string; url: string }> = (() => {
+    if (!project.resizedImages || !Array.isArray(project.resizedImages) || project.resizedImages.length === 0) {
+      return [];
+    }
+    
+    // Check if first item is an object with size/url or just a URL string
+    const firstItem = project.resizedImages[0];
+    if (typeof firstItem === 'object' && firstItem !== null && 'size' in firstItem) {
+      // Already in new format
+      return project.resizedImages as Array<{ size: string; url: string }>;
+    } else {
+      // Transform old format (array of URLs) to new format
+      const formats = ['4x5', '3x4', '2x3', '11x14', 'A4'];
+      return (project.resizedImages as unknown as string[]).map((url, index) => ({
+        size: formats[index] || `Format ${index + 1}`,
+        url: String(url)
+      }));
+    }
+  })();
 
   return (
     <div className="min-h-screen bg-gray-50">

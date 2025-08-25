@@ -204,7 +204,8 @@ export async function apiRequest(
             setTimeout(() => window.location.reload(), 3000);
           }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('Token refresh failed:', error);
           // Fallback to manual refresh
           setTimeout(() => window.location.reload(), 3000);
         });
