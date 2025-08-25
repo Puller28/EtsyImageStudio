@@ -72,7 +72,7 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
                 </svg>
                 <div className="text-sm">
                   <p className="text-amber-800 font-medium">Quick Generator Tool</p>
-                  <p className="text-amber-700 mt-1">This generates listing content for reference only - <strong>it won't be saved to any project</strong>. To save listings, generate them from individual project pages.</p>
+                  <p className="text-amber-700 mt-1">This generates listing content that you can copy and paste straight into Etsy - <strong>it won't be saved to any project</strong>. To save listings, generate them from individual project pages.</p>
                 </div>
               </div>
             </div>
