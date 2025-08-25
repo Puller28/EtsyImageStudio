@@ -327,13 +327,13 @@ export default function ProjectsPage() {
                         <div className="text-xs bg-yellow-100 p-2 mb-2 rounded text-yellow-800 break-all">
                           <div>📸 Original: {!!project.originalImageUrl ? '✓' : '✗'}</div>
                           <div>🔍 Upscaled: {!!project.upscaledImageUrl ? '✓' : '✗'}</div>
-                          <div>🖼️ Mockup: {!!project.mockupImageUrl ? '✓' : '✗'}</div>
+                          <div>🖼️ Mockup: {!!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)) ? '✓' : '✗'}</div>
                           <div>📏 Resized: {!!(project.resizedImages && project.resizedImages.length > 0) ? '✓' : '✗'}</div>
                           <div>📝 Etsy: {!!(project.etsyListing && Object.keys(project.etsyListing || {}).length > 0) ? '✓' : '✗'}</div>
                           <div className="mt-1 font-semibold">Assets: {[
                             !!project.originalImageUrl,
                             !!project.upscaledImageUrl,
-                            !!project.mockupImageUrl,
+                            !!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)),
                             !!(project.resizedImages && project.resizedImages.length > 0),
                             !!(project.etsyListing && Object.keys(project.etsyListing || {}).length > 0)
                           ].filter(Boolean).length}/5</div>
@@ -346,7 +346,7 @@ export default function ProjectsPage() {
                         const assets = {
                           original: !!project.originalImageUrl,
                           upscaled: !!project.upscaledImageUrl,
-                          mockup: !!project.mockupImageUrl,
+                          mockup: !!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)),
                           resized: !!(project.resizedImages && project.resizedImages.length > 0),
                           etsy: !!(project.etsyListing && (
                             typeof project.etsyListing === 'string' ? 
