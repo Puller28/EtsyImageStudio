@@ -383,7 +383,7 @@ export default function ProjectDetailPage() {
           {/* Right Column - Etsy Listing & Details */}
           <div className="space-y-6">
             {/* Etsy Listing */}
-            {console.log('🔍 Etsy Listing Debug:', project.etsyListing) || (project.etsyListing && Object.keys(project.etsyListing).length > 0) && (
+            {project.etsyListing && Object.keys(project.etsyListing).length > 0 && (project.etsyListing.title || project.etsyListing.description || (project.etsyListing.tags && project.etsyListing.tags.length > 0) || project.etsyListing.price) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
