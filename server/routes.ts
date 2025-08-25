@@ -1466,8 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId}`);
       
       // Create a project to preserve the AI-generated image since user paid for it
-      const projectId = Math.random().toString(36).substring(2, 15);
-      const project = {
+      const projectData = {
         userId: req.userId!,
         title: projectName.trim(),
         originalImageUrl: `data:image/jpeg;base64,${base64Image}`,
@@ -1484,23 +1483,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      await storage.createProject(project);
-      console.log(`📁 Created project ${projectId} for AI-generated artwork`);
+      const createdProject = await storage.createProject(projectData);
+      console.log(`📁 Created project ${createdProject.id} for AI-generated artwork`);
       
       // Automatically trigger upscaling for AI-generated images
-      console.log(`🔧 Auto-triggering upscaling for AI project: ${projectId}`);
-      processProjectAsync(project).catch(error => {
-        console.error(`🔧❌ Auto-processing failed for AI project ${projectId}:`, error);
+      console.log(`🔧 Auto-triggering upscaling for AI project: ${createdProject.id}`);
+      processProjectAsync(createdProject).catch(error => {
+        console.error(`🔧❌ Auto-processing failed for AI project ${createdProject.id}:`, error);
         // Update status to failed if processing fails
-        storage.updateProject(projectId, { status: "failed" }).catch(e => 
-          console.error(`Failed to update status for ${projectId}:`, e)
+        storage.updateProject(createdProject.id, { status: "failed" }).catch(e => 
+          console.error(`Failed to update status for ${createdProject.id}:`, e)
         );
       });
       
       res.json({ 
         image: base64Image,
         prompt: optimizedPrompt,
-        projectId: projectId // Return project ID so frontend can reference it
+        projectId: createdProject.id // Return the actual project ID so frontend can reference it
       });
       
     } catch (error) {

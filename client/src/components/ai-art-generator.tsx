@@ -13,7 +13,7 @@ import { Wand2, Sparkles, Palette, ArrowLeft } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 
 interface AIArtGeneratorProps {
-  onArtworkGenerated: (imageData: string, prompt: string) => void;
+  onArtworkGenerated: (imageData: string, prompt: string, projectId?: string) => void;
   onBackToChoice?: () => void; // To go back to initial choice
 }
 
@@ -38,13 +38,14 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
     },
     onSuccess: (result) => {
       if (result.image) {
-        onArtworkGenerated(result.image, prompt);
+        onArtworkGenerated(result.image, prompt, result.projectId);
         toast({
           title: "Artwork Generated!",
-          description: "Your AI artwork has been created successfully. 2 credits were used.",
+          description: `Your AI artwork "${projectName}" has been created successfully. 2 credits were used.`,
         });
-        // Refresh user data to show updated credits
+        // Refresh user data and projects to show updated credits and new project
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       }
     },
     onError: (error) => {

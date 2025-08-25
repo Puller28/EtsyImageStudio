@@ -291,7 +291,40 @@ export default function Dashboard() {
     console.log("Image uploaded successfully, preview set");
   };
 
-  const handleArtworkGenerated = (imageData: string, prompt: string) => {
+  const handleArtworkGenerated = async (imageData: string, prompt: string, projectId?: string) => {
+    console.log("🎨 AI Artwork generated, projectId:", projectId);
+    
+    if (projectId) {
+      // AI generation created a project - set it as current project
+      try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          const project = await response.json();
+          console.log("🎨 Setting current project to:", project.title);
+          setCurrentProject(project);
+          setShowAIGenerator(false);
+          setShowUploadMode(false);
+          setCurrentStep(1); // Move to processing step
+          
+          toast({
+            title: "Project Created!",
+            description: `Your "${project.title}" project is ready. Processing will begin automatically.`,
+          });
+          
+          // Refresh projects list
+          queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to fetch created project:", error);
+      }
+    }
+    
+    // Fallback to old behavior if project creation failed
     // Convert base64 to blob and create file
     const byteCharacters = atob(imageData);
     const byteNumbers = new Array(byteCharacters.length);
