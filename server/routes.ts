@@ -1437,7 +1437,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { prompt, negativePrompt, aspectRatio, category } = req.body;
+      const { projectName, prompt, negativePrompt, aspectRatio, category } = req.body;
+      
+      if (!projectName || !projectName.trim()) {
+        return res.status(400).json({ error: "Project name is required" });
+      }
       
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
@@ -1465,9 +1469,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const projectId = Math.random().toString(36).substring(2, 15);
       const project = {
         userId: req.userId!,
-        title: `ai-generated-artwork`,
+        title: projectName.trim(),
         originalImageUrl: `data:image/jpeg;base64,${base64Image}`,
-        artworkTitle: `AI Generated - ${prompt.slice(0, 30)}${prompt.length > 30 ? '...' : ''}`, // Required field
+        artworkTitle: projectName.trim(), // Use project name as artwork title
         styleKeywords: category || 'ai-generated, digital art', // Required field
         status: 'ai-generated', // New status for AI-generated images
         upscaleOption: '2x', // Required field with default value

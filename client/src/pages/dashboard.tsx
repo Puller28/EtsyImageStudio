@@ -17,6 +17,8 @@ import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Image as ImageIcon, Home, Palette, FolderOpen } from "lucide-react";
 import { Link } from "wouter";
@@ -31,6 +33,7 @@ export default function Dashboard() {
   const { user: authUser, token, login } = useAuth();
   
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | undefined>();
+  const [uploadProjectName, setUploadProjectName] = useState("");
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
 
   // Debug currentProject changes
@@ -333,14 +336,23 @@ export default function Dashboard() {
       return;
     }
 
+    // Validate project name
+    if (!uploadProjectName.trim()) {
+      toast({
+        title: "Project Name Required",
+        description: "Please enter a name for your project before processing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append("image", uploadedImage.file);
-    formData.append("artworkTitle", uploadedImage.file.name.replace(/\.[^/.]+$/, ""));
+    formData.append("artworkTitle", uploadProjectName.trim());
     formData.append("styleKeywords", "digital art");
     formData.append("upscaleOption", options.upscaleOption);
 
-
-    console.log("🟠 About to call createProjectMutation.mutate with FormData");
+    console.log("🟠 About to call createProjectMutation.mutate with FormData, project name:", uploadProjectName.trim());
     createProjectMutation.mutate(formData);
   };
 
@@ -648,10 +660,31 @@ export default function Dashboard() {
             )}
 
             {uploadedImage && !currentProject && (
-              <ProcessingControls
-                onStartProcessing={handleStartProcessing}
-                disabled={createProjectMutation.isPending}
-              />
+              <div className="space-y-6">
+                {/* Project Name for Upload */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <Label htmlFor="uploadProjectName" className="text-lg font-medium text-gray-900 mb-4 block">
+                    Project Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="uploadProjectName"
+                    type="text"
+                    placeholder="Enter a name for your project (e.g. 'Nature Photography', 'Product Mockups')"
+                    value={uploadProjectName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUploadProjectName(e.target.value)}
+                    className="w-full mb-2"
+                    data-testid="input-upload-project-name"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Choose a unique name to easily identify your project later
+                  </p>
+                </div>
+
+                <ProcessingControls
+                  onStartProcessing={handleStartProcessing}
+                  disabled={createProjectMutation.isPending}
+                />
+              </div>
             )}
 
             {currentProject && (
@@ -689,7 +722,7 @@ export default function Dashboard() {
                   <SelectContent>
                     {userProjects.map((project) => {
                       const displayName = project.title || `Project ${project.id.slice(0, 8)}`;
-                      const createdDate = new Date(project.createdAt).toLocaleDateString();
+                      const createdDate = project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Unknown';
                       const statusBadge = project.status === 'completed' ? '✅' : project.status === 'ai-generated' ? '🎨' : '🔄';
                       
                       return (

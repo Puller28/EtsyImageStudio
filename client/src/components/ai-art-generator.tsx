@@ -18,6 +18,7 @@ interface AIArtGeneratorProps {
 }
 
 export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: AIArtGeneratorProps) {
+  const [projectName, setProjectName] = useState("");
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("1:1");
@@ -26,6 +27,7 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
 
   const generateArtMutation = useMutation({
     mutationFn: async (data: {
+      projectName: string;
       prompt: string;
       negativePrompt?: string;
       aspectRatio?: string;
@@ -55,6 +57,15 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
   });
 
   const handleGenerate = () => {
+    if (!projectName.trim()) {
+      toast({
+        title: "Project Name Required",
+        description: "Please enter a name for your project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!prompt.trim()) {
       toast({
         title: "Prompt Required",
@@ -70,6 +81,7 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
     analytics.funnelStep('ai_art_generation', 1);
 
     generateArtMutation.mutate({
+      projectName: projectName.trim(),
       prompt,
       negativePrompt: negativePrompt || undefined,
       aspectRatio: selectedAspectRatio,
@@ -141,6 +153,25 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Project Name */}
+        <div className="space-y-2">
+          <Label htmlFor="projectName">
+            Project Name <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="projectName"
+            type="text"
+            placeholder="Enter a name for your project (e.g. 'Sunset Landscape', 'Abstract Portrait')"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            className="w-full"
+            data-testid="input-project-name"
+          />
+          <p className="text-xs text-gray-500">
+            Choose a unique name to easily identify your project later
+          </p>
+        </div>
+
         {/* Art Category */}
         <div className="space-y-2">
           <Label htmlFor="category" className="flex items-center gap-2">
