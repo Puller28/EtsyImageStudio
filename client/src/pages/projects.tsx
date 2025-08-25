@@ -294,7 +294,7 @@ export default function ProjectsPage() {
                                 📏 Print Sizes
                               </span>
                             )}
-                            {project.etsyListing && (
+                            {project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-pink-100 text-pink-700">
                                 📝 Etsy SEO
                               </span>
