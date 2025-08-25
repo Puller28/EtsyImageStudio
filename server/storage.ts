@@ -297,7 +297,14 @@ class MemStorage implements IStorage {
             }
           })(),
           resizedImages: project.resized_images || [],
-          etsyListing: project.etsy_listing || {},
+          etsyListing: (() => {
+            try {
+              return typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing || {};
+            } catch (error) {
+              console.warn('Failed to parse etsyListing in getProject:', project.etsy_listing);
+              return {};
+            }
+          })(),
           mockupTemplate: project.mockup_template,
           upscaleOption: project.upscale_option,
           status: project.status,
