@@ -82,8 +82,8 @@ class MemStorage implements IStorage {
           subscriptionStatus: dbUser.subscription_status || 'free',
           subscriptionPlan: dbUser.subscription_plan,
           subscriptionId: dbUser.subscription_id,
-          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : undefined,
-          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : undefined,
+          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : null,
+          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : null,
           createdAt: new Date(dbUser.created_at)
         };
         
@@ -128,8 +128,8 @@ class MemStorage implements IStorage {
           subscriptionStatus: dbUser.subscription_status || 'free',
           subscriptionPlan: dbUser.subscription_plan,
           subscriptionId: dbUser.subscription_id,
-          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : undefined,
-          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : undefined,
+          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : null,
+          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : null,
           createdAt: new Date(dbUser.created_at)
         };
         
