@@ -86,7 +86,10 @@ export default function ProjectsPage() {
   }, [projects, generateThumbnailMutation.isPending]);
 
   // Use auth user data as fallback if API user data is not available
-  const currentUser = user || authUser || undefined;
+  const currentUser = user || (authUser ? { 
+    ...authUser, 
+    avatar: authUser.avatar || undefined 
+  } : undefined);
 
   const formatDate = (date: Date | string) => {
     try {
@@ -165,7 +168,10 @@ export default function ProjectsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation user={currentUser} />
+        <Navigation user={currentUser ? { 
+          ...currentUser, 
+          avatar: currentUser.avatar || undefined 
+        } : undefined} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
@@ -179,7 +185,10 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation user={currentUser} />
+      <Navigation user={currentUser ? { 
+        ...currentUser, 
+        avatar: currentUser.avatar || undefined 
+      } : undefined} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -313,6 +322,15 @@ export default function ProjectsPage() {
                         {project.title}
                       </h4>
                       
+                      {/* Temporary debug info */}
+                      {project.title?.includes('Mockup') && (
+                        <div className="text-xs bg-yellow-100 p-1 mb-2 rounded text-yellow-800">
+                          Debug: original={!!project.originalImageUrl}, upscaled={!!project.upscaledImageUrl}, 
+                          mockup={!!project.mockupImageUrl}, resized={!!(project.resizedImages && project.resizedImages.length > 0)}, 
+                          etsy={!!(project.etsyListing)}
+                        </div>
+                      )}
+                      
                       {/* Content indicators showing what the project contains */}
                       {(() => {
                         // Debug logging for asset counting
@@ -323,8 +341,9 @@ export default function ProjectsPage() {
                           resized: !!(project.resizedImages && project.resizedImages.length > 0),
                           etsy: !!(project.etsyListing && (
                             typeof project.etsyListing === 'string' ? 
-              project.etsyListing.length > 0 : 
-              Object.keys(project.etsyListing).length > 0
+                              project.etsyListing.length > 0 : 
+                              typeof project.etsyListing === 'object' && project.etsyListing !== null ?
+                                Object.keys(project.etsyListing).length > 0 : false
                           ))
                         };
                         
