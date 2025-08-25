@@ -320,13 +320,13 @@ class MemStorage implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // Clear memory cache and reload from database to get complete JSONB data
-    console.log(`🔄 Reloading projects from database for user ${userId} to get complete JSONB data`);
+    // Load projects with optimized data (excluding large images for performance)
+    console.log(`🔄 Loading projects list for user ${userId} (optimized query)`);
     
     try {
-      const projects = await this.loadProjectsFromDatabase(userId);
+      const projects = await this.loadProjectsListFromDatabase(userId);
       
-      // Cache the complete results for subsequent requests
+      // Cache the results for subsequent requests
       projects.forEach(project => {
         this.projects.set(project.id, project);
       });
@@ -339,6 +339,56 @@ class MemStorage implements IStorage {
     }
   }
   
+  // Optimized loading for project lists (excludes large image data)
+  private async loadProjectsListFromDatabase(userId: string): Promise<Project[]> {
+    const sql = createDbConnection();
+
+    try {
+      // Load essential project data only (no large base64 images)
+      const projects = await sql`
+        SELECT 
+          id, user_id, title, status, thumbnail_url, 
+          upscaled_image_url, mockup_image_url, zip_url, created_at, 
+          upscale_option, mockup_template, ai_prompt,
+          CASE WHEN mockup_images IS NOT NULL AND mockup_images != '{}' THEN '{}' ELSE '{}' END as mockup_images,
+          CASE WHEN resized_images IS NOT NULL AND resized_images != '[]' THEN '[]' ELSE '[]' END as resized_images,
+          CASE WHEN etsy_listing IS NOT NULL AND etsy_listing != '{}' THEN '{}' ELSE '{}' END as etsy_listing,
+          COALESCE(metadata, '{}') as metadata
+        FROM projects 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+        LIMIT 20
+      `;
+      
+      const convertedProjects = projects.map((project: any) => ({
+        id: project.id,
+        userId: project.user_id,
+        title: project.title || 'Untitled Project',
+        originalImageUrl: null, // Not loaded for performance
+        upscaledImageUrl: project.upscaled_image_url,
+        mockupImageUrl: project.mockup_image_url,
+        mockupImages: {},
+        resizedImages: [],
+        etsyListing: {},
+        mockupTemplate: project.mockup_template,
+        upscaleOption: project.upscale_option || '2x',
+        status: project.status || 'pending',
+        zipUrl: project.zip_url,
+        thumbnailUrl: project.thumbnail_url,
+        aiPrompt: project.ai_prompt,
+        metadata: project.metadata || {},
+        createdAt: new Date(project.created_at)
+      }));
+      
+      console.log(`✅ Retrieved ${convertedProjects.length} projects (optimized) for user ${userId}`);
+      return convertedProjects;
+      
+    } finally {
+      await sql.end();
+    }
+  }
+
+  // Full project loading (includes all data) - used for individual project details
   private async loadProjectsFromDatabase(userId: string): Promise<Project[]> {
     const sql = createDbConnection();
 

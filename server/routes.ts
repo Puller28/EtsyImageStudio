@@ -8,6 +8,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
+import { ProjectImageStorage } from "./objectStorage";
 import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, type Project, projects } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
@@ -28,6 +29,17 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Image serving endpoint for object storage
+  app.get('/objects/*', async (req, res) => {
+    try {
+      const imageStorage = new ProjectImageStorage();
+      await imageStorage.serveImage(req.path, res);
+    } catch (error) {
+      console.error('Error serving image:', error);
+      res.status(500).json({ error: 'Failed to serve image' });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
