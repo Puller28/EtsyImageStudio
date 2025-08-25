@@ -17,7 +17,8 @@ import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
 
 import { Button } from "@/components/ui/button";
-import { Image as ImageIcon, Home, Palette } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Image as ImageIcon, Home, Palette, FolderOpen } from "lucide-react";
 import { Link } from "wouter";
 import { Footer } from "@/components/footer";
 
@@ -49,6 +50,7 @@ export default function Dashboard() {
   const [isGeneratingListing, setIsGeneratingListing] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showUploadMode, setShowUploadMode] = useState(false);
+  const [selectedProjectForListing, setSelectedProjectForListing] = useState<string | null>(null);
 
   const [isPackaging, setIsPackaging] = useState(false);
   const { toast } = useToast();
@@ -93,6 +95,12 @@ export default function Dashboard() {
     refetchInterval: 2000, // Poll every 2 seconds for active projects
     staleTime: 0, // Always consider data stale
     retry: false, // Don't retry failed requests to avoid spam
+  });
+
+  // Fetch user's projects for selection dropdown (only when no active project)
+  const { data: userProjects } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+    enabled: !currentProject && !selectedProjectForListing, // Only fetch when needed
   });
 
   // Clear currentProject if access is denied (cross-user project)
@@ -374,20 +382,23 @@ export default function Dashboard() {
   };
 
   const handleGenerateListing = async (data: { artworkTitle: string; styleKeywords: string }) => {
-    console.log("📝 handleGenerateListing called:", { data, currentProject: currentProject?.id });
+    console.log("📝 handleGenerateListing called:", { data, currentProject: currentProject?.id, selectedProject: selectedProjectForListing });
     
     console.log("🚀 Starting listing generation...");
     setIsGeneratingListing(true);
     try {
       console.log("📡 Making API call...");
       
-      // Use current project if available, otherwise use standalone endpoint
-      if (currentProject) {
+      // Use current project, selected project, or standalone endpoint
+      const projectId = currentProject?.id || selectedProjectForListing;
+      if (projectId) {
+        console.log("💾 Saving to project:", projectId);
         await generateListingMutation.mutateAsync({
-          projectId: currentProject.id,
+          projectId,
           data
         });
       } else {
+        console.log("📝 Using standalone mode");
         await standaloneListingMutation.mutateAsync(data);
       }
       
@@ -659,11 +670,43 @@ export default function Dashboard() {
 
           {/* Right Column */}
           <div className="space-y-6">
+            {/* Project Selection for Adding Assets */}
+            {!currentProject && userProjects && userProjects.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center mb-4">
+                  <FolderOpen className="w-5 h-5 text-primary mr-2" />
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Add to Existing Project
+                  </h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select a project to add Etsy listings or other assets to:
+                </p>
+                <Select value={selectedProjectForListing || ""} onValueChange={setSelectedProjectForListing}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userProjects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.title || `Project ${project.id.slice(0, 8)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedProjectForListing && (
+                  <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                    ✅ Selected: Generated content will be saved to this project
+                  </div>
+                )}
+              </div>
+            )}
+
             <EtsyListingGenerator
               onGenerate={handleGenerateListing}
               generatedListing={currentProject ? (projectStatus?.etsyListing || undefined) : standaloneListingResult}
               isGenerating={isGeneratingListing}
-              standalone={!currentProject}
+              standalone={!currentProject && !selectedProjectForListing}
             />
 
             {currentProject && (
