@@ -267,16 +267,23 @@ class MemStorage implements IStorage {
     
     console.log(`❌ MemStorage: Project ${id} NOT found in memory, checking database...`);
 
-    // Try to load from database if not in memory
+    // Try to load from database if not in memory - OPTIMIZED for individual projects
     try {
       const sql = createDbConnection();
 
       const projects = await sql`
         SELECT 
-          id, user_id, title, original_image_url, upscaled_image_url,
-          mockup_image_url, mockup_images, resized_images, etsy_listing,
-          mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at
+          id, user_id, title, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at, mockup_template, upscale_option,
+          -- Keep essential data but truncate massive base64 images  
+          CASE 
+            WHEN LENGTH(original_image_url) > 200000 THEN NULL
+            ELSE original_image_url 
+          END as original_image_url,
+          NULL as upscaled_image_url,
+          NULL as mockup_image_url,
+          -- KEEP resized_images and other small data
+          resized_images, etsy_listing, mockup_images
         FROM projects 
         WHERE id = ${id}
         LIMIT 1
@@ -349,7 +356,7 @@ class MemStorage implements IStorage {
       return projects;
       
     } catch (error) {
-      console.log(`⚠️ Database query failed for user ${userId}, returning empty array:`, error.message);
+      console.log(`⚠️ Database query failed for user ${userId}, returning empty array:`, (error as Error).message);
       return [];
     }
   }
@@ -377,7 +384,7 @@ class MemStorage implements IStorage {
         LIMIT 20
       `;
       
-      const convertedProjects = projects.map((project: any) => ({
+      const convertedProjects: Project[] = projects.map((project: any) => ({
         id: project.id,
         userId: project.user_id,
         title: project.title || 'Untitled Project',
@@ -386,7 +393,11 @@ class MemStorage implements IStorage {
         mockupImageUrl: project.mockup_image_url,
         mockupImages: {},
         resizedImages: [],
-        etsyListing: {},
+        etsyListing: {
+          title: '',
+          tags: [],
+          description: ''
+        },
         mockupTemplate: project.mockup_template,
         upscaleOption: project.upscale_option || '2x',
         status: project.status || 'pending',
@@ -530,6 +541,7 @@ class MemStorage implements IStorage {
       amount,
       description,
       balanceAfter: this.users.get(userId)?.credits || 0,
+      projectId: null
     });
   }
 
@@ -614,7 +626,7 @@ class MemStorage implements IStorage {
     
     // If we have cached transactions and not forcing DB load, return them
     if (memoryTransactions.length > 0 && !forceDbLoad) {
-      return memoryTransactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return memoryTransactions.sort((a, b) => (b.createdAt || new Date()).getTime() - (a.createdAt || new Date()).getTime());
     }
     
     // Only load from database when specifically requested (like settings page)
@@ -657,7 +669,7 @@ class MemStorage implements IStorage {
     }
     
     // Return memory cache (empty if no transactions exist)
-    return memoryTransactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return memoryTransactions.sort((a, b) => (b.createdAt || new Date()).getTime() - (a.createdAt || new Date()).getTime());
   }
 
   async getContactMessages(): Promise<any[]> {
