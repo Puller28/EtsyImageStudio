@@ -24,7 +24,7 @@ export default function ProjectsPage() {
   // Mutation to generate thumbnails
   const generateThumbnailMutation = useMutation({
     mutationFn: async (projectId: string) => {
-      return apiRequest(`/api/projects/${projectId}/generate-thumbnail`, 'POST', {});
+      return apiRequest('POST', `/api/projects/${projectId}/generate-thumbnail`, {});
     },
     onSuccess: () => {
       // Invalidate projects query to refetch with new thumbnails
