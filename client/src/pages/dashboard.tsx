@@ -215,13 +215,14 @@ export default function Dashboard() {
       const response = await apiRequest("POST", `/api/projects/${projectId}/generate-listing`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log("✅ Etsy listing generated successfully:", result);
       queryClient.invalidateQueries({ queryKey: ["/api/projects", currentProject?.id] });
       // Invalidate user query to update credit balance in header
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
-        title: "Listing Generated",
-        description: "Your Etsy listing content has been generated successfully.",
+        title: "Etsy Listing Generated!",
+        description: "Your listing has been created and saved to your project. 1 credit was used.",
       });
     },
     onError: (error: any) => {
