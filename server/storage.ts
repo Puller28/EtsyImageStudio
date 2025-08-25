@@ -326,10 +326,8 @@ class MemStorage implements IStorage {
     try {
       const projects = await this.loadProjectsListFromDatabase(userId);
       
-      // Cache the results for subsequent requests
-      projects.forEach(project => {
-        this.projects.set(project.id, project);
-      });
+      // DON'T cache optimized results - they're incomplete and would break individual project views
+      // Individual projects need full data via getProject() method
       
       return projects;
       
