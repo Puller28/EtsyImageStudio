@@ -202,7 +202,7 @@ export default function ProjectsPage() {
                 Manage and view all your artwork projects
               </p>
             </div>
-            <Link href="/mockups">
+            <Link href="/">
               <Button className="bg-indigo-600 hover:bg-indigo-700">
                 <Plus className="w-4 h-4 mr-2" />
                 New Project
