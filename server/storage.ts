@@ -219,10 +219,13 @@ class MemStorage implements IStorage {
       createdAt
     };
     
+    console.log(`💾 MemStorage: Creating project "${project.title}" with ID ${id}`);
     this.projects.set(id, project);
+    console.log(`💾 MemStorage: Project stored in memory, total projects: ${this.projects.size}`);
 
     // Persist to database
     try {
+      console.log(`💾 Database: Attempting to save project ${id} to database`);
       const sql = createDbConnection();
 
       await sql`
@@ -241,21 +244,28 @@ class MemStorage implements IStorage {
       `;
       
       await sql.end();
-      console.log(`✅ Successfully persisted project ${id} to database`);
+      console.log(`💾 Database: Project ${id} successfully saved to database`);
       
     } catch (dbError) {
-      console.error(`⚠️ Failed to persist project ${id} to database:`, dbError);
+      console.error(`💾 Database: Failed to persist project ${id} to database:`, dbError);
     }
     
     return project;
   }
 
   async getProject(id: string): Promise<Project | undefined> {
+    console.log(`🔍 MemStorage: Looking for project ${id}`);
+    console.log(`🔍 MemStorage: Have ${this.projects.size} projects in memory`);
+    console.log(`🔍 MemStorage: Memory project IDs:`, Array.from(this.projects.keys()));
+    
     // Check memory cache first
     const cachedProject = this.projects.get(id);
     if (cachedProject) {
+      console.log(`✅ MemStorage: Found project ${id} in memory cache`);
       return cachedProject;
     }
+    
+    console.log(`❌ MemStorage: Project ${id} NOT found in memory, checking database...`);
 
     // Try to load from database if not in memory
     try {
