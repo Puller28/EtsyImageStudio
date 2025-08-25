@@ -315,15 +315,33 @@ export default function ProjectsPage() {
                       
                       {/* Content indicators showing what the project contains */}
                       {(() => {
-                        const assetCount = [
-                          project.originalImageUrl,
-                          project.upscaledImageUrl,
-                          project.mockupImageUrl,
-                          project.resizedImages && project.resizedImages.length > 0,
-                          project.etsyListing && Object.keys(project.etsyListing).length > 0
-                        ].filter(Boolean).length;
+                        // Debug logging for asset counting
+                        const assets = {
+                          original: !!project.originalImageUrl,
+                          upscaled: !!project.upscaledImageUrl,
+                          mockup: !!project.mockupImageUrl,
+                          resized: !!(project.resizedImages && project.resizedImages.length > 0),
+                          etsy: !!(project.etsyListing && (
+                            typeof project.etsyListing === 'string' ? 
+              project.etsyListing.length > 0 : 
+              Object.keys(project.etsyListing).length > 0
+                          ))
+                        };
                         
+                        const assetCount = Object.values(assets).filter(Boolean).length;
                         const isCompleteProject = assetCount >= 3;
+                        
+                        // Debug log for the first project
+                        if (project.title?.includes('Mockup') || project.title?.includes('bedroom')) {
+                          console.log(`🔍 Project asset analysis:`, {
+                            title: project.title,
+                            assets,
+                            assetCount,
+                            isCompleteProject,
+                            mockupImageUrl: project.mockupImageUrl?.substring(0, 50),
+                            etsyListing: typeof project.etsyListing
+                          });
+                        }
                         
                         return (
                           <div className={`mb-3 ${isCompleteProject ? 'space-y-2' : ''}`}>
