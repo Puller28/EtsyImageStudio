@@ -1,0 +1,156 @@
+2025-08-25 14:30:02.09
+2b0718c4
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-25 14:30:02.09
+2b0718c4
+User
+at MemStorage.getUserById (file:///home/runner/workspace/dist/index.js:88:36) {
+2025-08-25 14:30:02.09
+2b0718c4
+User
+code: 'SASL_SIGNATURE_MISMATCH'
+2025-08-25 14:30:02.09
+2b0718c4
+User
+}
+2025-08-25 14:30:02.09
+2b0718c4
+User
+12:30:02 PM [express] GET /api/credit-transactions 403 in 310ms :: {"error":"User not found"}
+2025-08-25 14:30:09.16
+2b0718c4
+User
+⚠️ Database query failed for user 3@3.com: Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at SASLFinal (file:///home/runner/workspace/node_modules/postgres/src/connection.js:725:20)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at Authentication (file:///home/runner/workspace/node_modules/postgres/src/connection.js:662:6)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-25 14:30:09.16
+2b0718c4
+User
+at MemStorage.getUserByEmail (file:///home/runner/workspace/dist/index.js:50:36) {
+2025-08-25 14:30:09.16
+2b0718c4
+User
+code: 'SASL_SIGNATURE_MISMATCH'
+2025-08-25 14:30:09.16
+2b0718c4
+User
+}
+2025-08-25 14:30:09.16
+2b0718c4
+User
+12:30:09 PM [express] POST /api/auth/login 401 in 274ms :: {"error":"Invalid email or password"}
+2025-08-25 14:30:17.17
+2b0718c4
+User
+⚠️ Database query failed for user l@l.com: Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at SASLFinal (file:///home/runner/workspace/node_modules/postgres/src/connection.js:725:20)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at Authentication (file:///home/runner/workspace/node_modules/postgres/src/connection.js:662:6)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-08-25 14:30:17.17
+2b0718c4
+User
+at MemStorage.getUserByEmail (file:///home/runner/workspace/dist/index.js:50:36) {
+2025-08-25 14:30:17.17
+2b0718c4
+User
+code: 'SASL_SIGNATURE_MISMATCH'
+2025-08-25 14:30:17.17
+2b0718c4
+User
+}
+2025-08-25 14:30:17.17
+2b0718c4
+User
+12:30:17 PM [express] POST /api/auth/login 401 in 276ms :: {"error":"Invalid email or password"}

@@ -107,7 +107,7 @@ export default function RecentProjects({ projects, onViewProject }: RecentProjec
                         📏
                       </span>
                     )}
-                    {project.etsyListing && (
+                    {project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-pink-100 text-pink-700">
                         📝
                       </span>
