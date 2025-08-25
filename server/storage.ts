@@ -472,6 +472,37 @@ class MemStorage implements IStorage {
     
     const updatedProject = { ...project, ...updates };
     this.projects.set(id, updatedProject);
+    
+    // Persist to database
+    try {
+      const sql = createDbConnection();
+      
+      await sql`
+        UPDATE projects 
+        SET 
+          title = ${updatedProject.title || ''},
+          upscaled_image_url = ${updatedProject.upscaledImageUrl || null},
+          mockup_image_url = ${updatedProject.mockupImageUrl || null},
+          mockup_images = ${JSON.stringify(updatedProject.mockupImages || {})},
+          resized_images = ${JSON.stringify(updatedProject.resizedImages || [])},
+          etsy_listing = ${JSON.stringify(updatedProject.etsyListing || {})},
+          mockup_template = ${updatedProject.mockupTemplate || null},
+          upscale_option = ${updatedProject.upscaleOption || '2x'},
+          status = ${updatedProject.status || 'pending'},
+          zip_url = ${updatedProject.zipUrl || null},
+          thumbnail_url = ${updatedProject.thumbnailUrl || null},
+          ai_prompt = ${updatedProject.aiPrompt || null},
+          metadata = ${JSON.stringify(updatedProject.metadata || {})}
+        WHERE id = ${id}
+      `;
+      
+      await sql.end();
+      console.log(`✅ Successfully updated project ${id} in database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to update project ${id} in database:`, dbError);
+    }
+    
     return updatedProject;
   }
 
