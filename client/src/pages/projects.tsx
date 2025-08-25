@@ -1,13 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { History, Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/useAuth";
+import { apiRequest } from "@/lib/queryClient";
 import type { User, Project } from "@shared/schema";
 
 export default function ProjectsPage() {
@@ -18,6 +19,18 @@ export default function ProjectsPage() {
   // Debug initial state
   console.log("🔍 Projects page initial state:", { searchTerm, statusFilter });
   const { user: authUser } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Mutation to generate thumbnails
+  const generateThumbnailMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      return apiRequest(`/api/projects/${projectId}/generate-thumbnail`, 'POST', {});
+    },
+    onSuccess: () => {
+      // Invalidate projects query to refetch with new thumbnails
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    },
+  });
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -51,6 +64,26 @@ export default function ProjectsPage() {
       hasOriginalImageUrl: !!projects[0]?.originalImageUrl
     });
   }
+  
+  // Automatically generate thumbnails for projects that don't have them
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      const projectsWithoutThumbnails = projects.filter(project => 
+        project.status === 'completed' && 
+        project.originalImageUrl && 
+        project.originalImageUrl.startsWith('data:image/') &&
+        !project.thumbnailUrl &&
+        !generateThumbnailMutation.isPending
+      );
+      
+      // Generate thumbnail for the first project without one (to avoid overloading)
+      if (projectsWithoutThumbnails.length > 0 && !generateThumbnailMutation.isPending) {
+        const project = projectsWithoutThumbnails[0];
+        console.log(`🖼️ Auto-generating thumbnail for project: ${project.id}`);
+        generateThumbnailMutation.mutate(project.id);
+      }
+    }
+  }, [projects, generateThumbnailMutation.isPending]);
 
   // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser || undefined;
@@ -203,12 +236,15 @@ export default function ProjectsPage() {
         </div>
 
         {/* Projects Grid */}
-        {console.log("🎯 Rendering decision:", { 
-          filteredProjectsLength: filteredProjects.length, 
-          totalProjects: projects.length,
-          isLoading,
-          showingEmptyState: filteredProjects.length === 0 
-        })}
+        {(() => {
+          console.log("🎯 Rendering decision:", { 
+            filteredProjectsLength: filteredProjects.length, 
+            totalProjects: projects.length,
+            isLoading,
+            showingEmptyState: filteredProjects.length === 0 
+          });
+          return null;
+        })()}
         {filteredProjects.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-12 text-center">
@@ -261,8 +297,13 @@ export default function ProjectsPage() {
                           }}
                         />
                       ) : (
-                        <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                          <span className="text-gray-400 text-sm">No preview</span>
+                        <div className="w-full h-40 bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col items-center justify-center">
+                          <div className="text-indigo-500 mb-2">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <span className="text-indigo-600 text-xs font-medium">Artwork Project</span>
                         </div>
                       )}
                     </div>
@@ -273,44 +314,74 @@ export default function ProjectsPage() {
                       </h4>
                       
                       {/* Content indicators showing what the project contains */}
-                      <div className="mb-3 flex flex-wrap gap-1">
-                        {project.status === 'completed' && (
-                          <>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
-                              📸 Original
-                            </span>
-                            {project.upscaledImageUrl && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                                🔍 Upscaled
-                              </span>
+                      {(() => {
+                        const assetCount = [
+                          project.originalImageUrl,
+                          project.upscaledImageUrl,
+                          project.mockupImageUrl,
+                          project.resizedImages && project.resizedImages.length > 0,
+                          project.etsyListing && Object.keys(project.etsyListing).length > 0
+                        ].filter(Boolean).length;
+                        
+                        const isCompleteProject = assetCount >= 3;
+                        
+                        return (
+                          <div className={`mb-3 ${isCompleteProject ? 'space-y-2' : ''}`}>
+                            {/* Complete Project Badge */}
+                            {isCompleteProject && (
+                              <div className="flex items-center justify-center">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm">
+                                  ⭐ Complete Project ({assetCount} assets)
+                                </span>
+                              </div>
                             )}
-                            {project.mockupImageUrl && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
-                                🖼️ Mockups
-                              </span>
-                            )}
-                            {project.resizedImages && project.resizedImages.length > 0 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-700">
-                                📏 Print Sizes
-                              </span>
-                            )}
-                            {project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-pink-100 text-pink-700">
-                                📝 Etsy SEO
-                              </span>
-                            )}
-                          </>
-                        )}
-                        {project.status === 'ai-generated' && (
+                            
+                            {/* Asset indicators */}
+                            <div className={`flex flex-wrap gap-1 ${isCompleteProject ? 'justify-center' : ''}`}>
+                              {project.status === 'completed' && (
+                                <>
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-blue-100 text-blue-700`}>
+                                    📸 Original
+                                  </span>
+                                  {project.upscaledImageUrl && (
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-green-100 text-green-700`}>
+                                      🔍 Upscaled
+                                    </span>
+                                  )}
+                                  {project.mockupImageUrl && (
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-purple-100 text-purple-700`}>
+                                      🖼️ Mockups
+                                    </span>
+                                  )}
+                                  {project.resizedImages && project.resizedImages.length > 0 && (
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-orange-100 text-orange-700`}>
+                                      📏 Print Sizes
+                                    </span>
+                                  )}
+                                  {project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-pink-100 text-pink-700`}>
+                                      📝 Etsy SEO
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* AI Generated indicator for ai-generated projects */}
+                      {project.status === 'ai-generated' && (
+                        <div className="mb-3">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
                             🤖 AI Generated
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-gray-500">
-                          {formatDate(new Date(project.createdAt))}
+                          {formatDate(project.createdAt ? new Date(project.createdAt) : new Date())}
                         </p>
                         
                         <span className={`text-xs px-2 py-1 rounded-full ${

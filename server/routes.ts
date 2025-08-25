@@ -982,6 +982,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate thumbnail for project
+  app.post("/api/projects/:id/generate-thumbnail", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = req.params.id;
+      const userId = req.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // Get the project
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Check if project already has thumbnail
+      if (project.thumbnailUrl) {
+        return res.json({ message: "Project already has thumbnail", thumbnailUrl: project.thumbnailUrl });
+      }
+      
+      // Check if project has original image
+      if (!project.originalImageUrl || !project.originalImageUrl.startsWith('data:image/')) {
+        return res.status(400).json({ error: "Project has no original image to generate thumbnail from" });
+      }
+      
+      // Generate thumbnail from original image
+      const base64Data = project.originalImageUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Import sharp dynamically to avoid module issues
+      const sharp = (await import('sharp')).default;
+      
+      // Resize to thumbnail size (300x200)
+      const thumbnailBuffer = await sharp(buffer)
+        .resize(300, 200, { fit: 'cover', position: 'center' })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+      
+      const thumbnailBase64 = `data:image/jpeg;base64,${thumbnailBuffer.toString('base64')}`;
+      
+      // Update project with thumbnail
+      await storage.updateProject(projectId, {
+        thumbnailUrl: thumbnailBase64
+      });
+      
+      console.log(`✅ Generated thumbnail for project ${projectId}`);
+      res.json({ message: "Thumbnail generated successfully", thumbnailUrl: thumbnailBase64 });
+      
+    } catch (error) {
+      console.error("Error generating thumbnail:", error);
+      res.status(500).json({ error: "Failed to generate thumbnail" });
+    }
+  });
+
   // Get specific project
   app.get("/api/projects/:id", optionalAuth, async (req: AuthenticatedRequest, res) => {
     try {
