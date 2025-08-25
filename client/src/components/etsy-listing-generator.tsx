@@ -16,9 +16,10 @@ interface EtsyListingGeneratorProps {
   onGenerate: (data: { artworkTitle: string; styleKeywords: string }) => void;
   generatedListing?: EtsyListing;
   isGenerating?: boolean;
+  standalone?: boolean; // Whether this is standalone (not saved to project)
 }
 
-export default function EtsyListingGenerator({ onGenerate, generatedListing, isGenerating }: EtsyListingGeneratorProps) {
+export default function EtsyListingGenerator({ onGenerate, generatedListing, isGenerating, standalone = false }: EtsyListingGeneratorProps) {
   const [artworkTitle, setArtworkTitle] = useState("");
   const [styleKeywords, setStyleKeywords] = useState("");
   const { toast } = useToast();
@@ -56,12 +57,27 @@ export default function EtsyListingGenerator({ onGenerate, generatedListing, isG
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          <svg className="inline w-5 h-5 text-primary mr-2" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C13.1 2 14 2.9 14 4V8C14 9.1 13.1 10 12 10S10 9.1 10 8V4C10 2.9 10.9 2 12 2M21 9V7L19 5V3H16V1H8V3H5V5L3 7V9H1V11H3V13L5 15V17H8V19H16V17H19V15L21 13V11H23V9H21Z" />
-          </svg>
-          Etsy Listing Generator
-        </h3>
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <svg className="inline w-5 h-5 text-primary mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C13.1 2 14 2.9 14 4V8C14 9.1 13.1 10 12 10S10 9.1 10 8V4C10 2.9 10.9 2 12 2M21 9V7L19 5V3H16V1H8V3H5V5L3 7V9H1V11H3V13L5 15V17H8V19H16V17H19V15L21 13V11H23V9H21Z" />
+            </svg>
+            {standalone ? "Standalone Etsy Listing Generator" : "Etsy Listing Generator"}
+          </h3>
+          {standalone && (
+            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="text-sm">
+                  <p className="text-amber-800 font-medium">Quick Generator Tool</p>
+                  <p className="text-amber-700 mt-1">This generates listing content for reference only - <strong>it won't be saved to any project</strong>. To save listings, generate them from individual project pages.</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="space-y-4">
           <div>

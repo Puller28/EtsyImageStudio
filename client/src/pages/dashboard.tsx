@@ -663,6 +663,7 @@ export default function Dashboard() {
               onGenerate={handleGenerateListing}
               generatedListing={currentProject ? (projectStatus?.etsyListing || undefined) : standaloneListingResult}
               isGenerating={isGeneratingListing}
+              standalone={!currentProject}
             />
 
             {currentProject && (
