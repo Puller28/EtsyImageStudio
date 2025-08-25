@@ -267,23 +267,16 @@ class MemStorage implements IStorage {
     
     console.log(`❌ MemStorage: Project ${id} NOT found in memory, checking database...`);
 
-    // Try to load from database if not in memory - OPTIMIZED for individual projects
+    // Try to load from database if not in memory - FULL DATA for individual projects
     try {
       const sql = createDbConnection();
 
       const projects = await sql`
         SELECT 
-          id, user_id, title, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at, mockup_template, upscale_option,
-          -- Keep essential data but truncate massive base64 images  
-          CASE 
-            WHEN LENGTH(original_image_url) > 200000 THEN NULL
-            ELSE original_image_url 
-          END as original_image_url,
-          NULL as upscaled_image_url,
-          NULL as mockup_image_url,
-          -- KEEP resized_images and other small data
-          resized_images, etsy_listing, mockup_images
+          id, user_id, title, original_image_url, upscaled_image_url,
+          mockup_image_url, mockup_images, resized_images, etsy_listing,
+          mockup_template, upscale_option, status, zip_url, thumbnail_url,
+          ai_prompt, metadata, created_at
         FROM projects 
         WHERE id = ${id}
         LIMIT 1
@@ -366,18 +359,25 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Ultra-fast query - no large data fields at all
+      // Optimized query for project lists - show essential info with data indicators
       const projects = await sql`
         SELECT 
           id, user_id, title, status, thumbnail_url, zip_url, created_at, 
-          upscale_option, mockup_template, ai_prompt,
-          NULL as original_image_url,
-          NULL as upscaled_image_url, 
-          NULL as mockup_image_url,
-          '{}' as mockup_images,
-          '[]' as resized_images,
-          CASE WHEN etsy_listing IS NOT NULL AND etsy_listing != '{}' THEN '{}' ELSE '{}' END as etsy_listing,
-          COALESCE(metadata, '{}') as metadata
+          upscale_option, mockup_template, ai_prompt, metadata,
+          -- Use thumbnail or small portion of original for display
+          COALESCE(thumbnail_url, 
+            CASE 
+              WHEN LENGTH(original_image_url) > 100000 THEN LEFT(original_image_url, 50000)
+              ELSE original_image_url 
+            END
+          ) as original_image_url,
+          -- Indicate presence of data without loading it
+          CASE WHEN upscaled_image_url IS NOT NULL THEN 'available' ELSE NULL END as upscaled_image_url,
+          CASE WHEN mockup_image_url IS NOT NULL THEN 'available' ELSE NULL END as mockup_image_url,
+          -- Keep indicators for UI
+          CASE WHEN mockup_images IS NOT NULL AND mockup_images != '{}' THEN '{"hasData":true}' ELSE '{}' END as mockup_images,
+          CASE WHEN resized_images IS NOT NULL AND resized_images != '[]' THEN '[{"hasData":true}]' ELSE '[]' END as resized_images,
+          CASE WHEN etsy_listing IS NOT NULL AND etsy_listing != '{}' THEN '{"hasData":true}' ELSE '{}' END as etsy_listing
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
@@ -388,16 +388,33 @@ class MemStorage implements IStorage {
         id: project.id,
         userId: project.user_id,
         title: project.title || 'Untitled Project',
-        originalImageUrl: project.original_image_url, // Truncated for thumbnail use
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: {},
-        resizedImages: [],
-        etsyListing: {
-          title: '',
-          tags: [],
-          description: ''
-        },
+        originalImageUrl: project.original_image_url, // Safe thumbnail or truncated
+        upscaledImageUrl: project.upscaled_image_url === 'available' ? null : project.upscaled_image_url,
+        mockupImageUrl: project.mockup_image_url === 'available' ? null : project.mockup_image_url,
+        mockupImages: (() => {
+          try {
+            const parsed = JSON.parse(project.mockup_images);
+            return parsed.hasData ? {} : parsed;
+          } catch {
+            return {};
+          }
+        })(),
+        resizedImages: (() => {
+          try {
+            const parsed = JSON.parse(project.resized_images);
+            return Array.isArray(parsed) && parsed[0]?.hasData ? [] : parsed;
+          } catch {
+            return [];
+          }
+        })(),
+        etsyListing: (() => {
+          try {
+            const parsed = JSON.parse(project.etsy_listing);
+            return parsed.hasData ? { title: '', tags: [], description: '' } : parsed;
+          } catch {
+            return { title: '', tags: [], description: '' };
+          }
+        })(),
         mockupTemplate: project.mockup_template,
         upscaleOption: project.upscale_option || '2x',
         status: project.status || 'pending',
