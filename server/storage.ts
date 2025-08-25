@@ -344,10 +344,15 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Load essential project data only (no large base64 images)
+      // Load essential project data only (no large base64 images, but include thumbnail-size original)
       const projects = await sql`
         SELECT 
           id, user_id, title, status, thumbnail_url, 
+          -- Include first 50K chars of original_image_url for thumbnail fallback
+          CASE 
+            WHEN original_image_url IS NOT NULL THEN LEFT(original_image_url, 50000)
+            ELSE NULL 
+          END as original_image_url,
           upscaled_image_url, mockup_image_url, zip_url, created_at, 
           upscale_option, mockup_template, ai_prompt,
           CASE WHEN mockup_images IS NOT NULL AND mockup_images != '{}' THEN '{}' ELSE '{}' END as mockup_images,
@@ -364,7 +369,7 @@ class MemStorage implements IStorage {
         id: project.id,
         userId: project.user_id,
         title: project.title || 'Untitled Project',
-        originalImageUrl: null, // Not loaded for performance
+        originalImageUrl: project.original_image_url, // Truncated for thumbnail use
         upscaledImageUrl: project.upscaled_image_url,
         mockupImageUrl: project.mockup_image_url,
         mockupImages: {},
