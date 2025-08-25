@@ -687,11 +687,22 @@ export default function Dashboard() {
                     <SelectValue placeholder="Choose a project..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {userProjects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.title || `Project ${project.id.slice(0, 8)}`}
-                      </SelectItem>
-                    ))}
+                    {userProjects.map((project) => {
+                      const displayName = project.title || `Project ${project.id.slice(0, 8)}`;
+                      const createdDate = new Date(project.createdAt).toLocaleDateString();
+                      const statusBadge = project.status === 'completed' ? '✅' : project.status === 'ai-generated' ? '🎨' : '🔄';
+                      
+                      return (
+                        <SelectItem key={project.id} value={project.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{displayName}</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {statusBadge} {createdDate}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 {selectedProjectForListing && (
