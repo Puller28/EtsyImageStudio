@@ -15,7 +15,6 @@ import ProcessingControls from "@/components/processing-controls";
 import EtsyListingGenerator from "@/components/etsy-listing-generator";
 import ProcessingStatus from "@/components/processing-status";
 import DownloadAssets from "@/components/download-assets";
-import RecentProjects from "@/components/recent-projects";
 
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Home, Palette } from "lucide-react";
@@ -86,28 +85,6 @@ export default function Dashboard() {
   // Use auth user data as fallback if API user data is not available
   const currentUser = user || authUser;
 
-  // Fetch recent projects
-  const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
-    staleTime: 30000, // Cache for 30 seconds to reduce database load
-    enabled: !!token, // Only fetch if authenticated
-  });
-
-  // Debug projects data and authentication
-  useEffect(() => {
-    console.log("📋 Projects data:", projects.length, projects);
-    console.log("🔍 Auth state:", { 
-      hasToken: !!token, 
-      hasAuthUser: !!authUser, 
-      hasUser: !!user,
-      projectsLoading,
-      projectsError: projectsError?.message,
-      isAuthenticated: !!token && !!authUser 
-    });
-    if (projectsError) {
-      console.error("❌ Projects error:", projectsError);
-    }
-  }, [projects, token, authUser, user, projectsLoading, projectsError]);
 
   // Poll current project status
   const { data: projectStatus, error: projectStatusError } = useQuery<Project>({
@@ -706,50 +683,68 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Projects */}
+        {/* Platform Features */}
         <div className="mt-8">
-          {projectsLoading ? (
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Recent Projects
-                </h3>
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-gray-500">Loading your projects...</p>
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-6">
+                Platform Features
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-medium text-gray-900">AI Art Generation</h4>
+                  <p className="text-sm text-gray-500 mt-1">Create stunning artwork with AI</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </div>
+                  <h4 className="font-medium text-gray-900">4x Upscaling</h4>
+                  <p className="text-sm text-gray-500 mt-1">Enhance images up to 4x resolution</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h4 className="font-medium text-gray-900">Print Formats</h4>
+                  <p className="text-sm text-gray-500 mt-1">5 ready-to-print file formats</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-medium text-gray-900">Etsy SEO</h4>
+                  <p className="text-sm text-gray-500 mt-1">AI-powered listing optimization</p>
+                </div>
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Current Credits: <span className="font-medium text-gray-900">{currentUser?.credits || 0}</span></span>
+                  <Link href="/projects">
+                    <Button variant="outline" size="sm">
+                      View All Projects →
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
-          ) : (
-            <RecentProjects
-              projects={projects.map(p => ({
-                id: p.id,
-                title: p.title,
-                createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
-                status: p.status,
-                thumbnailUrl: p.originalImageUrl
-              }))}
-              onViewProject={(id) => {
-                console.log("🔍 Selecting project:", id);
-                const selectedProject = projects.find(p => p.id === id);
-                if (selectedProject) {
-                  // Verify project belongs to current user before setting
-                  if (selectedProject.userId === authUser?.id) {
-                    setCurrentProject(selectedProject);
-                    console.log("✅ Current project set:", selectedProject.id);
-                  } else {
-                    console.error("🚫 Cannot set project from different user:", {
-                      projectId: id,
-                      projectUserId: selectedProject.userId,
-                      currentUserId: authUser?.id
-                    });
-                  }
-                } else {
-                  console.error("❌ Project not found:", id);
-                }
-              }}
-            />
-          )}
+          </div>
         </div>
       </div>
       <Footer />
