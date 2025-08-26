@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { Download, ArrowLeft, Clock, CheckCircle, Image, FileText, Package } from "lucide-react";
+import { Download, ArrowLeft, Clock, CheckCircle, Image, FileText, Package, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,9 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params?.id;
   const [selectedMockup, setSelectedMockup] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user: authUser } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -65,6 +67,37 @@ export default function ProjectDetailPage() {
     avatar: (user || authUser)?.avatar || undefined,
     credits: (user || authUser)?.credits || 0
   } : undefined;
+
+  // Force refresh project data from server
+  const handleRefreshProject = async () => {
+    if (!projectId) return;
+    
+    setIsRefreshing(true);
+    try {
+      // Clear cached data for this project
+      await queryClient.removeQueries({ queryKey: ["/api/projects", projectId] });
+      
+      // Fetch fresh data with cache bust
+      const response = await fetch(`/api/projects/${projectId}?refresh=true`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+      });
+      
+      if (response.ok) {
+        const freshData = await response.json();
+        // Update cache with fresh data
+        queryClient.setQueryData(["/api/projects", projectId], freshData);
+        console.log('🔄 Project data refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh project data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -224,10 +257,21 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             </div>
-            <Button onClick={handleDownloadAll} size="lg" data-testid="button-download-all">
-              <Package className="w-5 h-5 mr-2" />
-              Download All Files
-            </Button>
+            <div className="flex space-x-3">
+              <Button 
+                onClick={handleRefreshProject} 
+                variant="outline" 
+                disabled={isRefreshing}
+                data-testid="button-refresh-project"
+              >
+                <RefreshCcw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+              </Button>
+              <Button onClick={handleDownloadAll} size="lg" data-testid="button-download-all">
+                <Package className="w-5 h-5 mr-2" />
+                Download All Files
+              </Button>
+            </div>
           </div>
         </div>
 

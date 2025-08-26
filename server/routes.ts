@@ -1046,8 +1046,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const projectId = req.params.id;
-      console.log(`🔍 Fetching project ${projectId} for user ${userId}`);
-      const project = await storage.getProject(projectId);
+      const forceRefresh = req.query.refresh === 'true';
+      console.log(`🔍 Fetching project ${projectId} for user ${userId} (forceRefresh: ${forceRefresh})`);
+      const project = await storage.getProject(projectId, forceRefresh);
       
       if (!project) {
         console.log(`❌ Project ${projectId} not found in database`);
@@ -1060,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Access denied to project from different user' });
       }
 
-      console.log(`✅ Successfully fetched project ${projectId} for user ${userId}`);
+      console.log(`✅ Successfully fetched project ${projectId} for user ${userId} - resizedImages: ${project.resizedImages?.length || 0}, etsyListing keys: ${Object.keys(project.etsyListing || {}).join(',')}`);
       res.json(project);
     } catch (error) {
       console.error('❌ Error fetching project:', error);

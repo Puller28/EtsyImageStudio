@@ -253,16 +253,22 @@ class MemStorage implements IStorage {
     return project;
   }
 
-  async getProject(id: string): Promise<Project | undefined> {
-    console.log(`🔍 MemStorage: Looking for project ${id}`);
+  async getProject(id: string, forceRefresh: boolean = false): Promise<Project | undefined> {
+    console.log(`🔍 MemStorage: Looking for project ${id} (forceRefresh: ${forceRefresh})`);
     console.log(`🔍 MemStorage: Have ${this.projects.size} projects in memory`);
     console.log(`🔍 MemStorage: Memory project IDs:`, Array.from(this.projects.keys()));
     
-    // Check memory cache first
-    const cachedProject = this.projects.get(id);
-    if (cachedProject) {
-      console.log(`✅ MemStorage: Found project ${id} in memory cache`);
-      return cachedProject;
+    // Check memory cache first (unless forcing refresh)
+    if (!forceRefresh) {
+      const cachedProject = this.projects.get(id);
+      if (cachedProject) {
+        console.log(`✅ MemStorage: Found project ${id} in memory cache - resizedImages: ${cachedProject.resizedImages?.length || 0}, etsyListing: ${Object.keys(cachedProject.etsyListing || {}).length} keys`);
+        return cachedProject;
+      }
+    } else {
+      // Clear from cache if forcing refresh
+      this.projects.delete(id);
+      console.log(`🔄 MemStorage: Cleared project ${id} from cache for fresh reload`);
     }
     
     console.log(`❌ MemStorage: Project ${id} NOT found in memory, checking database...`);
@@ -306,10 +312,27 @@ class MemStorage implements IStorage {
               return {};
             }
           })(),
-          resizedImages: project.resized_images || [],
+          resizedImages: (() => {
+            try {
+              const resizedData = project.resized_images;
+              if (typeof resizedData === 'string') {
+                const parsed = JSON.parse(resizedData);
+                return Array.isArray(parsed) ? parsed : [];
+              }
+              return Array.isArray(resizedData) ? resizedData : [];
+            } catch (e) {
+              console.warn('Failed to parse resizedImages in getProject:', project.resized_images);
+              return [];
+            }
+          })(),
           etsyListing: (() => {
             try {
-              return typeof project.etsy_listing === 'string' ? JSON.parse(project.etsy_listing) : project.etsy_listing || {};
+              const etsyData = project.etsy_listing;
+              if (typeof etsyData === 'string') {
+                const parsed = JSON.parse(etsyData);
+                return parsed || {};
+              }
+              return etsyData || {};
             } catch (error) {
               console.warn('Failed to parse etsyListing in getProject:', project.etsy_listing);
               return {};
@@ -325,8 +348,9 @@ class MemStorage implements IStorage {
           createdAt: new Date(project.created_at)
         };
         
-        // Cache for future requests
+        // Cache for future requests with logging
         this.projects.set(convertedProject.id, convertedProject);
+        console.log(`✅ Cached project ${id} with complete data - resizedImages: ${convertedProject.resizedImages?.length || 0}, etsyListing keys: ${Object.keys(convertedProject.etsyListing || {}).join(',')}`);
         return convertedProject;
       }
     } catch (error) {
