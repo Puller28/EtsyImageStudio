@@ -1428,17 +1428,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Art Generation endpoint  
   app.post("/api/generate-art", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      // Check user credits first (AI generation costs 2 credits)
+      const { projectName, prompt, negativePrompt, aspectRatio, category, upscalingFactor = "2x" } = req.body;
+      
+      // Determine credit cost based on upscaling factor
+      const creditsRequired = upscalingFactor === "4x" ? 4 : 2;
+      
+      // Check user credits first
       const user = await storage.getUserById(req.userId!);
-      if (!user || user.credits < 2) {
+      if (!user || user.credits < creditsRequired) {
         return res.status(400).json({ 
-          error: user && user.credits === 1 
-            ? "Insufficient credits. AI art generation requires 2 credits." 
-            : "Insufficient credits. AI art generation requires 2 credits. Please purchase more credits."
+          error: `Insufficient credits. AI art generation with ${upscalingFactor} upscaling requires ${creditsRequired} credits. Please purchase more credits.`
         });
       }
-
-      const { projectName, prompt, negativePrompt, aspectRatio, category } = req.body;
       
       if (!projectName || !projectName.trim()) {
         return res.status(400).json({ error: "Project name is required" });
@@ -1458,29 +1459,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prompt: optimizedPrompt,
         negativePrompt,
         aspectRatio: aspectRatio as '1:1' | '3:4' | '4:3' | '9:16' | '16:9',
+        upscalingFactor: upscalingFactor as '2x' | '4x',
       });
       
       console.log('AI art generation completed successfully');
       
-      // Deduct 2 credits for AI art generation with transaction record
-      await storage.updateUserCreditsWithTransaction(req.userId!, -2, 'AI Art Generation', 'Generated AI artwork');
-      console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId}`);
+      // Deduct credits for AI art generation with transaction record
+      await storage.updateUserCreditsWithTransaction(req.userId!, -creditsRequired, 'AI Art Generation', `Generated AI artwork with ${upscalingFactor} upscaling`);
+      console.log(`💳 Deducted ${creditsRequired} credits for AI art generation with ${upscalingFactor} upscaling. User ${req.userId}`);
       
       // Create a project to preserve the AI-generated image since user paid for it
       const projectData = {
         userId: req.userId!,
         title: projectName.trim(),
         originalImageUrl: `data:image/jpeg;base64,${base64Image}`,
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
+        mockupImages: null,
+        resizedImages: null,
+        etsyListing: null,
         artworkTitle: projectName.trim(), // Use project name as artwork title
         styleKeywords: category || 'ai-generated, digital art', // Required field
         status: 'ai-generated', // New status for AI-generated images
-        upscaleOption: '2x', // Required field with default value
+        upscaleOption: upscalingFactor, // Store the chosen upscaling factor
         thumbnailUrl: `data:image/jpeg;base64,${base64Image}`, // Use full image as thumbnail
         aiPrompt: optimizedPrompt, // Store the prompt used
         metadata: {
           category: category || 'general',
           originalPrompt: prompt,
-          aspectRatio: aspectRatio || '1:1'
+          aspectRatio: aspectRatio || '1:1',
+          upscalingFactor
         }
       };
       

@@ -10,6 +10,7 @@ interface ArtGenerationOptions {
   outputFormat?: 'JPEG' | 'PNG';
   seed?: number;
   safetyTolerance?: string;
+  upscalingFactor?: '2x' | '4x';
 }
 
 interface SegmindTextToImageResponse {

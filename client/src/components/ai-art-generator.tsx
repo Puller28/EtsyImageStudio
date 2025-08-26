@@ -23,6 +23,7 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
   const [negativePrompt, setNegativePrompt] = useState("");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("1:1");
   const [artCategory, setArtCategory] = useState("digital art");
+  const [upscalingFactor, setUpscalingFactor] = useState("2x");
   const { toast } = useToast();
 
   const generateArtMutation = useMutation({
@@ -32,6 +33,7 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
       negativePrompt?: string;
       aspectRatio?: string;
       category?: string;
+      upscalingFactor?: string;
     }) => {
       const response = await apiRequest("POST", "/api/generate-art", data);
       return response.json();
@@ -39,9 +41,10 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
     onSuccess: (result) => {
       if (result.image) {
         onArtworkGenerated(result.image, prompt, result.projectId);
+        const creditsUsed = upscalingFactor === "4x" ? 4 : 2;
         toast({
           title: "Artwork Generated!",
-          description: `Your AI artwork "${projectName}" has been created successfully. 2 credits were used.`,
+          description: `Your AI artwork "${projectName}" has been created successfully. ${creditsUsed} credits were used.`,
         });
         // Refresh user data and projects to show updated credits and new project
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
@@ -78,7 +81,8 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
     }
 
     // Track AI art generation
-    analytics.aiArtGenerate(prompt, 2); // 2 credits used
+    const creditsUsed = upscalingFactor === "4x" ? 4 : 2;
+    analytics.aiArtGenerate(prompt, creditsUsed);
     analytics.funnelStep('ai_art_generation', 1);
 
     generateArtMutation.mutate({
@@ -87,6 +91,7 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
       negativePrompt: negativePrompt || undefined,
       aspectRatio: selectedAspectRatio,
       category: artCategory,
+      upscalingFactor,
     });
   };
 
@@ -146,10 +151,10 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
         </p>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
           <p className="text-sm text-purple-700 font-medium">
-            💎 AI Art Generation: 2 Credits per Image
+            💎 AI Art Generation: {upscalingFactor === "4x" ? "4" : "2"} Credits per Image
           </p>
           <p className="text-xs text-purple-600 mt-1">
-            Each generated artwork costs 2 credits
+            {upscalingFactor === "4x" ? "4x upscaling costs 4 credits" : "2x upscaling costs 2 credits"}
           </p>
         </div>
       </CardHeader>
@@ -234,6 +239,23 @@ export default function AIArtGenerator({ onArtworkGenerated, onBackToChoice }: A
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">Advanced Options</h4>
           
+          {/* Upscaling Factor */}
+          <div className="space-y-2">
+            <Label htmlFor="upscaling">Upscaling Quality</Label>
+            <Select value={upscalingFactor} onValueChange={setUpscalingFactor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose upscaling quality" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2x">2x Upscaling (2 credits) - Good Quality</SelectItem>
+                <SelectItem value="4x">4x Upscaling (4 credits) - Premium Quality</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Higher upscaling provides better image resolution but costs more credits
+            </p>
+          </div>
+
           {/* Aspect Ratio */}
           <div className="space-y-2">
             <Label htmlFor="aspectRatio">Image Format</Label>
