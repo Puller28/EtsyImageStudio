@@ -18,6 +18,7 @@ import { resizeImageToFormats } from "./services/image-processor";
 import { generateMockupsForCategory } from "./services/mockup-templates";
 import { generateProjectZip } from "./services/zip-generator";
 import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
+import sharp from 'sharp';
 import { comfyUIService } from "./services/comfyui-service";
 import { spawn } from "child_process";
 import { db } from "./db";
@@ -1468,11 +1469,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUserCreditsWithTransaction(req.userId!, -creditsRequired, 'AI Art Generation', `Generated AI artwork with ${upscalingFactor} upscaling`);
       console.log(`💳 Deducted ${creditsRequired} credits for AI art generation with ${upscalingFactor} upscaling. User ${req.userId}`);
       
-      // Create a project to preserve the AI-generated image since user paid for it
-      const projectData = {
+      // Create temporary project to get ID for storage
+      const tempProjectData = {
         userId: req.userId!,
         title: projectName.trim(),
-        originalImageUrl: `data:image/jpeg;base64,${base64Image}`,
+        originalImageUrl: '', // Will be updated with storage URL
         upscaledImageUrl: null,
         mockupImageUrl: null,
         mockupImages: null,
@@ -1480,12 +1481,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         etsyListing: null,
         mockupTemplate: null,
         zipUrl: null,
-        artworkTitle: projectName.trim(), // Use project name as artwork title
-        styleKeywords: category || 'ai-generated, digital art', // Required field
-        status: 'ai-generated', // New status for AI-generated images
-        upscaleOption: upscalingFactor, // Store the chosen upscaling factor
-        thumbnailUrl: `data:image/jpeg;base64,${base64Image}`, // Use full image as thumbnail
-        aiPrompt: optimizedPrompt, // Store the prompt used
+        artworkTitle: projectName.trim(),
+        styleKeywords: category || 'ai-generated, digital art',
+        status: 'processing', // Will be updated after image upload
+        upscaleOption: upscalingFactor,
+        thumbnailUrl: '', // Will be updated with compressed thumbnail
+        aiPrompt: optimizedPrompt,
         metadata: {
           category: category || 'general',
           originalPrompt: prompt,
@@ -1494,23 +1495,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      const createdProject = await storage.createProject(projectData);
-      console.log(`📁 Created project ${createdProject.id} for AI-generated artwork`);
+      const tempProject = await storage.createProject(tempProjectData);
+      console.log(`📁 Created temp project ${tempProject.id} for AI-generated artwork`);
+      
+      // Upload full image to object storage
+      const imageStorage = new ProjectImageStorage();
+      const originalImageUrl = await imageStorage.uploadImage(
+        `data:image/jpeg;base64,${base64Image}`, 
+        tempProject.id, 
+        'upscaled' // Store original AI image as upscaled type
+      );
+      
+      // Generate small thumbnail for database (max 200x200)
+      const thumbnailBuffer = await sharp(Buffer.from(base64Image, 'base64'))
+        .resize(200, 200, { fit: 'inside' })
+        .jpeg({ quality: 70 })
+        .toBuffer();
+      const thumbnailBase64 = `data:image/jpeg;base64,${thumbnailBuffer.toString('base64')}`;
+      
+      // Update project with storage URLs and final status
+      await storage.updateProject(tempProject.id, {
+        originalImageUrl,
+        thumbnailUrl: thumbnailBase64,
+        status: 'ai-generated'
+      });
+      
+      console.log(`📁 Updated project ${tempProject.id} with storage URLs`);
       
       // Automatically trigger upscaling for AI-generated images
-      console.log(`🔧 Auto-triggering upscaling for AI project: ${createdProject.id}`);
-      processProjectAsync(createdProject).catch(error => {
-        console.error(`🔧❌ Auto-processing failed for AI project ${createdProject.id}:`, error);
+      console.log(`🔧 Auto-triggering upscaling for AI project: ${tempProject.id}`);
+      processProjectAsync(tempProject).catch(error => {
+        console.error(`🔧❌ Auto-processing failed for AI project ${tempProject.id}:`, error);
         // Update status to failed if processing fails
-        storage.updateProject(createdProject.id, { status: "failed" }).catch(e => 
-          console.error(`Failed to update status for ${createdProject.id}:`, e)
+        storage.updateProject(tempProject.id, { status: "failed" }).catch(e => 
+          console.error(`Failed to update status for ${tempProject.id}:`, e)
         );
       });
       
       res.json({ 
-        image: base64Image,
+        image: base64Image, // Return small preview for immediate display
         prompt: optimizedPrompt,
-        projectId: createdProject.id // Return the actual project ID so frontend can reference it
+        projectId: tempProject.id, // Return the actual project ID
+        imageUrl: originalImageUrl // Return storage URL for full image
       });
       
     } catch (error) {
