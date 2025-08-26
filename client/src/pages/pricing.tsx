@@ -312,7 +312,11 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
               <AlertDescription className="text-green-800">
                 <div className="flex items-center justify-between">
                   <div>
-                    <strong>Active Subscription:</strong> {subscriptionStatus.subscriptionPlan?.replace('_', ' ').toUpperCase() || 'Premium Plan'}
+                    <strong>Active Subscription:</strong> {
+                      subscriptionStatus.subscriptionPlan === 'pro_monthly' ? 'Pro Plan' :
+                      subscriptionStatus.subscriptionPlan === 'business_monthly' ? 'Business Plan' :
+                      subscriptionStatus.subscriptionPlan || 'Free Plan'
+                    }
                     {subscriptionStatus.nextBillingDate && (
                       <span className="ml-2 text-sm">
                         (Next billing: {new Date(subscriptionStatus.nextBillingDate).toLocaleDateString()})

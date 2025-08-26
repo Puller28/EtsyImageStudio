@@ -91,8 +91,17 @@ export class SubscriptionService {
       }
 
       // Return free status if no active subscription found
+      // Make sure free users have the correct status set in database
+      if (!user.subscriptionStatus || user.subscriptionStatus === '') {
+        await storage.updateUserSubscription(userId, {
+          subscriptionStatus: 'free',
+          subscriptionPlan: undefined,
+          subscriptionId: undefined,
+        });
+      }
+      
       return {
-        subscriptionStatus: user.subscriptionStatus || 'free',
+        subscriptionStatus: 'free',
         subscriptionPlan: undefined,
         subscriptionId: undefined,
         nextBillingDate: undefined,

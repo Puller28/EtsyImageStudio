@@ -155,11 +155,11 @@ export default function Settings() {
                     <Label>Status</Label>
                     <div className="mt-1">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        currentUser?.subscriptionStatus === 'active' 
+                        (currentUser?.subscriptionStatus === 'active' || currentUser?.subscriptionStatus === 'free' || !currentUser?.subscriptionStatus)
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {currentUser?.subscriptionStatus === 'active' ? 'Active' : 'Inactive'}
+                        {(currentUser?.subscriptionStatus === 'active' || currentUser?.subscriptionStatus === 'free' || !currentUser?.subscriptionStatus) ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </div>
