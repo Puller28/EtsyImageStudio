@@ -1478,6 +1478,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mockupImages: null,
         resizedImages: null,
         etsyListing: null,
+        mockupTemplate: null,
+        zipUrl: null,
         artworkTitle: projectName.trim(), // Use project name as artwork title
         styleKeywords: category || 'ai-generated, digital art', // Required field
         status: 'ai-generated', // New status for AI-generated images
