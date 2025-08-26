@@ -322,33 +322,21 @@ export default function ProjectsPage() {
                         {project.title}
                       </h4>
                       
-                      {/* Temporary debug info */}
-                      {project.title?.includes('Mockup') && (
-                        <div className="text-xs bg-yellow-100 p-2 mb-2 rounded text-yellow-800 break-all">
-                          <div>📸 Original: {!!project.originalImageUrl ? '✓' : '✗'}</div>
-                          <div>🔍 Upscaled: {!!project.upscaledImageUrl ? '✓' : '✗'}</div>
-                          <div>🖼️ Mockup: {!!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)) ? '✓' : '✗'}</div>
-                          <div>📏 Resized: {!!(project.resizedImages && project.resizedImages.length > 0) ? '✓' : '✗'}</div>
-                          <div>📝 Etsy: {!!(project.etsyListing && Object.keys(project.etsyListing || {}).length > 0) ? '✓' : '✗'}</div>
-                          <div className="mt-1 font-semibold">Assets: {[
-                            !!project.originalImageUrl,
-                            !!project.upscaledImageUrl,
-                            !!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)),
-                            !!(project.resizedImages && project.resizedImages.length > 0),
-                            !!(project.etsyListing && Object.keys(project.etsyListing || {}).length > 0)
-                          ].filter(Boolean).length}/5</div>
-                        </div>
-                      )}
+
                       
                       {/* Content indicators showing what the project contains */}
                       {(() => {
                         // Debug logging for asset counting
+                        // Determine project type and available assets
+                        const isMockupProject = project.title?.toLowerCase().includes('mockup');
+                        
                         const assets = {
                           original: !!project.originalImageUrl,
                           upscaled: !!project.upscaledImageUrl,
                           mockup: !!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)),
                           resized: !!(project.resizedImages && project.resizedImages.length > 0),
-                          etsy: !!(project.etsyListing && (
+                          // Only count Etsy listings for non-mockup projects
+                          etsy: !isMockupProject && !!(project.etsyListing && (
                             typeof project.etsyListing === 'string' ? 
                               project.etsyListing.length > 0 : 
                               typeof project.etsyListing === 'object' && project.etsyListing !== null ?
@@ -404,7 +392,7 @@ export default function ProjectsPage() {
                                       📏 Print Sizes
                                     </span>
                                   )}
-                                  {project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
+                                  {!isMockupProject && project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
                                     <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-pink-100 text-pink-700`}>
                                       📝 Etsy SEO
                                     </span>
