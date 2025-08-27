@@ -19,6 +19,7 @@ import { generateMockupsForCategory } from "./services/mockup-templates";
 import { generateProjectZip } from "./services/zip-generator";
 import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
 import { comfyUIService } from "./services/comfyui-service";
+import { SEOService } from "./services/seo-service";
 import { spawn } from "child_process";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -32,13 +33,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SEO files - serve sitemap.xml and robots.txt
   app.get('/sitemap.xml', (req, res) => {
     res.set('Content-Type', 'application/xml');
-    const { SEOService } = require('./services/seo-service');
     res.send(SEOService.generateSitemap());
   });
 
   app.get('/robots.txt', (req, res) => {
     res.set('Content-Type', 'text/plain');
-    const { SEOService } = require('./services/seo-service');
     res.send(SEOService.generateRobots());
   });
 
