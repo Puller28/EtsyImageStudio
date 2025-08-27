@@ -1,0 +1,42 @@
+# Robots.txt for Image Upscaler Pro
+# Last updated: 2025-08-27
+
+User-agent: *
+Allow: /
+
+# Block access to user-specific and admin areas
+Disallow: /api/
+Disallow: /settings/
+Disallow: /admin/
+Disallow: /dashboard/
+
+# Block access to temporary files and processing
+Disallow: /temp/
+Disallow: /uploads/
+Disallow: /processing/
+
+# Block common sensitive files
+Disallow: /.env
+Disallow: /package.json
+Disallow: /config/
+
+# Allow access to main features and public pages
+Allow: /
+Allow: /generate
+Allow: /upscale
+Allow: /mockups
+Allow: /resize
+Allow: /etsy-seo
+Allow: /projects
+Allow: /pricing
+Allow: /contact
+Allow: /login
+Allow: /register
+Allow: /privacy
+Allow: /terms
+
+# Sitemap location
+Sitemap: https://imageupscaler.app/sitemap.xml
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1
