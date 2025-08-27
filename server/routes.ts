@@ -20,6 +20,7 @@ import { generateProjectZip } from "./services/zip-generator";
 import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest } from "./auth";
 import { comfyUIService } from "./services/comfyui-service";
 import { SEOService } from "./services/seo-service";
+import { ImageMigrationService } from "./services/image-migration-service";
 import { spawn } from "child_process";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -39,6 +40,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/robots.txt', (req, res) => {
     res.set('Content-Type', 'text/plain');
     res.send(SEOService.generateRobots());
+  });
+
+  // Image Migration API endpoints
+  const migrationService = new ImageMigrationService();
+
+  // Get migration status
+  app.get('/api/migration/status', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const status = await migrationService.getMigrationStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Migration status error:', error);
+      res.status(500).json({ error: 'Failed to get migration status' });
+    }
+  });
+
+  // Start batch migration
+  app.post('/api/migration/start', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { batchSize = 5 } = req.body;
+      
+      // Start migration asynchronously
+      migrationService.runBatchMigration(batchSize).then(progress => {
+        console.log('Migration completed:', progress);
+      }).catch(error => {
+        console.error('Migration failed:', error);
+      });
+
+      res.json({ 
+        message: 'Migration started', 
+        batchSize,
+        startTime: new Date()
+      });
+    } catch (error) {
+      console.error('Migration start error:', error);
+      res.status(500).json({ error: 'Failed to start migration' });
+    }
+  });
+
+  // Get migration progress
+  app.get('/api/migration/progress', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const progress = migrationService.getProgress();
+      res.json(progress);
+    } catch (error) {
+      console.error('Migration progress error:', error);
+      res.status(500).json({ error: 'Failed to get migration progress' });
+    }
+  });
+
+  // Migrate specific project
+  app.post('/api/migration/project/:projectId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { projectId } = req.params;
+      const result = await migrationService.migrateProjectImages(projectId);
+      res.json(result);
+    } catch (error) {
+      console.error('Project migration error:', error);
+      res.status(500).json({ error: 'Failed to migrate project' });
+    }
   });
 
   // Image serving endpoint for object storage
