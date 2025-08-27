@@ -30,6 +30,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite`.
 - **Streamlined Mockup Interface**: Sequential mockup generation is the default with a simplified single "Generate" button. Template selection is integrated into the workflow rather than a separate dashboard step.
 - **Enhanced Project Display**: Project cards show visual content indicators (📸 Original, 🔍 Upscaled, 🖼️ Mockups, 📏 Print Sizes, 📝 Etsy SEO) to clearly communicate what assets each project contains, improving project organization and user understanding.
+- **SEO Infrastructure**: Production-ready SEO implementation with sitemap.xml and robots.txt endpoints serving proper XML and text content with appropriate security blocking and search engine optimization for imageupscaler.app domain.
 
 ## External Dependencies
 
