@@ -121,43 +121,91 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
     onSuccess: (data: any) => {
       try {
         console.log('🎉 Mockup generation successful:', data);
-        toast({
-          title: "Mockups Generated Successfully",
-          description: `Created ${data.mockups?.length || 0} mockups using ${data.credits_used || 3} credits`,
-        });
         
-        if (data.mockups && Array.isArray(data.mockups)) {
-          onMockupsGenerated(data.mockups);
-        } else {
-          console.warn('⚠️ No mockups in response:', data);
-          onMockupsGenerated([]);
+        // Clear the stuck state timer
+        if (stuckStateTimer) {
+          clearTimeout(stuckStateTimer);
+          setStuckStateTimer(null);
         }
         
+        // Show success message
+        toast({
+          title: "Mockups Generated Successfully", 
+          description: `Created ${data.mockups?.length || data.mockupCount || selectedTemplates.length} mockups using ${data.credits_used || selectedTemplates.length} credits`,
+        });
+        
+        // Handle different response formats
+        if (data.mockups && Array.isArray(data.mockups)) {
+          onMockupsGenerated(data.mockups);
+        } else if (data.project_id) {
+          // If we got a project ID, redirect to projects page
+          setTimeout(() => {
+            window.location.href = `/projects/${data.project_id}`;
+          }, 1500);
+        } else {
+          console.warn('⚠️ No mockups in response, redirecting to projects:', data);
+          setTimeout(() => {
+            window.location.href = '/projects';
+          }, 1500);
+        }
+        
+        // Clear selected templates
+        setSelectedTemplates([]);
+        
+        // Invalidate queries to refresh user data
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+        
+        // Track successful completion
+        analytics.funnelStep('mockup_generation_complete', 4);
+        
       } catch (error) {
         console.error('❌ Error in onSuccess callback:', error);
         toast({
           title: "Processing Error",
-          description: "Mockups generated but failed to display. Please refresh the page.",
+          description: "Mockups generated but failed to display. Check your Projects page.",
           variant: "destructive",
         });
+        
+        // Still redirect to projects as a fallback
+        setTimeout(() => {
+          window.location.href = '/projects';
+        }, 2000);
       }
     },
     onError: (error: any) => {
       console.error('❌ Mockup generation error:', error);
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate mockups",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      // Force reset mutation state to prevent stuck loading
-      console.log('🔄 Mutation settled - resetting state');
+      
+      // Clear the stuck state timer
       if (stuckStateTimer) {
         clearTimeout(stuckStateTimer);
         setStuckStateTimer(null);
       }
+      
+      // Show error message
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate mockups. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Track error
+      analytics.errorEncounter('mockup_generation_failed', 'template_selector', error.message || 'Unknown error');
+    },
+    onSettled: () => {
+      // Force reset mutation state to prevent stuck loading
+      console.log('🔄 Mutation settled - resetting state');
+      
+      // Always clear the timer when mutation settles
+      if (stuckStateTimer) {
+        clearTimeout(stuckStateTimer);
+        setStuckStateTimer(null);
+      }
+      
+      // Small delay to ensure UI updates properly
+      setTimeout(() => {
+        console.log('🔄 Mutation state fully settled');
+      }, 100);
     },
   });
 
