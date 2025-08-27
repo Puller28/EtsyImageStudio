@@ -269,12 +269,32 @@ export default function Dashboard() {
       
       console.log("Project status changed:", projectStatus.status, "Current step:", currentStep);
       
+      // Determine if project is fully completed based on available assets
+      const hasUpscaled = !!projectStatus.upscaledImageUrl;
+      const hasResized = (projectStatus.resizedImages?.length || 0) > 0;
+      const hasEtsyListing = !!projectStatus.etsyListing;
+      const isProcessingComplete = hasUpscaled && hasResized && hasEtsyListing;
+      
+      console.log("📊 Processing completion check:", {
+        hasUpscaled,
+        hasResized,
+        hasEtsyListing,
+        isProcessingComplete,
+        status: projectStatus.status
+      });
+      
       switch (projectStatus.status) {
         case "uploading":
           setCurrentStep(1); // Show processing controls after upload
           break;
         case "processing":
-          setCurrentStep(2); // Show processing status
+          // Check if processing is actually complete even if status hasn't updated
+          if (isProcessingComplete) {
+            console.log("🎉 Processing complete - moving to download step");
+            setCurrentStep(3); // Move to download step
+          } else {
+            setCurrentStep(2); // Show processing status
+          }
           break;
         case "completed":
           setCurrentStep(3); // Show completed status
@@ -283,7 +303,7 @@ export default function Dashboard() {
           break;
       }
     }
-  }, [projectStatus]);
+  }, [projectStatus, currentStep]);
 
   const handleImageUpload = (file: File) => {
     console.log("handleImageUpload called with file:", file.name);
