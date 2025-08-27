@@ -32,144 +32,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SEO files - serve sitemap.xml and robots.txt
   app.get('/sitemap.xml', (req, res) => {
     res.set('Content-Type', 'application/xml');
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <url>
-    <loc>https://imageupscaler.app/</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/generate</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/upscale</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/mockups</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/resize</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/etsy-seo</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/projects</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/settings</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/login</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/register</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/pricing</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/contact</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/privacy</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://imageupscaler.app/terms</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-</urlset>`;
-    res.send(sitemap);
+    const { SEOService } = require('./services/seo-service');
+    res.send(SEOService.generateSitemap());
   });
 
   app.get('/robots.txt', (req, res) => {
     res.set('Content-Type', 'text/plain');
-    const robots = `# Robots.txt for Image Upscaler Pro
-# Last updated: 2025-08-27
-
-User-agent: *
-Allow: /
-
-# Block access to user-specific and admin areas
-Disallow: /api/
-Disallow: /settings/
-Disallow: /admin/
-Disallow: /dashboard/
-
-# Block access to temporary files and processing
-Disallow: /temp/
-Disallow: /uploads/
-Disallow: /processing/
-
-# Block common sensitive files
-Disallow: /.env
-Disallow: /package.json
-Disallow: /config/
-
-# Allow access to main features and public pages
-Allow: /
-Allow: /generate
-Allow: /upscale
-Allow: /mockups
-Allow: /resize
-Allow: /etsy-seo
-Allow: /projects
-Allow: /pricing
-Allow: /contact
-Allow: /login
-Allow: /register
-Allow: /privacy
-Allow: /terms
-
-# Sitemap location
-Sitemap: https://imageupscaler.app/sitemap.xml
-
-# Crawl delay (optional - helps with server load)
-Crawl-delay: 1`;
-    res.send(robots);
+    const { SEOService } = require('./services/seo-service');
+    res.send(SEOService.generateRobots());
   });
 
   // Image serving endpoint for object storage
