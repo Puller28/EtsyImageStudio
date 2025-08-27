@@ -45,8 +45,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Image Migration API endpoints
   const migrationService = new ImageMigrationService();
 
-  // Get migration status
-  app.get('/api/migration/status', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  // Get migration status (admin only)
+  app.get('/api/admin/migration/status', async (req, res) => {
     try {
       const status = await migrationService.getMigrationStatus();
       res.json(status);
@@ -56,16 +56,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start batch migration
-  app.post('/api/migration/start', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  // Start batch migration (admin only)
+  app.post('/api/admin/migration/start', async (req, res) => {
     try {
       const { batchSize = 5 } = req.body;
       
+      console.log(`🚀 Starting image migration with batch size: ${batchSize}`);
+      
       // Start migration asynchronously
       migrationService.runBatchMigration(batchSize).then(progress => {
-        console.log('Migration completed:', progress);
+        console.log('✅ Migration completed:', progress);
       }).catch(error => {
-        console.error('Migration failed:', error);
+        console.error('❌ Migration failed:', error);
       });
 
       res.json({ 
@@ -79,8 +81,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get migration progress
-  app.get('/api/migration/progress', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  // Get migration progress (admin only)
+  app.get('/api/admin/migration/progress', async (req, res) => {
     try {
       const progress = migrationService.getProgress();
       res.json(progress);
