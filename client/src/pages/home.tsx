@@ -97,7 +97,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground text-center">
-                  Generate professional mockups in living rooms, bedrooms, galleries, and more with 5 room templates.
+                  Generate professional mockups in bedrooms, living rooms, galleries, studies, and kids' rooms.
                 </p>
               </CardContent>
             </Card>
@@ -149,7 +149,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-lg font-semibold">2. AI Enhancement</h3>
               <p className="text-sm text-muted-foreground">
-                Automatically upscale to 4K resolution and generate 5 print-ready format sizes.
+                Automatically upscale images (2x for free, up to 4x for Pro+) and generate 5 print-ready format sizes.
               </p>
             </div>
 
@@ -195,7 +195,7 @@ export default function HomePage() {
                   <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-foreground">Professional Quality Output</h3>
-                    <p className="text-muted-foreground">AI-powered upscaling to 4K resolution ensures crisp, print-ready artwork every time.</p>
+                    <p className="text-muted-foreground">AI-powered upscaling (2x-4x depending on plan) ensures crisp, print-ready artwork every time.</p>
                   </div>
                 </div>
 
@@ -203,7 +203,7 @@ export default function HomePage() {
                   <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-foreground">Multiple Room Templates</h3>
-                    <p className="text-muted-foreground">Choose from 5 professional room settings: living room, bedroom, study, gallery, and kitchen.</p>
+                    <p className="text-muted-foreground">Choose from professional room settings: bedroom, living room, study, gallery, and kids' room.</p>
                   </div>
                 </div>
 
@@ -237,7 +237,7 @@ export default function HomePage() {
                     <CheckCircle className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">4K Image Upscaling</span>
+                    <span className="text-sm">AI Image Upscaling</span>
                     <CheckCircle className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex items-center justify-between">
