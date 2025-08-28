@@ -299,13 +299,16 @@ export default function Dashboard() {
           }
           break;
         case "completed":
-          setCurrentStep(3); // Show completed status
+          // If download has been completed manually, keep at step 4, otherwise step 3
+          if (!downloadCompleted) {
+            setCurrentStep(3); // Show completed status
+          }
           break;
         default:
           break;
       }
     }
-  }, [projectStatus, currentStep]);
+  }, [projectStatus, downloadCompleted]);
 
   const handleImageUpload = (file: File) => {
     console.log("handleImageUpload called with file:", file.name);
