@@ -39,6 +39,7 @@ export default function ProjectDetailPage() {
   const projectId = params?.id;
   const [selectedMockup, setSelectedMockup] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
 
@@ -110,13 +111,16 @@ export default function ProjectDetailPage() {
   };
 
   const handleDownloadAll = async () => {
-    if (!project?.zipUrl) {
-      // Generate zip file with all assets
-      try {
+    setIsDownloading(true);
+    try {
+      if (!project?.zipUrl) {
+        // Generate zip file with all assets
+        console.log('🎁 Starting zip generation for project:', projectId);
         const response = await fetch(`/api/projects/${projectId}/download`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         });
         
@@ -130,16 +134,25 @@ export default function ProjectDetailPage() {
           a.click();
           window.URL.revokeObjectURL(url);
           document.body.removeChild(a);
+          console.log('✅ Zip download completed successfully');
+        } else {
+          console.error('❌ Download failed with status:', response.status);
         }
-      } catch (error) {
-        console.error('Download failed:', error);
+      } else {
+        // Use existing zip URL
+        console.log('🎁 Using existing zip URL for download');
+        const a = document.createElement('a');
+        a.href = project.zipUrl;
+        a.download = `${project.title}-assets.zip`;
+        a.click();
+        console.log('✅ Direct zip download completed successfully');
       }
-    } else {
-      // Use existing zip URL
-      const a = document.createElement('a');
-      a.href = project.zipUrl;
-      a.download = `${project.title}-assets.zip`;
-      a.click();
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+    } finally {
+      // Always reset the loading state
+      setIsDownloading(false);
+      console.log('🔄 Download state reset');
     }
   };
 
@@ -267,9 +280,23 @@ export default function ProjectDetailPage() {
                 <RefreshCcw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                 {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
               </Button>
-              <Button onClick={handleDownloadAll} size="lg" data-testid="button-download-all">
-                <Package className="w-5 h-5 mr-2" />
-                Download All Files
+              <Button 
+                onClick={handleDownloadAll} 
+                size="lg" 
+                disabled={isDownloading}
+                data-testid="button-download-all"
+              >
+                {isDownloading ? (
+                  <>
+                    <RefreshCcw className="w-5 h-5 mr-2 animate-spin" />
+                    Preparing Download...
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-5 h-5 mr-2" />
+                    Download All Files
+                  </>
+                )}
               </Button>
             </div>
           </div>
