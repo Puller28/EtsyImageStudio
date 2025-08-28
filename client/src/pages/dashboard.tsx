@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [selectedProjectForListing, setSelectedProjectForListing] = useState<string | null>(null);
 
   const [isPackaging, setIsPackaging] = useState(false);
+  const [downloadCompleted, setDownloadCompleted] = useState(false);
   const { toast } = useToast();
   
   // Auto-authenticate for production deployment if not authenticated
@@ -111,6 +112,7 @@ export default function Dashboard() {
     if (projectStatusError && projectStatusError.message?.includes('403')) {
       console.log("🚫 Access denied to current project, clearing state");
       setCurrentProject(null);
+      setDownloadCompleted(false);
     }
   }, [projectStatusError]);
 
@@ -330,6 +332,7 @@ export default function Dashboard() {
           setShowAIGenerator(false);
           setShowUploadMode(false);
           setCurrentStep(1); // Move to processing step
+          setDownloadCompleted(false); // Reset download state for new project
           
           toast({
             title: "Project Created!",
@@ -373,6 +376,7 @@ export default function Dashboard() {
       setUploadedImage(undefined);
     }
     setCurrentProject(null);
+    setDownloadCompleted(false);
     setCurrentStep(0);
     setShowAIGenerator(false);
     setShowUploadMode(false); // Reset to show options again
@@ -407,6 +411,7 @@ export default function Dashboard() {
     formData.append("upscaleOption", options.upscaleOption);
 
     console.log("🟠 About to call createProjectMutation.mutate with FormData, project name:", uploadProjectName.trim());
+    setDownloadCompleted(false); // Reset download state for new processing
     createProjectMutation.mutate(formData);
   };
 
@@ -510,6 +515,7 @@ export default function Dashboard() {
       console.log("🎁 Download completed successfully");
       // Mark download step as completed
       setCurrentStep(4);
+      setDownloadCompleted(true);
       toast({
         title: "Download Complete",
         description: "Your project assets have been downloaded successfully.",
@@ -548,7 +554,7 @@ export default function Dashboard() {
     {
       id: "package",
       label: "Package assets",
-      status: projectStatus?.zipUrl ? "completed" : "pending"
+      status: downloadCompleted || projectStatus?.zipUrl ? "completed" : "pending"
     }
   ] as Array<{id: string; label: string; status: "pending" | "processing" | "completed" | "failed"}>;
 
