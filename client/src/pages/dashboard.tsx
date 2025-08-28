@@ -523,11 +523,8 @@ export default function Dashboard() {
       });
     } finally {
       console.log("🎁 Resetting packaging state");
-      // Force immediate state update with timeout to ensure React re-renders
-      setTimeout(() => {
-        setIsPackaging(false);
-        console.log("🎁 Packaging state reset completed");
-      }, 100);
+      setIsPackaging(false);
+      console.log("🎁 Packaging state reset completed");
     }
   };
 
