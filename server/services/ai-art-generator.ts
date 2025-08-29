@@ -32,29 +32,68 @@ export class AIArtGeneratorService {
 
     console.log('Starting AI art generation with prompt:', options.prompt);
     
+    // Retry logic for transient failures
+    const maxRetries = 2;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.attemptGeneration(options, attempt);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Check if this is a retryable error
+        const isRetryable = errorMessage.includes('No images were generated') || 
+                           errorMessage.includes('safety') ||
+                           errorMessage.includes('content policy');
+        
+        if (attempt < maxRetries && isRetryable) {
+          console.log(`AI generation attempt ${attempt} failed with retryable error: ${errorMessage}`);
+          console.log(`Retrying with attempt ${attempt + 1}/${maxRetries}...`);
+          
+          // Wait a bit before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+        
+        // If not retryable or max retries reached, throw the error
+        throw error;
+      }
+    }
+    
+    throw new Error('Max retries reached');
+  }
+
+  private async attemptGeneration(options: ArtGenerationOptions, attempt: number): Promise<string> {
     try {
+      const requestBody = {
+        prompt: options.prompt,
+        negative_prompt: options.negativePrompt || "blurry, low quality, distorted, watermark, text, signature",
+        aspect_ratio: options.aspectRatio || "1:1",
+        output_format: options.outputFormat || "JPEG",
+        seed: options.seed || Math.floor(Math.random() * 1000000),
+        safety_tolerance: options.safetyTolerance || "BLOCK_SOME",
+        person_generation: "allow_adult"
+      };
+
+      // Use different seeds for retries to avoid same result
+      if (attempt > 1) {
+        requestBody.seed = Math.floor(Math.random() * 1000000);
+        console.log(`Attempt ${attempt}: Using new seed ${requestBody.seed}`);
+      }
+
       const response = await fetch(`${this.baseUrl}/imagen`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
         },
-        body: JSON.stringify({
-          prompt: options.prompt,
-          negative_prompt: options.negativePrompt || "blurry, low quality, distorted, watermark, text, signature",
-          aspect_ratio: options.aspectRatio || "1:1",
-          output_format: options.outputFormat || "JPEG",
-          seed: options.seed || Math.floor(Math.random() * 1000000),
-          safety_tolerance: options.safetyTolerance || "BLOCK_SOME",
-          person_generation: "allow_adult"
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      console.log('Segmind AI Art generation response status:', response.status);
+      console.log(`Segmind AI Art generation response status (attempt ${attempt}):`, response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Segmind AI Art generation error response:', errorText);
+        console.error(`Segmind AI Art generation error response (attempt ${attempt}):`, errorText);
         
         // Provide more specific error messages
         if (response.status === 401) {
@@ -80,10 +119,10 @@ export class AIArtGeneratorService {
         .toBuffer();
       
       const base64Image = processedBuffer.toString('base64');
-      console.log('Imagen 3 art generation completed successfully (with 300 DPI)');
+      console.log(`Imagen 3 art generation completed successfully on attempt ${attempt} (with 300 DPI)`);
       return base64Image;
     } catch (error) {
-      console.error('AI art generation error:', error);
+      console.error(`AI art generation error on attempt ${attempt}:`, error);
       throw new Error(`Failed to generate artwork: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
