@@ -89,7 +89,41 @@ export default function TermsOfServicePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Related Links Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Related Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link href="/privacy-policy">
+                <Button variant="outline" className="w-full justify-start" data-testid="link-privacy-policy">
+                  Privacy Policy
+                </Button>
+              </Link>
+              <Link href="/contact">
+                <Button variant="outline" className="w-full justify-start" data-testid="link-contact">
+                  Contact Us
+                </Button>
+              </Link>
+              <Link href="/pricing">
+                <Button variant="outline" className="w-full justify-start" data-testid="link-pricing">
+                  View Pricing
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <Link href="/auth">
+                <Button className="w-full" data-testid="button-get-started">
+                  Get Started with Etsy Art & Image Upscaler Pro
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -2,10 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowLeft, Users, Target } from "lucide-react";
+import { PublicNavigation } from "@/components/navigation-public";
+import { Footer } from "@/components/footer";
 
 export default function AboutUsPage() {
   return (
     <div className="min-h-screen bg-background">
+      <PublicNavigation />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <Link href="/">
@@ -81,8 +84,42 @@ export default function AboutUsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Related Links */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Explore More</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link href="/features">
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-features">
+                    Our Features
+                  </Button>
+                </Link>
+                <Link href="/pricing">
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-pricing">
+                    View Pricing
+                  </Button>
+                </Link>
+                <Link href="/blog">
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-blog">
+                    Read Our Blog
+                  </Button>
+                </Link>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Link href="/auth">
+                  <Button className="w-full" data-testid="button-get-started">
+                    Start Creating Today
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
