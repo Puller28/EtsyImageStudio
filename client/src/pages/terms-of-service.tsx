@@ -2,10 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
+import { PublicNavigation } from "@/components/navigation-public";
+import { Footer } from "@/components/footer";
 
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-background">
+      <PublicNavigation />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <Link href="/">
