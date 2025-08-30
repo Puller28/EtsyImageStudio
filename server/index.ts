@@ -276,6 +276,30 @@ process.on('exit', cleanup);
     console.error('FastAPI server startup failed:', err);
   });
 
+  // Add canonical URL redirect middleware (www -> non-www)
+  app.use((req, res, next) => {
+    const host = req.get('host');
+    
+    // Only apply redirects in production or when host matches imageupscaler.app
+    if (host && (host.startsWith('www.imageupscaler.app') || 
+                host.startsWith('www.') && host.includes('imageupscaler'))) {
+      const canonicalHost = host.replace('www.', '');
+      const canonicalUrl = `https://${canonicalHost}${req.url}`;
+      
+      console.log(`🔀 Redirecting www.${canonicalHost} to ${canonicalHost}`);
+      return res.redirect(301, canonicalUrl);
+    }
+    
+    // Set canonical URL header for all requests
+    if (host && host.includes('imageupscaler')) {
+      const canonicalHost = host.replace('www.', '');
+      const canonicalUrl = `https://${canonicalHost}${req.path}`;
+      res.set('Link', `<${canonicalUrl}>; rel="canonical"`);
+    }
+    
+    next();
+  });
+
   // Register routes immediately (don't wait for database or FastAPI)
   const server = await registerRoutes(app);
 

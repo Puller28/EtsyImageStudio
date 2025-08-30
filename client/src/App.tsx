@@ -27,9 +27,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { initGA, identifyUser, trackUserPlan } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
+import { SEOHead } from "@/components/seo-head";
+import { useLocation } from "wouter";
 
 function Router() {
   const { isAuthenticated, login, user } = useAuth();
+  const [location] = useLocation();
   
   // Initialize analytics tracking
   useAnalytics();
@@ -53,8 +56,10 @@ function Router() {
   console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user, currentPath: window.location.pathname });
 
   return (
-    <Switch>
-      {/* Public routes */}
+    <>
+      <SEOHead path={location} />
+      <Switch>
+        {/* Public routes */}
       <Route path="/home" component={HomePage} />
       <Route path="/features" component={FeaturesPage} />
       <Route path="/blog" component={BlogPage} />
@@ -101,6 +106,7 @@ function Router() {
       
       <Route component={NotFound} />
     </Switch>
+    </>
   );
 }
 
