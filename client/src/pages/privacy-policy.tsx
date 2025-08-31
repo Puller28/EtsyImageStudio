@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-          <p className="text-muted-foreground">Last updated: June 26, 2024</p>
+          <p className="text-muted-foreground">Last updated: June 26, 2024. Learn about our <Link href="/features" className="text-primary hover:underline">AI-powered tools</Link> and <Link href="/about-us" className="text-primary hover:underline">company mission</Link>.</p>
         </div>
 
         <Card>
@@ -37,6 +37,8 @@ export default function PrivacyPolicyPage() {
               <p className="text-base leading-relaxed">
                 We collect information that you provide directly to us, such as when you create an account, subscribe to our 
                 newsletter, or otherwise communicate with us. This may include your name, email address, and payment information.
+                Learn more about our <Link href="/features" className="text-primary hover:underline">features and services</Link> or visit our 
+                <Link href="/about-us" className="text-primary hover:underline">about page</Link> for company information.
               </p>
             </div>
 
@@ -73,8 +75,9 @@ export default function PrivacyPolicyPage() {
               <h3 className="text-lg font-semibold mb-2">5. Your Choices</h3>
               <p className="text-base leading-relaxed">
                 You may update, correct or delete information about you at any time by logging into your online account. 
-                If you wish to delete your account, please email us at info@imageupscaler.app, but note that we may retain 
-                certain information as required by law or for legitimate business purposes.
+                If you wish to delete your account, please <Link href="/contact" className="text-primary hover:underline">email us</Link> at info@imageupscaler.app, but note that we may retain 
+                certain information as required by law or for legitimate business purposes. Check out our 
+                <Link href="/blog" className="text-primary hover:underline">helpful guides</Link> to get the most from our platform.
               </p>
             </div>
           </CardContent>

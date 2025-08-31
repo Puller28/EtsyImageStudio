@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-          <p className="text-muted-foreground">Last updated: June 26, 2024</p>
+          <p className="text-muted-foreground">Last updated: June 26, 2024. Check our <Link href="/pricing" className="text-primary hover:underline">pricing plans</Link> and <Link href="/contact" className="text-primary hover:underline">contact us</Link> with questions.</p>
         </div>
 
         <Card>

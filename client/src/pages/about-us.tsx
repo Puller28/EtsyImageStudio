@@ -35,8 +35,9 @@ export default function AboutUsPage() {
             <CardContent>
               <p className="text-base leading-relaxed">
                 Our mission is to provide artists and creators with the best tools to bring their digital creations to life. 
-                We believe in empowering creativity through technology, making high-quality image processing and generation 
-                accessible to everyone.
+                We believe in empowering creativity through technology, making high-quality <Link href="/features" className="text-primary hover:underline">image processing and generation features</Link> 
+                accessible to everyone. Learn more about our <Link href="/blog/ai-art-etsy-success-2025" className="text-primary hover:underline">AI art strategies</Link> and discover 
+                <Link href="/blog/automate-digital-art-business-workflow" className="text-primary hover:underline">how to automate your digital art workflow</Link>.
               </p>
             </CardContent>
           </Card>
@@ -52,8 +53,10 @@ export default function AboutUsPage() {
             <CardContent>
               <p className="text-base leading-relaxed">
                 Digital Art Helper started as a small project to solve a common problem for digital artists: resizing and 
-                preparing images for print. It has since grown into a powerful platform with AI-driven features, serving a 
-                global community of creators.
+                preparing images for print. It has since grown into a powerful platform with <Link href="/blog/ai-image-upscaling-print-on-demand" className="text-primary hover:underline">AI-driven upscaling features</Link>, 
+                <Link href="/template-mockups" className="text-primary hover:underline">professional mockup generation</Link>, and automated workflows, serving a 
+                global community of creators. Check out our <Link href="/pricing" className="text-primary hover:underline">flexible pricing plans</Link> and explore our 
+                <Link href="/blog" className="text-primary hover:underline">comprehensive guides and tutorials</Link>.
               </p>
             </CardContent>
           </Card>
@@ -79,42 +82,52 @@ export default function AboutUsPage() {
               </div>
               <div className="pt-4">
                 <Link href="/contact">
-                  <Button data-testid="button-contact-us">
+                  <Button className="w-full">
                     Contact Us
+                  </Button>
+                </Link>
+              </div>
+              <div className="pt-2">
+                <Link href="/auth">
+                  <Button variant="outline" className="w-full">
+                    Get Started Free
                   </Button>
                 </Link>
               </div>
             </CardContent>
           </Card>
 
-          {/* Related Links */}
-          <Card className="mt-6">
+          {/* Resources & Learning */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Explore More</CardTitle>
+              <CardTitle>Learn More About Digital Art</CardTitle>
+              <CardDescription>Explore our comprehensive guides and resources</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link href="/blog/best-print-sizes-digital-art-etsy">
+                  <div className="p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                    <h4 className="font-medium text-sm">Essential Print Sizes</h4>
+                    <p className="text-xs text-muted-foreground">Learn about the best print sizes for Etsy</p>
+                  </div>
+                </Link>
+                <Link href="/blog/room-mockup-templates-etsy-sales">
+                  <div className="p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                    <h4 className="font-medium text-sm">Mockup Templates</h4>
+                    <p className="text-xs text-muted-foreground">Templates that boost sales by 300%</p>
+                  </div>
+                </Link>
+                <Link href="/blog/etsy-seo-ai-listing-optimization">
+                  <div className="p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                    <h4 className="font-medium text-sm">Etsy SEO Guide</h4>
+                    <p className="text-xs text-muted-foreground">AI-powered listing optimization</p>
+                  </div>
+                </Link>
                 <Link href="/features">
-                  <Button variant="outline" className="w-full justify-start" data-testid="link-features">
-                    Our Features
-                  </Button>
-                </Link>
-                <Link href="/pricing">
-                  <Button variant="outline" className="w-full justify-start" data-testid="link-pricing">
-                    View Pricing
-                  </Button>
-                </Link>
-                <Link href="/blog">
-                  <Button variant="outline" className="w-full justify-start" data-testid="link-blog">
-                    Read Our Blog
-                  </Button>
-                </Link>
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <Link href="/auth">
-                  <Button className="w-full" data-testid="button-get-started">
-                    Start Creating Today
-                  </Button>
+                  <div className="p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                    <h4 className="font-medium text-sm">All Features</h4>
+                    <p className="text-xs text-muted-foreground">Complete suite of AI tools</p>
+                  </div>
                 </Link>
               </div>
             </CardContent>

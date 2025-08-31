@@ -87,7 +87,7 @@ export default function ContactPage() {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
-          <p className="text-muted-foreground">Get in touch with our team</p>
+          <p className="text-muted-foreground">Get in touch with our team. Learn about our <Link href="/features" className="text-primary hover:underline">complete feature set</Link> or explore our <Link href="/blog" className="text-primary hover:underline">guides and tutorials</Link>.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">

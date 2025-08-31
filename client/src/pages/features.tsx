@@ -28,6 +28,8 @@ export default function FeaturesPage() {
             <h1 className="text-4xl md:text-5xl font-bold">AI-Powered Digital Art Tools</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Professional-grade image processing, mockup generation, and content creation tools designed specifically for digital artists and Etsy sellers.
+              Learn more in our <Link href="/blog/ai-art-etsy-success-2025" className="text-primary hover:underline">AI art success guide</Link> and explore our 
+              <Link href="/pricing" className="text-primary hover:underline">flexible pricing plans</Link>.
             </p>
           </div>
         </div>
@@ -374,7 +376,9 @@ export default function FeaturesPage() {
         <section className="text-center space-y-8">
           <h2 className="text-3xl font-bold">Ready to Transform Your Digital Art Business?</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Join hundreds of digital artists who have automated their workflow and scaled their Etsy stores.
+            Join hundreds of digital artists who have automated their workflow and scaled their Etsy stores. 
+            Read our <Link href="/blog/automate-digital-art-business-workflow" className="text-primary hover:underline">automation guide</Link> and 
+            learn about <Link href="/blog/room-mockup-templates-etsy-sales" className="text-primary hover:underline">mockup templates that boost sales</Link>.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth">
