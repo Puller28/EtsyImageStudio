@@ -104,8 +104,9 @@ export default function BlogPage() {
 
       if (response.success) {
         toast({
-          title: "Welcome to our newsletter!",
-          description: "You'll receive weekly insights on digital art trends and AI tools.",
+          title: "Successfully subscribed!",
+          description: "Welcome to our newsletter! You'll receive weekly insights on digital art trends and AI tools.",
+          variant: "default",
         });
         setEmail("");
       }
