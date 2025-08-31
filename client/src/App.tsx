@@ -70,6 +70,18 @@ function Router() {
       <Route path="/contact" component={ContactPage} />
       <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
       <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      <Route path="/login" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      <Route path="/register" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      
+      {/* Feature routes - redirect to auth or dashboard based on authentication */}
+      <Route path="/generate" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      <Route path="/upscale" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      <Route path="/resize" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      <Route path="/etsy-seo" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      
+      {/* Legacy route redirects */}
+      <Route path="/terms" component={TermsOfServicePage} />
+      <Route path="/privacy" component={PrivacyPolicyPage} />
       
       {/* Protected routes */}
       {isAuthenticated ? (

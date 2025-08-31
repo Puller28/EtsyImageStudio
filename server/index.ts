@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
@@ -12,6 +13,20 @@ let fastApiProcess: ChildProcess | null = null;
 let fastApiReady = false;
 
 const app = express();
+
+// Add compression middleware for better performance
+app.use(compression({
+  // Compress all responses
+  filter: (req: Request, res: Response) => {
+    // Don't compress if the request has a 'x-no-compression' header
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Compress all other responses
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
