@@ -1,0 +1,90 @@
+Goal
+
+Fix Ahrefs “Non-canonical page in sitemap” by making every URL in the sitemap self-canonical or by removing non-indexable URLs from the sitemap. Recommended route is self-canonical for all public pages so blog and info pages can rank.
+
+Scope
+
+Website: imageupscaler.app
+
+Pages affected include blog posts, About, Settings, and any other URLs currently in sitemap.xml whose canonical points to the homepage.
+
+Changes Required
+1) Canonical tag logic
+
+What to do
+
+Add a self-referencing canonical tag on every indexable page
+
+Canonical must be an absolute HTTPS URL with one chosen trailing-slash policy used everywhere
+
+Implementation
+In the base HTML head template used by all pages add:
+
+<!-- Canonical -->
+<link rel="canonical" href="{{CANONICAL_URL}}">
+
+
+Generate {{CANONICAL_URL}} server side using request data or known route paths
+
+Must resolve to the exact public URL of the current page
+
+Strip query strings and fragments
+
+Normalise to your preferred trailing-slash policy
+
+Force https and non-www if that is the public choice
+
+Pseudo helper
+
+function canonicalFor(reqPath) {
+  const BASE = 'https://imageupscaler.app';
+  let path = reqPath.split('?')[0].replace(/\/+$/, '');   // drop ? and trailing slash
+  if (path === '') path = '/';
+  // if you prefer no trailing slash except root keep as above
+  // or if you prefer trailing slash then ensure one for non root:
+  // if (path !== '/' && !path.endsWith('/')) path += '/';
+  return BASE + path;
+}
+
+
+Use this for blog, about, settings, and all other public routes.
+Only pages that are intentionally not indexable should either
+
+use <meta name="robots" content="noindex,follow"> and be excluded from the sitemap
+
+or keep a canonical to another page and be excluded from the sitemap
+
+Do not point normal pages to the homepage as canonical.
+
+2) Sitemap generation
+
+What to do
+
+Include only URLs that are indexable and self-canonical
+
+Ensure each URL in the sitemap returns HTTP 200, uses https, and matches your trailing-slash choice
+
+Implementation checklist
+
+Remove any URL that has noindex or has a canonical pointing elsewhere
+
+Ensure there are no duplicates like both /page and /page/
+
+Use absolute URLs only
+
+Optional but good: include <lastmod> using ISO 8601
+
+Example entry
+
+<url>
+  <loc>https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand</loc>
+  <lastmod>2025-08-31</lastmod>
+</url>
+
+3) Edge case handling
+
+Tracking parameters: never include ?utm_* or any query strings in canonical or sitemap
+
+Pagination: each page in a paginated series should canonicalise to itself
+
+Redirects: do not list URLs in the sitemap that 301 or 302 to another URL

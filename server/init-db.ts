@@ -60,6 +60,27 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT now()
       )
     `);
+
+    // Create newsletter subscribers table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL DEFAULT 'active',
+        source TEXT NOT NULL DEFAULT 'blog',
+        created_at TIMESTAMP DEFAULT now(),
+        unsubscribed_at TIMESTAMP
+      )
+    `);
+
+    // Add indexes for newsletter table
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email)
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_newsletter_status ON newsletter_subscribers(status)
+    `);
     
     console.log('✅ Database tables initialized successfully');
   } catch (error) {

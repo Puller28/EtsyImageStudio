@@ -1,4 +1,4 @@
-import { User, Project, CreditTransaction } from "../shared/schema";
+import { User, Project, CreditTransaction, NewsletterSubscriber, InsertNewsletterSubscriber } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 
@@ -42,6 +42,11 @@ export interface IStorage {
   // Contact management
   getContactMessages(): Promise<any[]>;
   createContactMessage(message: any): Promise<any>;
+
+  // Newsletter management
+  createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber>;
+  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  unsubscribeNewsletter(email: string): Promise<boolean>;
 }
 
 class MemStorage implements IStorage {
@@ -50,6 +55,7 @@ class MemStorage implements IStorage {
   private creditTransactions = new Map<string, CreditTransaction>();
   private processedPayments = new Set<string>();
   private contactMessages = new Map<string, any>();
+  private newsletterSubscribers = new Map<string, NewsletterSubscriber>();
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const user = Array.from(this.users.values()).find(u => u.email === email);
@@ -728,6 +734,80 @@ class MemStorage implements IStorage {
     
     this.contactMessages.set(id, contactMessage);
     return contactMessage;
+  }
+
+  async createNewsletterSubscriber(subscriberData: InsertNewsletterSubscriber): Promise<NewsletterSubscriber> {
+    const id = crypto.randomUUID();
+    const createdAt = new Date();
+    
+    const subscriber: NewsletterSubscriber = {
+      id,
+      ...subscriberData,
+      createdAt,
+      unsubscribedAt: null
+    };
+    
+    this.newsletterSubscribers.set(id, subscriber);
+
+    // Persist to database
+    try {
+      const sql = createDbConnection();
+
+      await sql`
+        INSERT INTO newsletter_subscribers (id, email, status, source, created_at)
+        VALUES (${subscriber.id}, ${subscriber.email}, ${subscriber.status}, ${subscriber.source}, ${subscriber.createdAt})
+      `;
+      
+      await sql.end();
+      console.log(`✅ Newsletter subscriber ${subscriber.email} added to database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to persist newsletter subscriber ${subscriber.email}:`, dbError);
+    }
+    
+    return subscriber;
+  }
+
+  async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+    return Array.from(this.newsletterSubscribers.values())
+      .filter(sub => sub.status === 'active')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async unsubscribeNewsletter(email: string): Promise<boolean> {
+    const subscriber = Array.from(this.newsletterSubscribers.values())
+      .find(sub => sub.email === email);
+    
+    if (!subscriber) {
+      return false;
+    }
+
+    const updatedSubscriber = {
+      ...subscriber,
+      status: 'unsubscribed' as const,
+      unsubscribedAt: new Date()
+    };
+    
+    this.newsletterSubscribers.set(subscriber.id, updatedSubscriber);
+
+    // Persist to database
+    try {
+      const sql = createDbConnection();
+
+      await sql`
+        UPDATE newsletter_subscribers 
+        SET status = 'unsubscribed', unsubscribed_at = ${updatedSubscriber.unsubscribedAt}
+        WHERE email = ${email}
+      `;
+      
+      await sql.end();
+      console.log(`✅ Newsletter subscriber ${email} unsubscribed in database`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to unsubscribe ${email} in database:`, dbError);
+    }
+
+    return true;
   }
 }
 

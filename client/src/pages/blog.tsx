@@ -5,6 +5,9 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, ArrowRight, Sparkles, TrendingUp, Users, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const blogPosts = [
   {
@@ -78,6 +81,55 @@ const blogPosts = [
 export default function BlogPage() {
   const featuredPosts = blogPosts.filter(post => post.featured);
   const regularPosts = blogPosts.filter(post => !post.featured);
+  const [email, setEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const { toast } = useToast();
+
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubscribing(true);
+    
+    try {
+      const response = await apiRequest("/api/newsletter/subscribe", {
+        method: "POST",
+        body: { email, source: "blog" },
+      });
+
+      if (response.success) {
+        toast({
+          title: "Welcome to our newsletter!",
+          description: "You'll receive weekly insights on digital art trends and AI tools.",
+        });
+        setEmail("");
+      }
+    } catch (error: any) {
+      if (error.message?.includes("already subscribed")) {
+        toast({
+          title: "Already subscribed",
+          description: "This email is already subscribed to our newsletter.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Subscription failed",
+          description: "Please try again later or contact support.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -232,21 +284,31 @@ export default function BlogPage() {
         <section className="text-center bg-muted/20 rounded-2xl p-12">
           <h2 className="text-3xl font-bold mb-4">Stay Updated with Digital Art Trends</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Get weekly insights on AI art trends, Etsy optimization tips, and exclusive tutorials delivered to your inbox.
+            Get weekly insights on AI art generation, Etsy optimization, and digital marketing strategies delivered straight to your inbox.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+          <form onSubmit={handleNewsletterSubscribe} className="max-w-md mx-auto flex flex-col sm:flex-row gap-4" data-testid="form-newsletter-signup">
             <input 
               type="email" 
-              placeholder="Enter your email" 
-              className="px-4 py-3 rounded-lg border border-border bg-background flex-1"
+              placeholder="Enter your email address" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isSubscribing}
+              className="flex-1 px-4 py-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               data-testid="input-newsletter-email"
             />
-            <Button size="lg" data-testid="button-subscribe-newsletter">
-              Subscribe
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="px-8" 
+              disabled={isSubscribing}
+              data-testid="button-newsletter-subscribe"
+            >
+              {isSubscribing ? "Subscribing..." : "Subscribe"}
             </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-4">
-            Join 500+ digital artists growing their business with AI tools
+          </form>
+          <p className="text-xs text-muted-foreground mt-4">
+            No spam, unsubscribe anytime. We respect your privacy.
           </p>
         </section>
       </div>

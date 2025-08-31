@@ -71,6 +71,15 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  status: text("status").notNull().default("active"), // active, unsubscribed
+  source: text("source").notNull().default("blog"), // Track where they signed up
+  createdAt: timestamp("created_at").default(sql`now()`),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
@@ -108,6 +117,12 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
   status: true,
 });
 
+export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSubscribers).omit({
+  id: true,
+  createdAt: true,
+  unsubscribedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
@@ -116,3 +131,5 @@ export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSche
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;

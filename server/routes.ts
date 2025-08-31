@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { ProjectImageStorage } from "./objectStorage";
-import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, type Project, projects } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, type Project, projects } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -953,6 +953,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to get contact messages:", error);
       res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+
+  // Newsletter subscription endpoint
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const subscriberData = insertNewsletterSubscriberSchema.parse(req.body);
+      
+      // Check if email already exists
+      const existingSubscribers = await storage.getNewsletterSubscribers();
+      const existingSubscriber = existingSubscribers.find(sub => sub.email === subscriberData.email);
+      
+      if (existingSubscriber) {
+        return res.status(409).json({ 
+          error: "Email already subscribed",
+          message: "This email is already subscribed to our newsletter." 
+        });
+      }
+      
+      // Create new subscriber
+      const subscriber = await storage.createNewsletterSubscriber(subscriberData);
+      
+      console.log(`📧 New newsletter subscriber: ${subscriberData.email} from ${subscriberData.source || 'blog'}`);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: "Successfully subscribed to newsletter!",
+        id: subscriber.id 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid email address", 
+          details: error.errors 
+        });
+      }
+      
+      console.error("Newsletter subscription error:", error);
+      res.status(500).json({ error: "Failed to subscribe to newsletter" });
+    }
+  });
+
+  // Newsletter unsubscribe endpoint
+  app.post("/api/newsletter/unsubscribe", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email address is required" });
+      }
+      
+      const unsubscribed = await storage.unsubscribeNewsletter(email);
+      
+      if (unsubscribed) {
+        console.log(`📧 Newsletter unsubscribe: ${email}`);
+        res.json({ 
+          success: true, 
+          message: "Successfully unsubscribed from newsletter." 
+        });
+      } else {
+        res.status(404).json({ 
+          error: "Email not found",
+          message: "This email is not subscribed to our newsletter." 
+        });
+      }
+    } catch (error) {
+      console.error("Newsletter unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from newsletter" });
+    }
+  });
+
+  // Get newsletter subscribers (admin only)
+  app.get("/api/newsletter/subscribers", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const subscribers = await storage.getNewsletterSubscribers();
+      res.json({
+        count: subscribers.length,
+        subscribers: subscribers
+      });
+    } catch (error) {
+      console.error("Failed to get newsletter subscribers:", error);
+      res.status(500).json({ error: "Failed to get subscribers" });
     }
   });
 
