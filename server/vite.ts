@@ -5,6 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
+import fs from "fs";
 
 const viteLogger = createLogger();
 
@@ -79,7 +80,48 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // fall through to index.html if the file doesn't exist - WITH CANONICAL URL PROCESSING
+  app.use("*", (req, res) => {
+    const indexPath = path.resolve(distPath, "index.html");
+
+    // Read the HTML file and process canonical URLs
+    fs.readFile(indexPath, 'utf-8', (err, html) => {
+      if (err) {
+        console.error('Error reading index.html:', err);
+        return res.status(500).send('Internal Server Error');
+      }
+
+      // Generate correct canonical URL for this specific page
+      let pathClean = req.path.split('?')[0].split('#')[0];
+      pathClean = pathClean.replace(/\/+$/, '');
+      if (pathClean === '') pathClean = '/';
+      if (pathClean === '/home') pathClean = '/';
+
+      const canonicalUrl = `https://imageupscaler.app${pathClean === '/' ? '' : pathClean}`;
+      const isArticlePage = pathClean.startsWith('/blog/') && pathClean !== '/blog';
+      const ogType = isArticlePage ? 'article' : 'website';
+
+      console.log(`🔍 CANONICAL: Processing ${pathClean} → ${canonicalUrl} (${ogType})`);
+
+      // Replace canonical URLs in the HTML
+      let processedHtml = html;
+      processedHtml = processedHtml.replace(
+        '<link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />',
+        `<link rel="canonical" href="${canonicalUrl}" id="canonical-url" />`
+      );
+      processedHtml = processedHtml.replace(
+        '<meta property="og:url" content="https://imageupscaler.app/" id="og-url" />',
+        `<meta property="og:url" content="${canonicalUrl}" id="og-url" />`
+      );
+      processedHtml = processedHtml.replace(
+        '<meta property="og:type" content="website" id="og-type" />',
+        `<meta property="og:type" content="${ogType}" id="og-type" />`
+      );
+
+      console.log(`✅ CANONICAL: Set to ${canonicalUrl}`);
+
+      res.set('Content-Type', 'text/html');
+      res.send(processedHtml);
+    });
   });
 }
