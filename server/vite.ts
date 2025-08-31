@@ -5,7 +5,6 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
-import fs from "fs";
 
 const viteLogger = createLogger();
 
@@ -92,10 +91,13 @@ export function serveStatic(app: Express) {
       }
 
       // Generate correct canonical URL for this specific page
-      let pathClean = req.path.split('?')[0].split('#')[0];
+      // Generate correct canonical URL for this specific page
+      // Use originalUrl to get the full path including route parameters
+      let pathClean = (req.originalUrl || req.path).split('?')[0].split('#')[0];
       pathClean = pathClean.replace(/\/+$/, '');
       if (pathClean === '') pathClean = '/';
       if (pathClean === '/home') pathClean = '/';
+      console.log(`🔍 RAW PATH DEBUG: originalUrl="${req.originalUrl}", path="${req.path}", cleaned="${pathClean}"`);
 
       const canonicalUrl = `https://imageupscaler.app${pathClean === '/' ? '' : pathClean}`;
       const isArticlePage = pathClean.startsWith('/blog/') && pathClean !== '/blog';
