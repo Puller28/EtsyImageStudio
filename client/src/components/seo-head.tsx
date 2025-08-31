@@ -96,31 +96,27 @@ export function SEOHead({
       metaDescription.setAttribute('content', finalDescription);
     }
     
-    // Generate canonical URL following best practices
+    // Canonical URLs are now handled by the inline script in index.html
+    // This ensures they're present before search engines finish parsing the head
+    // Just ensure the existing ones are correct if they exist
     const canonicalUrl = generateCanonicalUrl(currentPath);
+    const isArticlePage = currentPath.startsWith('/blog/') && currentPath !== '/blog' && currentPath !== '/blog/';
+    const ogType = isArticlePage ? 'article' : 'website';
     
-    let canonicalLink = document.getElementById('canonical-url') || document.querySelector('link[rel="canonical"]');
+    // Update existing canonical if present
+    let canonicalLink = document.getElementById('canonical-url');
     if (canonicalLink) {
       canonicalLink.setAttribute('href', canonicalUrl);
-    } else {
-      // Create canonical link if it doesn't exist
-      canonicalLink = document.createElement('link');
-      canonicalLink.setAttribute('rel', 'canonical');
-      canonicalLink.setAttribute('href', canonicalUrl);
-      canonicalLink.id = 'canonical-url';
-      document.head.appendChild(canonicalLink);
     }
     
-    // Update Open Graph URL
-    let ogUrl = document.querySelector('meta[property="og:url"]');
+    // Update existing og:url if present
+    let ogUrl = document.getElementById('og-url');
     if (ogUrl) {
       ogUrl.setAttribute('content', canonicalUrl);
     }
     
-    // Update Open Graph type (article for blog posts, website for other pages)
-    const isArticlePage = currentPath.startsWith('/blog/') && currentPath !== '/blog' && currentPath !== '/blog/';
-    const ogType = isArticlePage ? 'article' : 'website';
-    let ogTypeElement = document.querySelector('meta[property="og:type"]');
+    // Update existing og:type if present
+    let ogTypeElement = document.getElementById('og-type');
     if (ogTypeElement) {
       ogTypeElement.setAttribute('content', ogType);
     }
