@@ -31,66 +31,70 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Server-side canonical URL injection middleware
-  app.use((req, res, next) => {
-    // Only process page routes, not API endpoints or static assets
+  // Create custom middleware that handles canonical URLs for static HTML serving
+  // This runs BEFORE the catch-all static file handler
+  app.get('*', (req, res, next) => {
+    // Skip API routes and actual static files
     if (req.path.startsWith('/api') || req.path.includes('.') || req.path.startsWith('/@vite') || req.path.startsWith('/assets')) {
       return next();
     }
 
-    // Store original send function to intercept HTML responses
-    const originalSend = res.send;
+    console.log(`🌐 CANONICAL INTERCEPT: ${req.method} ${req.path}`);
+
+    // This is a page route - we need to serve index.html with correct canonical URLs
+    const fs = require('fs');
+    const path = require('path');
     
-    res.send = function(body: any) {
-      if (typeof body === 'string' && body.includes('<!DOCTYPE html>')) {
-        // Generate correct canonical URL for this specific page
-        let path = req.path.split('?')[0].split('#')[0];
-        path = path.replace(/\/+$/, '');
-        if (path === '') path = '/';
-        if (path === '/home') path = '/';
-        
-        const canonicalUrl = `https://imageupscaler.app${path === '/' ? '' : path}`;
-        const isArticlePage = path.startsWith('/blog/') && path !== '/blog';
-        const ogType = isArticlePage ? 'article' : 'website';
-        
-        console.log(`🔍 CANONICAL DEBUG: Processing path: ${path} → ${canonicalUrl} (og:type: ${ogType})`);
-        
-        // Replace canonical URL with exact string matching
-        const originalCanonical = '<link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />';
-        const newCanonical = `<link rel="canonical" href="${canonicalUrl}" id="canonical-url" />`;
-        
-        const originalOgUrl = '<meta property="og:url" content="https://imageupscaler.app/" id="og-url" />';
-        const newOgUrl = `<meta property="og:url" content="${canonicalUrl}" id="og-url" />`;
-        
-        const originalOgType = '<meta property="og:type" content="website" id="og-type" />';
-        const newOgType = `<meta property="og:type" content="${ogType}" id="og-type" />`;
-        
-        if (body.includes(originalCanonical)) {
-          body = body.replace(originalCanonical, newCanonical);
-          console.log(`✅ CANONICAL: Replaced canonical URL with ${canonicalUrl}`);
-        } else {
-          console.log(`❌ CANONICAL: Original canonical tag not found in HTML body`);
-        }
-        
-        if (body.includes(originalOgUrl)) {
-          body = body.replace(originalOgUrl, newOgUrl);
-          console.log(`✅ OG:URL: Replaced with ${canonicalUrl}`);
-        } else {
-          console.log(`❌ OG:URL: Original og:url tag not found in HTML body`);
-        }
-        
-        if (body.includes(originalOgType)) {
-          body = body.replace(originalOgType, newOgType);
-          console.log(`✅ OG:TYPE: Replaced with ${ogType}`);
-        } else {
-          console.log(`❌ OG:TYPE: Original og:type tag not found in HTML body`);
-        }
+    // Determine the path to the built index.html
+    const isProduction = process.env.NODE_ENV === 'production';
+    const indexPath = isProduction 
+      ? path.resolve(import.meta.dirname, '../dist/public/index.html')
+      : path.resolve(import.meta.dirname, '../client/index.html');
+
+    console.log(`📁 Reading HTML from: ${indexPath}`);
+
+    fs.readFile(indexPath, 'utf-8', (err, html) => {
+      if (err) {
+        console.error('❌ Error reading index.html:', err);
+        return next(); // Fall through to default handler
       }
+
+      // Generate correct canonical URL for this specific page
+      let cleanPath = req.path.split('?')[0].split('#')[0];
+      cleanPath = cleanPath.replace(/\/+$/, '');
+      if (cleanPath === '') cleanPath = '/';
+      if (cleanPath === '/home') cleanPath = '/';
       
-      return originalSend.call(this, body);
-    };
-    
-    next();
+      const canonicalUrl = `https://imageupscaler.app${cleanPath === '/' ? '' : cleanPath}`;
+      const isArticlePage = cleanPath.startsWith('/blog/') && cleanPath !== '/blog';
+      const ogType = isArticlePage ? 'article' : 'website';
+      
+      console.log(`🔍 CANONICAL: ${cleanPath} → ${canonicalUrl} (${ogType})`);
+      
+      // Replace canonical URLs in the HTML
+      let processedHtml = html;
+      
+      // Replace with more flexible matching
+      processedHtml = processedHtml.replace(
+        /<link rel="canonical" href="https:\/\/imageupscaler\.app\/" id="canonical-url"[^>]*>/gi,
+        `<link rel="canonical" href="${canonicalUrl}" id="canonical-url" />`
+      );
+      
+      processedHtml = processedHtml.replace(
+        /<meta property="og:url" content="https:\/\/imageupscaler\.app\/" id="og-url"[^>]*>/gi,
+        `<meta property="og:url" content="${canonicalUrl}" id="og-url" />`
+      );
+      
+      processedHtml = processedHtml.replace(
+        /<meta property="og:type" content="website" id="og-type"[^>]*>/gi,
+        `<meta property="og:type" content="${ogType}" id="og-type" />`
+      );
+      
+      console.log(`✅ CANONICAL: Set to ${canonicalUrl}`);
+      
+      res.set('Content-Type', 'text/html');
+      res.send(processedHtml);
+    });
   });
 
   // SEO files - serve sitemap.xml and robots.txt
