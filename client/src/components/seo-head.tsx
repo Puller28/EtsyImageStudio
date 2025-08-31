@@ -101,11 +101,15 @@ export function SEOHead({
     const isArticlePage = currentPath.startsWith('/blog/') && currentPath !== '/blog' && currentPath !== '/blog/';
     const ogType = isArticlePage ? 'article' : 'website';
     
+    console.log('🔍 SEOHead updating:', { currentPath, canonicalUrl, ogType });
+    
     // Always ensure canonical link exists and is correct
     let canonicalLink = document.getElementById('canonical-url');
     if (canonicalLink) {
+      console.log('📝 Updating existing canonical from:', canonicalLink.href, 'to:', canonicalUrl);
       canonicalLink.setAttribute('href', canonicalUrl);
     } else {
+      console.log('➕ Creating new canonical:', canonicalUrl);
       canonicalLink = document.createElement('link');
       canonicalLink.setAttribute('rel', 'canonical');
       canonicalLink.setAttribute('href', canonicalUrl);
