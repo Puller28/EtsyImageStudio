@@ -16,6 +16,30 @@
 
   </head>
   <body>
+    <!-- Server-rendered navigation for crawlers (hidden from users) -->
+    <nav aria-label="Primary" style="display: none;" data-seo-nav="true">
+      <a href="/">Home</a>
+      <a href="/features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/blog">Blog</a>
+      <a href="/about-us">About</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy-policy">Privacy</a>
+      <a href="/terms-of-service">Terms</a>
+    </nav>
+    
+    <!-- Related articles for blog posts (will be enhanced via server processing) -->
+    <div style="display: none;" data-seo-related="blog">
+      <h3>Related Articles</h3>
+      <a href="/blog/ai-art-etsy-success-2025">AI Art Etsy Success Guide 2025</a>
+      <a href="/blog/best-print-sizes-digital-art-etsy">Best Print Sizes for Digital Art</a>
+      <a href="/blog/ai-image-upscaling-print-on-demand">AI Image Upscaling for Print-on-Demand</a>
+      <a href="/blog/room-mockup-templates-etsy-sales">Room Mockup Templates That Boost Sales</a>
+      <a href="/blog/etsy-seo-ai-listing-optimization">Etsy SEO & AI Listing Optimization</a>
+      <a href="/blog/mockup-generation-digital-art">Mockup Generation for Digital Art</a>
+      <a href="/blog/automate-digital-art-business-workflow">Automate Your Digital Art Workflow</a>
+    </div>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->

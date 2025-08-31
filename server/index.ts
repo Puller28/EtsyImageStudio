@@ -30,6 +30,15 @@ app.use(compression({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Fix canonical URL issue with HTTP Link headers (overrides HTML canonical)
+app.use((req, res, next) => {
+  const base = 'https://imageupscaler.app';
+  let path = req.path.replace(/\/+$/, '');
+  if (path === '') path = '/';
+  res.setHeader('Link', `<${base + path}>; rel="canonical"`);
+  next();
+});
+
 // Note: Server-side HTML modification doesn't work in development due to Vite
 // Canonical URLs are handled by SEOHead component for reliability
 

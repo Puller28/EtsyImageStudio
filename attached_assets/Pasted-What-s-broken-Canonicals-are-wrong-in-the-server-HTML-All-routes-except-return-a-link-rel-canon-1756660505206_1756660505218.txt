@@ -1,0 +1,162 @@
+What’s broken
+
+Canonicals are wrong in the server HTML
+All routes except / return a <link rel="canonical" href="https://imageupscaler.app/"> in the initial HTML. You verified this with PowerShell. Ahrefs reads the HTML response before JS runs so any JavaScript that later rewrites the canonical is ignored. Result: “non-canonical in sitemap” and “canonical URL changed”.
+
+Pages have “no outgoing links” in the HTML response
+The server returns almost no anchors. Navigation and body links are injected by React after load so crawlers do not see them. Your PowerShell check showed zero <a href="…"> in the raw HTML. Result: Ahrefs flags “no outgoing links” and Google has a weak internal link graph.
+
+What to change
+A) Canonicals — make the server response correct
+
+Pick either the proper fix or the quick stop-gap. Prefer the proper fix.
+
+Proper fix
+Render a self-referencing canonical per route in the server HTML or at build time. No JS rewriting.
+
+/ → https://imageupscaler.app/
+
+/blog → https://imageupscaler.app/blog
+
+/blog/<slug> → https://imageupscaler.app/blog/<slug>
+
+/about-us → https://imageupscaler.app/about-us
+
+/contact → https://imageupscaler.app/contact
+
+same for every indexable page
+
+Ensure og:url equals the canonical. Use og:type=article on posts and website elsewhere.
+
+Quick stop-gap
+Set a per-request HTTP Link header that matches the requested path. This overrides the bad HTML canonical until you refactor the head.
+
+Express
+
+app.use((req, res, next) => {
+  const base = 'https://imageupscaler.app';
+  let path = req.path.replace(/\/+$/, '');
+  if (path === '') path = '/';
+  res.setHeader('Link', `<${base + path}>; rel="canonical"`);
+  next();
+});
+
+
+Nginx
+
+map $uri $canonical {
+  default  "https://imageupscaler.app$uri";
+  "~^/$"   "https://imageupscaler.app/";
+}
+server {
+  add_header Link "<$canonical>; rel=\"canonical\"";
+}
+
+
+Also
+
+Make sitemap <loc> strings identical to the canonical form
+https scheme, non-www host, no trailing slash except /
+
+Enforce redirects to that policy
+http → https, www → non-www, with-slash → no-slash for non-root
+
+Remove any global rule that injects a single canonical for all pages
+
+B) Outgoing links — put real anchors in the HTML
+
+Crawlers must see links before JS.
+
+Add a server-rendered header or footer with plain anchors in the base HTML that is served for every route
+
+<nav aria-label="Primary">
+  <a href="/">Home</a>
+  <a href="/features">Features</a>
+  <a href="/blog">Blog</a>
+  <a href="/about-us">About</a>
+  <a href="/contact">Contact</a>
+  <a href="/privacy-policy">Privacy</a>
+  <a href="/terms-of-service">Terms</a>
+</nav>
+
+
+For blog posts output a small Related articles block in the raw HTML that links to 3–5 posts with <a href="/blog/<slug>">…</a>
+
+Avoid href="#", javascript:void(0), hash routes, button-only navigation and rel="nofollow" on internal links
+
+Longer term: move to SSR or SSG so each route is pre-rendered with its own head and body content. For a Vite SPA use vite-ssg or a prerender plugin or migrate blog pages to a static exporter.
+
+Acceptance tests
+
+Run these after deployment. All must pass.
+
+1) Canonical equals requested URL
+
+$urls = @(
+  "https://imageupscaler.app/",
+  "https://imageupscaler.app/blog",
+  "https://imageupscaler.app/blog/best-print-sizes-digital-art-etsy",
+  "https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand",
+  "https://imageupscaler.app/blog/automate-digital-art-business-workflow",
+  "https://imageupscaler.app/blog/etsy-seo-ai-listing-optimization",
+  "https://imageupscaler.app/blog/mockup-generation-digital-art",
+  "https://imageupscaler.app/about-us",
+  "https://imageupscaler.app/privacy-policy",
+  "https://imageupscaler.app/contact",
+  "https://imageupscaler.app/terms-of-service",
+  "https://imageupscaler.app/features"
+)
+$re = 'rel="canonical"\s+href="([^"]+)"'
+foreach ($u in $urls) {
+  $resp = Invoke-WebRequest -Uri $u
+  $m = [regex]::Match($resp.Content, $re, 'IgnoreCase')
+  $canon = if ($m.Success) { $m.Groups[1].Value } else { "<none>" }
+  $status = if ($canon -eq $u) { "OK" } else { "MISMATCH" }
+  "{0}`n  canonical: {1}`n  result: {2}`n" -f $u, $canon, $status
+}
+
+
+Every line should end with OK. If you used the HTTP Link header stop-gap also check:
+
+$r = Invoke-WebRequest -Uri "https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand" -Method Head
+$r.Headers["Link"]
+
+
+It should show the exact URL for that route.
+
+2) Sitemap equals canonical
+
+$smap = Invoke-WebRequest -Uri "https://imageupscaler.app/sitemap.xml"
+$smap.Content | Select-String -Pattern "<loc>([^<]+)</loc>" -AllMatches |
+  ForEach-Object { $_.Matches.Groups[1].Value }
+
+
+Pick samples and ensure the strings match the canonicals exactly.
+
+3) There are crawlable outlinks in the raw HTML
+
+$u = "https://imageupscaler.app/blog/etsy-seo-ai-listing-optimization"
+$r = Invoke-WebRequest -Uri $u
+($r.Content | Select-String -Pattern '<a\s' -AllMatches).Matches.Count    # should be > 0
+[regex]::Matches($r.Content,'<a\s+[^>]*href="([^"#][^"]*)"', 'IgnoreCase') |
+  ForEach-Object { $_.Groups[1].Value }                                    # should list real URLs
+
+
+4) Redirect and slash policy
+
+$test = "https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand"
+$r1 = Invoke-WebRequest -Uri $test -Method Head -MaximumRedirection 0;     "$($r1.StatusCode) $($r1.Headers['Location'])"
+$r2 = Invoke-WebRequest -Uri ($test + "/") -Method Head -MaximumRedirection 0; "$($r2.StatusCode) $($r2.Headers['Location'])"
+
+
+Exactly one form should return 200 and the other should redirect to it. The 200 form must be the one used in sitemap and canonical.
+
+After deployment
+
+Purge CDN and any build caches
+
+Resubmit sitemap.xml in Search Console
+
+Start a new crawl in Ahrefs
+
+This will clear the “non-canonical in sitemap” and “no outgoing links” issues and will also help with missing H1 and OG tags once the pages are server rendered or pre-rendered.
