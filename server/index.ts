@@ -309,7 +309,10 @@ process.on('exit', cleanup);
     next();
   });
 
-  // Canonical URL injection middleware for HTML responses
+  // Register routes immediately (don't wait for database or FastAPI)
+  const server = await registerRoutes(app);
+
+  // Canonical URL injection middleware for HTML responses (MUST be after routes)
   app.use((req, res, next) => {
     // Only inject canonical URLs for HTML page requests (not API or static files)
     if (req.headers.accept?.includes('text/html') && !req.path.startsWith('/api/')) {
@@ -337,9 +340,6 @@ process.on('exit', cleanup);
     
     next();
   });
-
-  // Register routes immediately (don't wait for database or FastAPI)
-  const server = await registerRoutes(app);
 
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
