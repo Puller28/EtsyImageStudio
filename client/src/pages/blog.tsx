@@ -100,10 +100,7 @@ export default function BlogPage() {
     setIsSubscribing(true);
     
     try {
-      const response = await apiRequest("/api/newsletter/subscribe", {
-        method: "POST",
-        body: { email, source: "blog" },
-      });
+      const response = await apiRequest("POST", "/api/newsletter/subscribe", { email, source: "blog" });
 
       if (response.success) {
         toast({
