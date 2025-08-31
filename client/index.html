@@ -6,10 +6,42 @@
     <title>Etsy Art & Image Upscaler Pro - AI-Powered Digital Art Tools</title>
     <meta name="description" content="Professional AI-powered image upscaling up to 4x, stunning mockups, print-ready formats, and automated Etsy listings. The ultimate platform for digital artists and Etsy sellers." />
     
-    <!-- Default canonical URLs - will be present in server response -->
+    <!-- Dynamic canonical URLs - set immediately via JavaScript before React loads -->
     <link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />
     <meta property="og:url" content="https://imageupscaler.app/" id="og-url" />
     <meta property="og:type" content="website" id="og-type" />
+    
+    <script>
+      // Immediately set canonical URLs before React loads - ensures search engines see correct canonicals
+      (function() {
+        const path = window.location.pathname.replace(/\/+$/, '');
+        const cleanPath = path === '' || path === '/home' ? '/' : path;
+        const canonicalUrl = 'https://imageupscaler.app' + (cleanPath === '/' ? '' : cleanPath);
+        const isArticlePage = cleanPath.startsWith('/blog/') && cleanPath !== '/blog';
+        const ogType = isArticlePage ? 'article' : 'website';
+        
+        // Update canonical URL
+        const canonicalLink = document.getElementById('canonical-url');
+        if (canonicalLink) {
+          canonicalLink.setAttribute('href', canonicalUrl);
+        }
+        
+        // Update og:url
+        const ogUrlMeta = document.getElementById('og-url');
+        if (ogUrlMeta) {
+          ogUrlMeta.setAttribute('content', canonicalUrl);
+        }
+        
+        // Update og:type
+        const ogTypeMeta = document.getElementById('og-type');
+        if (ogTypeMeta) {
+          ogTypeMeta.setAttribute('content', ogType);
+        }
+        
+        // Debug log for production troubleshooting
+        console.log('🔗 Canonical URL set:', canonicalUrl, 'og:type:', ogType);
+      })();
+    </script>
     
     <meta property="og:site_name" content="Image Upscaler Pro" />
     <meta name="twitter:card" content="summary_large_image" />
