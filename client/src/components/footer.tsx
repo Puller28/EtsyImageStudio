@@ -9,10 +9,21 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="md:col-span-1 space-y-4">
-            <h3 className="font-semibold text-lg text-foreground">Etsy Art & Image Upscaler Pro</h3>
+            <Link href="/">
+              <h3 className="font-semibold text-lg text-foreground hover:text-primary transition-colors cursor-pointer">
+                Etsy Art & Image Upscaler Pro
+              </h3>
+            </Link>
             <p className="text-sm text-muted-foreground leading-relaxed pr-4">
               The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling, mockups, and automated listings.
             </p>
+            <div>
+              <Link href="/">
+                <Button variant="outline" size="sm" className="text-xs">
+                  Back to Home
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Features & Tools */}

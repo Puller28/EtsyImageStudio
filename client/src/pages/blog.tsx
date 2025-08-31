@@ -294,7 +294,7 @@ export default function BlogPage() {
         <section className="text-center bg-muted/20 rounded-2xl p-12">
           <h2 className="text-3xl font-bold mb-4">Stay Updated with Digital Art Trends</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Get weekly insights on AI art generation, Etsy optimization, and digital marketing strategies delivered straight to your inbox.
+            Get weekly insights on AI art generation, Etsy optimization, and digital marketing strategies delivered straight to your inbox. Ready to start? <Link href="/"><span className="text-primary hover:underline cursor-pointer">Try our AI-powered tools</span></Link> and transform your digital art workflow.
           </p>
           <form onSubmit={handleNewsletterSubscribe} className="max-w-md mx-auto flex flex-col sm:flex-row gap-4" data-testid="form-newsletter-signup">
             <input 
