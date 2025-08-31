@@ -97,20 +97,29 @@ export default function BlogPage() {
       return;
     }
 
+    // Test toast to verify it's working
+    console.log("About to show toast test");
+
     setIsSubscribing(true);
     
     try {
       const response = await apiRequest("POST", "/api/newsletter/subscribe", { email, source: "blog" });
+      console.log("Newsletter API response:", response);
 
       if (response.success) {
+        console.log("Showing success toast");
         toast({
-          title: "Successfully subscribed!",
+          title: "🎉 Successfully subscribed!",
           description: "Welcome to our newsletter! You'll receive weekly insights on digital art trends and AI tools.",
           variant: "default",
+          duration: 5000, // Show for 5 seconds
         });
         setEmail("");
+      } else {
+        throw new Error(response.message || "Subscription failed");
       }
     } catch (error: any) {
+      console.error("Newsletter subscription error:", error);
       if (error.message?.includes("already subscribed")) {
         toast({
           title: "Already subscribed",
