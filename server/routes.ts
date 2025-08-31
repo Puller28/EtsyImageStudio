@@ -53,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const isArticlePage = path.startsWith('/blog/') && path !== '/blog';
         const ogType = isArticlePage ? 'article' : 'website';
         
-        console.log(`🔍 Processing canonical for path: ${path} → ${canonicalUrl}`);
+        console.log(`🔍 CANONICAL DEBUG: Processing path: ${path} → ${canonicalUrl} (og:type: ${ogType})`);
         
         // Replace canonical URL with exact string matching
         const originalCanonical = '<link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />';
@@ -67,17 +67,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (body.includes(originalCanonical)) {
           body = body.replace(originalCanonical, newCanonical);
-          console.log(`✅ Replaced canonical: ${canonicalUrl}`);
+          console.log(`✅ CANONICAL: Replaced canonical URL with ${canonicalUrl}`);
+        } else {
+          console.log(`❌ CANONICAL: Original canonical tag not found in HTML body`);
         }
         
         if (body.includes(originalOgUrl)) {
           body = body.replace(originalOgUrl, newOgUrl);
-          console.log(`✅ Replaced og:url: ${canonicalUrl}`);
+          console.log(`✅ OG:URL: Replaced with ${canonicalUrl}`);
+        } else {
+          console.log(`❌ OG:URL: Original og:url tag not found in HTML body`);
         }
         
         if (body.includes(originalOgType)) {
           body = body.replace(originalOgType, newOgType);
-          console.log(`✅ Replaced og:type: ${ogType}`);
+          console.log(`✅ OG:TYPE: Replaced with ${ogType}`);
+        } else {
+          console.log(`❌ OG:TYPE: Original og:type tag not found in HTML body`);
         }
       }
       
