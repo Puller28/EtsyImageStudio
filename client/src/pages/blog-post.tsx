@@ -6,6 +6,40 @@ import { ArrowLeft, Calendar, Clock, CheckCircle, Sparkles, Star } from "lucide-
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
 
+// Related articles for internal linking to resolve orphan pages
+const relatedArticles = {
+  "ai-art-etsy-success-2025": [
+    { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling for Print-on-Demand" },
+    { slug: "etsy-seo-ai-listing-optimization", title: "Etsy SEO with AI-Powered Listings" },
+    { slug: "automate-digital-art-business-workflow", title: "Automate Your Digital Art Business" }
+  ],
+  "ai-image-upscaling-print-on-demand": [
+    { slug: "best-print-sizes-digital-art-etsy", title: "Best Print Sizes for Digital Art" },
+    { slug: "mockup-generation-digital-art", title: "Professional Mockup Generation" },
+    { slug: "ai-art-etsy-success-2025", title: "AI Art Revolution on Etsy" }
+  ],
+  "etsy-seo-ai-listing-optimization": [
+    { slug: "ai-art-etsy-success-2025", title: "AI Art Revolution on Etsy" },
+    { slug: "best-print-sizes-digital-art-etsy", title: "Best Print Sizes for Digital Art" },
+    { slug: "automate-digital-art-business-workflow", title: "Automate Your Digital Art Business" }
+  ],
+  "best-print-sizes-digital-art-etsy": [
+    { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling Guide" },
+    { slug: "mockup-generation-digital-art", title: "Professional Mockup Generation" },
+    { slug: "etsy-seo-ai-listing-optimization", title: "Etsy SEO Optimization" }
+  ],
+  "automate-digital-art-business-workflow": [
+    { slug: "ai-art-etsy-success-2025", title: "AI Art Revolution on Etsy" },
+    { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling Guide" },
+    { slug: "etsy-seo-ai-listing-optimization", title: "Etsy SEO with AI" }
+  ],
+  "mockup-generation-digital-art": [
+    { slug: "best-print-sizes-digital-art-etsy", title: "Best Print Sizes for Digital Art" },
+    { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling Guide" },
+    { slug: "ai-art-etsy-success-2025", title: "AI Art Revolution on Etsy" }
+  ]
+};
+
 const blogPosts = {
   "ai-art-etsy-success-2025": {
     title: "How AI Art Generation is Revolutionizing Etsy Success in 2025",
@@ -970,6 +1004,7 @@ export default function BlogPostPage() {
   const params = useParams();
   const slug = params.slug as keyof typeof blogPosts;
   const post = blogPosts[slug];
+  const related = relatedArticles[slug as keyof typeof relatedArticles] || [];
 
   if (!post) {
     return (
@@ -1085,45 +1120,32 @@ export default function BlogPostPage() {
           </div>
         </article>
 
-        {/* Related Articles */}
-        <section className="mt-16 pt-8 border-t">
-          <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <Badge variant="outline" className="w-fit mb-2">AI Art</Badge>
-                <CardTitle className="text-lg">5 Room Mockup Templates That Boost Sales</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Learn which room settings perform best for digital art sales on Etsy.
-                </p>
-                <Link href="/blog/room-mockup-templates-etsy-sales">
-                  <Button variant="ghost" size="sm">
-                    Read More
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <Badge variant="outline" className="w-fit mb-2">Etsy Marketing</Badge>
-                <CardTitle className="text-lg">Etsy SEO Optimization Guide</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Master Etsy SEO with AI-generated content that ranks and converts.
-                </p>
-                <Link href="/blog/etsy-seo-ai-listing-optimization">
-                  <Button variant="ghost" size="sm">
-                    Read More
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+        {/* Related Articles - Dynamic Internal Linking */}
+        {related.length > 0 && (
+          <section className="mt-16 pt-8 border-t">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <Star className="w-6 h-6 text-primary" />
+              Related Articles
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {related.map((article) => (
+                <Card key={article.slug} className="hover:shadow-md transition-all duration-200 hover:border-primary/20 group">
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors mb-3">
+                      {article.title}
+                    </h3>
+                    <Link href={`/blog/${article.slug}`}>
+                      <Button variant="ghost" size="sm" className="group-hover:bg-primary/10 transition-colors">
+                        Read Article
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* CTA Section */}
         <section className="mt-16 text-center bg-muted/20 rounded-2xl p-8">
