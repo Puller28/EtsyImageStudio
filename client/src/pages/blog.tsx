@@ -258,37 +258,45 @@ export default function BlogPage() {
         <section className="mb-16">
           <h2 className="text-2xl font-bold mb-8">Browse by Category</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="text-center hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
-                <h3 className="font-semibold">AI Art</h3>
-                <p className="text-sm text-muted-foreground">Generation & Tools</p>
-              </CardContent>
-            </Card>
+            <Link href="/blog/ai-art-etsy-success-2025">
+              <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
+                <CardContent className="p-6">
+                  <Sparkles className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">AI Art</h3>
+                  <p className="text-sm text-muted-foreground">Generation & Tools</p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card className="text-center hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <Zap className="h-8 w-8 text-primary mx-auto mb-2" />
-                <h3 className="font-semibold">Image Processing</h3>
-                <p className="text-sm text-muted-foreground">Upscaling & Enhancement</p>
-              </CardContent>
-            </Card>
+            <Link href="/blog/ai-image-upscaling-print-on-demand">
+              <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
+                <CardContent className="p-6">
+                  <Zap className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">Image Processing</h3>
+                  <p className="text-sm text-muted-foreground">Upscaling & Enhancement</p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card className="text-center hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2" />
-                <h3 className="font-semibold">Etsy Marketing</h3>
-                <p className="text-sm text-muted-foreground">SEO & Sales Tips</p>
-              </CardContent>
-            </Card>
+            <Link href="/blog/etsy-seo-ai-listing-optimization">
+              <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
+                <CardContent className="p-6">
+                  <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">Etsy Marketing</h3>
+                  <p className="text-sm text-muted-foreground">SEO & Sales Tips</p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card className="text-center hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-                <h3 className="font-semibold">Business Growth</h3>
-                <p className="text-sm text-muted-foreground">Scaling Strategies</p>
-              </CardContent>
-            </Card>
+            <Link href="/blog/automate-digital-art-business-workflow">
+              <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
+                <CardContent className="p-6">
+                  <Users className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">Business Growth</h3>
+                  <p className="text-sm text-muted-foreground">Scaling Strategies</p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </section>
 

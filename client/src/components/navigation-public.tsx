@@ -37,6 +37,11 @@ export function PublicNavigation() {
                 Blog
               </span>
             </Link>
+            <Link href="/template-mockups">
+              <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Mockups
+              </span>
+            </Link>
             <Link href="/about-us">
               <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                 About
@@ -92,6 +97,11 @@ export function PublicNavigation() {
               <Link href="/blog">
                 <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer block py-2">
                   Blog
+                </span>
+              </Link>
+              <Link href="/template-mockups">
+                <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer block py-2">
+                  Mockups
                 </span>
               </Link>
               <Link href="/about-us">

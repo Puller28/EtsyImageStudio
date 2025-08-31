@@ -15,7 +15,7 @@ const relatedArticles = {
   ],
   "ai-image-upscaling-print-on-demand": [
     { slug: "best-print-sizes-digital-art-etsy", title: "Best Print Sizes for Digital Art" },
-    { slug: "mockup-generation-digital-art", title: "Professional Mockup Generation" },
+    { slug: "room-mockup-templates-etsy-sales", title: "Room Mockup Templates That Boost Sales" },
     { slug: "ai-art-etsy-success-2025", title: "AI Art Revolution on Etsy" }
   ],
   "etsy-seo-ai-listing-optimization": [
@@ -25,7 +25,7 @@ const relatedArticles = {
   ],
   "best-print-sizes-digital-art-etsy": [
     { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling Guide" },
-    { slug: "mockup-generation-digital-art", title: "Professional Mockup Generation" },
+    { slug: "room-mockup-templates-etsy-sales", title: "Room Mockup Templates" },
     { slug: "etsy-seo-ai-listing-optimization", title: "Etsy SEO Optimization" }
   ],
   "automate-digital-art-business-workflow": [
@@ -33,7 +33,7 @@ const relatedArticles = {
     { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling Guide" },
     { slug: "etsy-seo-ai-listing-optimization", title: "Etsy SEO with AI" }
   ],
-  "mockup-generation-digital-art": [
+  "room-mockup-templates-etsy-sales": [
     { slug: "best-print-sizes-digital-art-etsy", title: "Best Print Sizes for Digital Art" },
     { slug: "ai-image-upscaling-print-on-demand", title: "AI Image Upscaling Guide" },
     { slug: "ai-art-etsy-success-2025", title: "AI Art Revolution on Etsy" }

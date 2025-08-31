@@ -27,7 +27,7 @@ export default function HomePage() {
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling up to 4x, 
-              stunning mockups, print-ready formats, and automated Etsy listings - everything you need in one place.
+              stunning mockups, print-ready formats, and automated Etsy listings - everything you need in one place. Read our <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">essential print sizes guide</span></Link> and learn about <Link href="/blog/room-mockup-templates-etsy-sales"><span className="text-primary hover:underline">room mockup templates that boost sales</span></Link>.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
@@ -69,7 +69,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground text-center">
-                  Create stunning digital artwork using Google's Imagen 3 AI model with custom prompts and styles.
+                  Create stunning digital artwork using Google's Imagen 3 AI model with custom prompts and styles. <Link href="/blog/ai-art-etsy-success-2025"><span className="text-primary hover:underline">Learn AI art strategies</span></Link>.
                 </p>
               </CardContent>
             </Card>
@@ -84,7 +84,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground text-center">
-                  Enhance image quality up to 4x resolution using Real-ESRGAN AI models for crystal-clear prints.
+                  Enhance image quality up to 4x resolution using Real-ESRGAN AI models for crystal-clear prints. <Link href="/blog/ai-image-upscaling-print-on-demand"><span className="text-primary hover:underline">Read our upscaling guide</span></Link>.
                 </p>
               </CardContent>
             </Card>
@@ -99,7 +99,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground text-center">
-                  Generate professional mockups in bedrooms, living rooms, galleries, studies, and kids' rooms.
+                  Generate professional mockups in bedrooms, living rooms, galleries, studies, and kids' rooms. <Link href="/blog/room-mockup-templates-etsy-sales"><span className="text-primary hover:underline">See templates that boost sales</span></Link>.
                 </p>
               </CardContent>
             </Card>
@@ -114,10 +114,104 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground text-center">
-                  Automatically generate 5 standard print sizes optimized for Etsy and print-on-demand services.
+                  Automatically generate 5 standard print sizes optimized for Etsy and print-on-demand services. <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">Learn about essential print sizes</span></Link>.
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Blog Articles Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              Learn from Expert Digital Art Guides
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Discover proven strategies, tips, and techniques from successful Etsy sellers and digital artists.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Featured Article 1 */}
+            <Card className="hover:shadow-lg transition-shadow group">
+              <CardHeader>
+                <Badge variant="secondary" className="w-fit mb-2">AI Art</Badge>
+                <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                  <Link href="/blog/ai-art-etsy-success-2025">
+                    How AI Art Generation is Revolutionizing Etsy Success
+                  </Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Discover how digital artists are using AI tools like Imagen 3 to create profitable Etsy stores.
+                </p>
+                <Link href="/blog/ai-art-etsy-success-2025">
+                  <Button variant="ghost" size="sm">
+                    Read More
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Featured Article 2 */}
+            <Card className="hover:shadow-lg transition-shadow group">
+              <CardHeader>
+                <Badge variant="secondary" className="w-fit mb-2">Print Business</Badge>
+                <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                  <Link href="/blog/best-print-sizes-digital-art-etsy">
+                    Essential Print Sizes for Digital Art: What Sells Best
+                  </Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Comprehensive guide to the 5 most profitable print sizes for digital art on Etsy.
+                </p>
+                <Link href="/blog/best-print-sizes-digital-art-etsy">
+                  <Button variant="ghost" size="sm">
+                    Read More
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Featured Article 3 */}
+            <Card className="hover:shadow-lg transition-shadow group">
+              <CardHeader>
+                <Badge variant="secondary" className="w-fit mb-2">Image Processing</Badge>
+                <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                  <Link href="/blog/ai-image-upscaling-print-on-demand">
+                    The Complete Guide to AI Image Upscaling
+                  </Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Learn how Real-ESRGAN AI upscaling transforms low-resolution artwork into stunning prints.
+                </p>
+                <Link href="/blog/ai-image-upscaling-print-on-demand">
+                  <Button variant="ghost" size="sm">
+                    Read More
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center mt-12">
+            <Link href="/blog">
+              <Button variant="outline" size="lg">
+                View All Articles
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

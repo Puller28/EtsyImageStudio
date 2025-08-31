@@ -61,6 +61,41 @@ export function Footer() {
             </div>
           </div>
 
+          {/* Popular Articles */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-foreground">Popular Articles</h4>
+            <div className="space-y-2">
+              <div>
+                <Link href="/blog/best-print-sizes-digital-art-etsy">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Best Print Sizes for Digital Art
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/ai-image-upscaling-print-on-demand">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    AI Image Upscaling Guide
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/automate-digital-art-business-workflow">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Automate Your Digital Art Business
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/etsy-seo-ai-listing-optimization">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Etsy SEO Optimization
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Company */}
           <div className="space-y-4">
             <h4 className="font-medium text-foreground">Company</h4>
