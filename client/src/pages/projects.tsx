@@ -10,11 +10,33 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import type { User, Project } from "@shared/schema";
+import { SEOHead } from "@/components/seo-head";
 
 export default function ProjectsPage() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Add noindex meta tag for user-specific content
+  useEffect(() => {
+    const metaRobots = document.querySelector('meta[name="robots"]');
+    if (metaRobots) {
+      metaRobots.setAttribute('content', 'noindex,nofollow');
+    } else {
+      const newMetaRobots = document.createElement('meta');
+      newMetaRobots.setAttribute('name', 'robots');
+      newMetaRobots.setAttribute('content', 'noindex,nofollow');
+      document.head.appendChild(newMetaRobots);
+    }
+    
+    return () => {
+      // Cleanup: remove noindex when leaving page
+      const metaRobots = document.querySelector('meta[name="robots"]');
+      if (metaRobots) {
+        metaRobots.remove();
+      }
+    };
+  }, []);
   
   // Debug initial state
   console.log("🔍 Projects page initial state:", { searchTerm, statusFilter });
@@ -185,6 +207,11 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title="My Projects - Image Upscaler Pro"
+        description="Manage your AI-generated artwork projects"
+        path="/projects"
+      />
       <Navigation user={currentUser ? { 
         ...currentUser, 
         avatar: currentUser.avatar || undefined 

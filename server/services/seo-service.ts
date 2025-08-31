@@ -1,202 +1,68 @@
 // SEO Service - Sitemap and Robots.txt generation
 export class SEOService {
+  // Generate canonical URL following SEO best practices
+  static generateCanonicalUrl(reqPath: string): string {
+    const BASE = 'https://imageupscaler.app';
+    
+    // Remove query strings and fragments
+    let path = reqPath.split('?')[0].split('#')[0];
+    
+    // Normalize trailing slashes - remove all except root
+    path = path.replace(/\/+$/, '');
+    if (path === '') path = '/';
+    
+    // Return absolute HTTPS URL
+    return BASE + path;
+  }
+
   static generateSitemap(): string {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Only include indexable pages that are self-canonical
+    const indexablePages = [
+      // Public marketing pages
+      { path: '/', priority: '1.0', changefreq: 'weekly' },
+      { path: '/home', priority: '0.9', changefreq: 'weekly' },
+      { path: '/features', priority: '0.9', changefreq: 'monthly' },
+      { path: '/about-us', priority: '0.7', changefreq: 'monthly' },
+      { path: '/contact', priority: '0.6', changefreq: 'monthly' },
+      { path: '/blog', priority: '0.8', changefreq: 'weekly' },
+      
+      // Legal pages
+      { path: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },
+      { path: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
+      
+      // Blog posts (individual articles)
+      { path: '/blog/ai-image-upscaling-print-on-demand', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/mockup-generation-digital-art', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/etsy-seo-ai-listing-optimization', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/best-print-sizes-digital-art-etsy', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/automate-digital-art-business-workflow', priority: '0.7', changefreq: 'monthly' }
+    ];
+
+    const urls = indexablePages.map(page => 
+      `  <url>
+    <loc>${this.generateCanonicalUrl(page.path)}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`
+    ).join('\n\n');
+
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
-  <!-- Homepage -->
-  <url>
-    <loc>https://imageupscaler.app/</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/home</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/features</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/about-us</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Main Features -->
-  <url>
-    <loc>https://imageupscaler.app/generate</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/upscale</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/mockups</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/resize</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/etsy-seo</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- User Account Pages -->
-  <url>
-    <loc>https://imageupscaler.app/projects</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/settings</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-  <!-- Authentication Pages -->
-  <url>
-    <loc>https://imageupscaler.app/login</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/register</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- Business Pages -->
-  <url>
-    <loc>https://imageupscaler.app/pricing</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/contact</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- Blog Pages -->
-  <url>
-    <loc>https://imageupscaler.app/blog</loc>
-    <lastmod>2025-08-31</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Blog Articles -->
-  <url>
-    <loc>https://imageupscaler.app/blog/ai-art-etsy-success-2025</loc>
-    <lastmod>2025-01-15</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand</loc>
-    <lastmod>2025-01-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/blog/room-mockup-templates-etsy-sales</loc>
-    <lastmod>2025-01-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/blog/etsy-seo-ai-listing-optimization</loc>
-    <lastmod>2024-12-28</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/blog/digital-art-print-sizes-etsy</loc>
-    <lastmod>2024-12-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- Legal Pages -->
-  <url>
-    <loc>https://imageupscaler.app/privacy-policy</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/terms-of-service</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <!-- Legacy URL redirects (kept for SEO) -->
-  <url>
-    <loc>https://imageupscaler.app/privacy</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
-  </url>
-
-  <url>
-    <loc>https://imageupscaler.app/terms</loc>
-    <lastmod>2025-08-27</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
-  </url>
+${urls}
 
 </urlset>`;
   }
 
   static generateRobots(): string {
     return `# Robots.txt for Image Upscaler Pro
-# Last updated: 2025-08-27
+# Last updated: ${new Date().toISOString().split('T')[0]}
 
 User-agent: *
 Allow: /
@@ -216,21 +82,6 @@ Disallow: /processing/
 Disallow: /.env
 Disallow: /package.json
 Disallow: /config/
-
-# Allow access to main features and public pages
-Allow: /
-Allow: /generate
-Allow: /upscale
-Allow: /mockups
-Allow: /resize
-Allow: /etsy-seo
-Allow: /projects
-Allow: /pricing
-Allow: /contact
-Allow: /login
-Allow: /register
-Allow: /privacy
-Allow: /terms
 
 # Sitemap location
 Sitemap: https://imageupscaler.app/sitemap.xml

@@ -30,7 +30,8 @@ The system uses JWT-based authentication for user registration, login, and secur
 - **ComfyUI Integration**: RunPod serverless ComfyUI 5.2.0 is integrated for specific AI tasks, featuring an async-first architecture with retry logic and error handling. It supports custom ComfyUI workflows for tasks like `LatentComposite`.
 - **Streamlined Mockup Interface**: Sequential mockup generation is the default with a simplified single "Generate" button. Template selection is integrated into the workflow rather than a separate dashboard step.
 - **Enhanced Project Display**: Project cards show visual content indicators (📸 Original, 🔍 Upscaled, 🖼️ Mockups, 📏 Print Sizes, 📝 Etsy SEO) to clearly communicate what assets each project contains, improving project organization and user understanding.
-- **SEO Infrastructure**: Production-ready SEO implementation with sitemap.xml and robots.txt endpoints serving proper XML and text content with appropriate security blocking and search engine optimization for imageupscaler.app domain.
+- **SEO Infrastructure**: Production-ready SEO implementation with sitemap.xml and robots.txt endpoints serving proper XML and text content with appropriate security blocking and search engine optimization for imageupscaler.app domain. Includes self-referencing canonical URLs for all indexable pages and noindex meta tags for user-specific content to resolve Ahrefs non-canonical page issues.
+- **Newsletter Subscription System**: Complete email capture system with database storage, duplicate checking, user feedback via toast notifications, and API endpoints for subscription management. Integrated newsletter signup form on blog page for content marketing and lead generation.
 
 ## External Dependencies
 

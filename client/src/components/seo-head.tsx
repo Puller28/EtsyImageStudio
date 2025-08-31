@@ -1,5 +1,20 @@
 import { useEffect } from 'react';
 
+// Generate canonical URL following SEO best practices
+function generateCanonicalUrl(reqPath: string): string {
+  const BASE = 'https://imageupscaler.app';
+  
+  // Remove query strings and fragments
+  let path = reqPath.split('?')[0].split('#')[0];
+  
+  // Normalize trailing slashes - remove all except root
+  path = path.replace(/\/+$/, '');
+  if (path === '') path = '/';
+  
+  // Return absolute HTTPS URL
+  return BASE + path;
+}
+
 interface SEOHeadProps {
   title?: string;
   description?: string;
@@ -75,8 +90,8 @@ export function SEOHead({
       metaDescription.setAttribute('content', finalDescription);
     }
     
-    // Handle canonical URL - always point to imageupscaler.app (without www)
-    const canonicalUrl = `https://imageupscaler.app${path}`;
+    // Generate canonical URL following best practices
+    const canonicalUrl = generateCanonicalUrl(path);
     
     let canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) {
