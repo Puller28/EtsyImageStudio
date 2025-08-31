@@ -31,6 +31,51 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Server-side canonical URL injection middleware
+  app.use((req, res, next) => {
+    // Only process page routes, not API endpoints or static assets
+    if (req.path.startsWith('/api') || req.path.includes('.') || req.path.startsWith('/@vite') || req.path.startsWith('/assets')) {
+      return next();
+    }
+
+    // Store original send function to intercept HTML responses
+    const originalSend = res.send;
+    
+    res.send = function(body: any) {
+      if (typeof body === 'string' && body.includes('<!DOCTYPE html>')) {
+        // Generate correct canonical URL for this specific page
+        let path = req.path.split('?')[0].split('#')[0];
+        path = path.replace(/\/+$/, '');
+        if (path === '') path = '/';
+        if (path === '/home') path = '/';
+        
+        const canonicalUrl = `https://imageupscaler.app${path === '/' ? '' : path}`;
+        const isArticlePage = path.startsWith('/blog/') && path !== '/blog';
+        const ogType = isArticlePage ? 'article' : 'website';
+        
+        // Replace the default canonical URL with the correct page-specific one
+        body = body.replace(
+          /href="https:\/\/imageupscaler\.app\/" id="canonical-url"/,
+          `href="${canonicalUrl}" id="canonical-url"`
+        );
+        
+        body = body.replace(
+          /content="https:\/\/imageupscaler\.app\/" id="og-url"/,
+          `content="${canonicalUrl}" id="og-url"`
+        );
+        
+        body = body.replace(
+          /content="website" id="og-type"/,
+          `content="${ogType}" id="og-type"`
+        );
+      }
+      
+      return originalSend.call(this, body);
+    };
+    
+    next();
+  });
+
   // SEO files - serve sitemap.xml and robots.txt
   app.get('/sitemap.xml', (req, res) => {
     res.set('Content-Type', 'application/xml');
