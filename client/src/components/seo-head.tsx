@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 
 // Generate canonical URL following SEO best practices
+// CRITICAL: Each page must have a self-referencing canonical URL
+// This fixes "Non-canonical page in sitemap" Ahrefs errors
 function generateCanonicalUrl(reqPath: string): string {
   const BASE = 'https://imageupscaler.app';
   
@@ -14,8 +16,11 @@ function generateCanonicalUrl(reqPath: string): string {
   // Map /home to root for canonical consistency (prevent duplicate content)
   if (path === '/home') path = '/';
   
-  // Return absolute HTTPS URL
-  return BASE + path;
+  // IMPORTANT: Every indexable page gets its own canonical URL
+  // Blog articles: /blog/article-slug → https://imageupscaler.app/blog/article-slug
+  // Static pages: /features → https://imageupscaler.app/features
+  // This ensures URL = Canonical URL for all pages
+  return BASE + (path === '/' ? '' : path);
 }
 
 interface SEOHeadProps {

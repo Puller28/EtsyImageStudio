@@ -1,0 +1,141 @@
+In your <head> for https://imageupscaler.app/blog you currently have:
+
+<link rel="canonical" href="https://imageupscaler.app/blog" id="canonical-url">
+<meta property="og:url" content="https://imageupscaler.app/blog" id="og-url">
+<meta property="og:type" content="website" id="og-type">
+
+
+This is fine for the blog index page itself, but the problem is that the same snippet appears to be used across all blog subpages (like /blog/ai-image-upscaling-print-on-demand).
+
+So for articles, you are still serving a canonical pointing to /blog, which means:
+
+Sitemap says: “Please index /blog/ai-image-upscaling-print-on-demand”
+
+Canonical says: “No, use /blog instead.”
+
+That mismatch is what Ahrefs is reporting as “Non-canonical page in sitemap”.
+
+🔧 How to Fix
+
+Blog index page
+Keep as-is:
+
+<link rel="canonical" href="https://imageupscaler.app/blog">
+<meta property="og:url" content="https://imageupscaler.app/blog">
+<meta property="og:type" content="website">
+
+
+Blog article pages
+Change to self-referencing canonicals:
+
+<link rel="canonical" href="https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand">
+<meta property="og:url" content="https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand">
+<meta property="og:type" content="article">
+
+
+Each article page must dynamically insert its own canonical/og:url instead of inheriting the /blog defaults.
+
+🚨 Why It’s Important
+
+Right now, all blog content points back to /blog, which means:
+
+Google won’t index your articles separately.
+
+All SEO value consolidates to /blog.
+
+Your sitemap and canonical tags conflict, hence the warnings.
+
+👉 Do you want me to produce a URL → Correct Canonical mapping for all the blog/article pages shown in your Ahrefs report, so your devs can implement them directly?
+
+You said:
+would this be the truth for all pages?
+ChatGPT said:
+
+Yes — this principle applies to all indexable pages on your site:
+
+If the page is meant to rank and appear in Google, the <link rel="canonical"> should be a self-referencing canonical (the exact same URL as the page itself).
+
+If the page is not meant to rank (like admin, login, checkout, test pages), then it should either:
+
+Have a canonical pointing to another preferred URL, and
+
+Be excluded from the sitemap.
+
+✅ Rule of Thumb for Your Site
+
+Homepage
+
+Canonical: https://imageupscaler.app/
+
+Blog index
+
+Canonical: https://imageupscaler.app/blog
+
+Each blog article
+
+Canonical: https://imageupscaler.app/blog/<slug>
+
+Static pages (about-us, contact, privacy-policy, features, etc.)
+
+Canonical: their exact URL.
+Example:
+
+/about-us → https://imageupscaler.app/about-us
+
+/contact → https://imageupscaler.app/contact
+
+Pages you don’t want indexed (e.g. internal-only or duplicates)
+
+Add <meta name="robots" content="noindex, follow">
+
+Remove them from sitemap.
+
+🚨 Why This Is Critical
+
+Right now, as your Ahrefs crawl shows, all your pages are pointing their canonical to the homepage. That tells Google:
+
+"Only index the homepage — ignore the blog posts, contact page, about page, etc."
+
+That’s why Ahrefs is reporting “Non-canonical page in sitemap”.
+
+👉 Do you want me to create a full canonical mapping table (URL → Correct Canonical) for all the pages Ahrefs flagged in your screenshots, so you can give it straight to your devs as a checklist?
+
+You said:
+👉 Do you want me to produce a URL → Correct Canonical mapping for all the blog/article pages shown in your Ahrefs report, so your devs can implement them directly?
+
+Yes please
+ChatGPT said:
+
+Brilliant — here’s a clean mapping you can hand straight to your devs.
+Policy: no trailing slash everywhere, HTTPS, non-www
+. Every page below is indexable and should be self-canonical.
+
+URL → Correct canonical
+URL	Canonical <link rel="canonical" href="…">	Also set og:url	og:type
+https://imageupscaler.app/	https://imageupscaler.app/	same	website
+https://imageupscaler.app/blog	https://imageupscaler.app/blog	same	website
+https://imageupscaler.app/blog/best-print-sizes-digital-art-etsy	https://imageupscaler.app/blog/best-print-sizes-digital-art-etsy	same	article
+https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand	https://imageupscaler.app/blog/ai-image-upscaling-print-on-demand	same	article
+https://imageupscaler.app/blog/automate-digital-art-business-workflow	https://imageupscaler.app/blog/automate-digital-art-business-workflow	same	article
+https://imageupscaler.app/blog/etsy-seo-ai-listing-optimization	https://imageupscaler.app/blog/etsy-seo-ai-listing-optimization	same	article
+https://imageupscaler.app/blog/mockup-generation-digital-art	https://imageupscaler.app/blog/mockup-generation-digital-art	same	article
+https://imageupscaler.app/about-us	https://imageupscaler.app/about-us	same	website
+https://imageupscaler.app/privacy-policy	https://imageupscaler.app/privacy-policy	same	website
+https://imageupscaler.app/contact	https://imageupscaler.app/contact	same	website
+https://imageupscaler.app/terms-of-service	https://imageupscaler.app/terms-of-service	same	website
+https://imageupscaler.app/features	https://imageupscaler.app/features	same	website
+
+If there are any other blog posts, follow the same pattern:
+/blog/<slug> → canonical https://imageupscaler.app/blog/<slug> with og:type=article.
+
+Implementation notes for Replit
+
+Render server-side. Do not rely on JS to rewrite canonicals.
+
+Remove any global HTTP Link: … rel="canonical" header or generate it per page to exactly match the HTML canonical.
+
+Ensure sitemap <loc> values are identical to the canonicals above.
+
+Enforce redirects so only the preferred form resolves with 200
+
+http → https, www → non-www, with-slash → no-slash for non-root.
