@@ -20,9 +20,8 @@ export class SEOService {
     
     // Only include indexable pages that are self-canonical
     const indexablePages = [
-      // Public marketing pages
+      // Public marketing pages - only root path, not /home (duplicate content)
       { path: '/', priority: '1.0', changefreq: 'weekly' },
-      { path: '/home', priority: '0.9', changefreq: 'weekly' },
       { path: '/features', priority: '0.9', changefreq: 'monthly' },
       { path: '/about-us', priority: '0.7', changefreq: 'monthly' },
       { path: '/contact', priority: '0.6', changefreq: 'monthly' },

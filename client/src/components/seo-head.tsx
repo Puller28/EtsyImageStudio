@@ -11,6 +11,9 @@ function generateCanonicalUrl(reqPath: string): string {
   path = path.replace(/\/+$/, '');
   if (path === '') path = '/';
   
+  // Map /home to root for canonical consistency (prevent duplicate content)
+  if (path === '/home') path = '/';
+  
   // Return absolute HTTPS URL
   return BASE + path;
 }
@@ -75,8 +78,11 @@ export function SEOHead({
   path = "/"
 }: SEOHeadProps) {
   
+  // Use current window location if path is not provided or is default
+  const currentPath = path !== "/" ? path : window.location.pathname;
+  
   // Get page-specific SEO if no custom values provided
-  const pageSEO = getPageSEO(path);
+  const pageSEO = getPageSEO(currentPath);
   const finalTitle = title || pageSEO.title;
   const finalDescription = description || pageSEO.description;
   
@@ -91,7 +97,7 @@ export function SEOHead({
     }
     
     // Generate canonical URL following best practices
-    const canonicalUrl = generateCanonicalUrl(path);
+    const canonicalUrl = generateCanonicalUrl(currentPath);
     
     let canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) {
