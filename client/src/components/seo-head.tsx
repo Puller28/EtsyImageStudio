@@ -78,8 +78,8 @@ export function SEOHead({
   path = "/"
 }: SEOHeadProps) {
   
-  // Use current window location if path is not provided or is default
-  const currentPath = path !== "/" ? path : window.location.pathname;
+  // Always use window.location.pathname for accurate path detection
+  const currentPath = window.location.pathname;
   
   // Get page-specific SEO if no custom values provided
   const pageSEO = getPageSEO(currentPath);
@@ -99,7 +99,7 @@ export function SEOHead({
     // Generate canonical URL following best practices
     const canonicalUrl = generateCanonicalUrl(currentPath);
     
-    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    let canonicalLink = document.getElementById('canonical-url') || document.querySelector('link[rel="canonical"]');
     if (canonicalLink) {
       canonicalLink.setAttribute('href', canonicalUrl);
     } else {
@@ -107,6 +107,7 @@ export function SEOHead({
       canonicalLink = document.createElement('link');
       canonicalLink.setAttribute('rel', 'canonical');
       canonicalLink.setAttribute('href', canonicalUrl);
+      canonicalLink.id = 'canonical-url';
       document.head.appendChild(canonicalLink);
     }
     
@@ -140,7 +141,7 @@ export function SEOHead({
       twitterDescription.setAttribute('content', finalDescription);
     }
     
-  }, [finalTitle, finalDescription, path]);
+  }, [finalTitle, finalDescription, currentPath]);
 
   return null; // This component doesn't render anything visual
 }
