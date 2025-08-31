@@ -53,21 +53,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const isArticlePage = path.startsWith('/blog/') && path !== '/blog';
         const ogType = isArticlePage ? 'article' : 'website';
         
-        // Replace the default canonical URL with the correct page-specific one
-        body = body.replace(
-          /href="https:\/\/imageupscaler\.app\/" id="canonical-url"/,
-          `href="${canonicalUrl}" id="canonical-url"`
-        );
+        console.log(`🔍 Processing canonical for path: ${path} → ${canonicalUrl}`);
         
-        body = body.replace(
-          /content="https:\/\/imageupscaler\.app\/" id="og-url"/,
-          `content="${canonicalUrl}" id="og-url"`
-        );
+        // Replace canonical URL with exact string matching
+        const originalCanonical = '<link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />';
+        const newCanonical = `<link rel="canonical" href="${canonicalUrl}" id="canonical-url" />`;
         
-        body = body.replace(
-          /content="website" id="og-type"/,
-          `content="${ogType}" id="og-type"`
-        );
+        const originalOgUrl = '<meta property="og:url" content="https://imageupscaler.app/" id="og-url" />';
+        const newOgUrl = `<meta property="og:url" content="${canonicalUrl}" id="og-url" />`;
+        
+        const originalOgType = '<meta property="og:type" content="website" id="og-type" />';
+        const newOgType = `<meta property="og:type" content="${ogType}" id="og-type" />`;
+        
+        if (body.includes(originalCanonical)) {
+          body = body.replace(originalCanonical, newCanonical);
+          console.log(`✅ Replaced canonical: ${canonicalUrl}`);
+        }
+        
+        if (body.includes(originalOgUrl)) {
+          body = body.replace(originalOgUrl, newOgUrl);
+          console.log(`✅ Replaced og:url: ${canonicalUrl}`);
+        }
+        
+        if (body.includes(originalOgType)) {
+          body = body.replace(originalOgType, newOgType);
+          console.log(`✅ Replaced og:type: ${ogType}`);
+        }
       }
       
       return originalSend.call(this, body);
