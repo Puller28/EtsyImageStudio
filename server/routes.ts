@@ -43,6 +43,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(SEOService.generateRobots());
   });
 
+  // IndexNow API endpoint for instant search engine notifications
+  app.post('/api/indexnow', async (req, res) => {
+    const { urls } = req.body;
+    
+    if (!urls || !Array.isArray(urls) || urls.length === 0) {
+      return res.status(400).json({ error: 'URLs array is required' });
+    }
+
+    const indexNowPayload = {
+      host: 'imageupscaler.app',
+      key: '7f8a2c9b4e1d6f3a8c5b9e2d4f7a1c8e',
+      keyLocation: 'https://imageupscaler.app/7f8a2c9b4e1d6f3a8c5b9e2d4f7a1c8e.txt',
+      urlList: urls.map(url => {
+        if (url.startsWith('/')) {
+          return `https://imageupscaler.app${url}`;
+        }
+        return url;
+      })
+    };
+
+    try {
+      // Submit to Bing IndexNow
+      const bingResponse = await fetch('https://api.indexnow.org/indexnow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify(indexNowPayload)
+      });
+
+      const success = bingResponse.status === 200 || bingResponse.status === 202;
+      
+      res.json({
+        success,
+        status: bingResponse.status,
+        submitted: indexNowPayload.urlList.length,
+        message: success ? 'URLs submitted for indexing' : 'Submission failed'
+      });
+
+    } catch (error) {
+      console.error('IndexNow submission error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to submit URLs for indexing' 
+      });
+    }
+  });
+
   // Image Migration API endpoints
   const migrationService = new ImageMigrationService();
 
