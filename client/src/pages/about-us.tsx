@@ -4,10 +4,12 @@ import { Link } from "wouter";
 import { ArrowLeft, Users, Target } from "lucide-react";
 import { PublicNavigation } from "@/components/navigation-public";
 import { Footer } from "@/components/footer";
+import { SEOHead } from "@/components/seo-head";
 
 export default function AboutUsPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead />
       <PublicNavigation />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">

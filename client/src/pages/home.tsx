@@ -6,10 +6,12 @@ import { Link } from "wouter";
 import { ArrowRight, Sparkles, Zap, Shield, Users, Star, CheckCircle, Upload, RotateCcw, Palette, Download } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
+import { SEOHead } from "@/components/seo-head";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead />
       <PublicNavigation />
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20">

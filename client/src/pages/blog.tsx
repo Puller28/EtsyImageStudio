@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, ArrowRight, Sparkles, TrendingUp, Users, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
+import { SEOHead } from "@/components/seo-head";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -143,6 +144,7 @@ export default function BlogPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead />
       <PublicNavigation />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">

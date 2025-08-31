@@ -309,6 +309,35 @@ process.on('exit', cleanup);
     next();
   });
 
+  // Canonical URL injection middleware for HTML responses
+  app.use((req, res, next) => {
+    // Only inject canonical URLs for HTML page requests (not API or static files)
+    if (req.headers.accept?.includes('text/html') && !req.path.startsWith('/api/')) {
+      const originalSend = res.send;
+      
+      res.send = function(body: any) {
+        if (typeof body === 'string' && body.includes('<html')) {
+          // Import SEOService for canonical URL generation
+          const { SEOService } = require('./services/seo-service');
+          const canonicalUrl = SEOService.generateCanonicalUrl(req.path);
+          
+          // Inject canonical URL into the HTML head
+          body = body.replace(
+            '<!-- Canonical URL and Open Graph meta tags will be dynamically set by SEOHead component -->',
+            `<!-- Canonical URL and Open Graph meta tags will be dynamically set by SEOHead component -->
+    <link rel="canonical" href="${canonicalUrl}" id="canonical-url" />`
+          );
+          
+          console.log(`🔍 SEO: Injected canonical URL ${canonicalUrl} for ${req.path}`);
+        }
+        
+        return originalSend.call(this, body);
+      };
+    }
+    
+    next();
+  });
+
   // Register routes immediately (don't wait for database or FastAPI)
   const server = await registerRoutes(app);
 
