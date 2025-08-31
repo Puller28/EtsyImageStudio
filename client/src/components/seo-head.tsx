@@ -117,6 +117,14 @@ export function SEOHead({
       ogUrl.setAttribute('content', canonicalUrl);
     }
     
+    // Update Open Graph type (article for blog posts, website for other pages)
+    const isArticlePage = currentPath.startsWith('/blog/') && currentPath !== '/blog' && currentPath !== '/blog/';
+    const ogType = isArticlePage ? 'article' : 'website';
+    let ogTypeElement = document.querySelector('meta[property="og:type"]');
+    if (ogTypeElement) {
+      ogTypeElement.setAttribute('content', ogType);
+    }
+    
     // Update Open Graph title
     let ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) {

@@ -6,29 +6,10 @@
     <title>Etsy Art & Image Upscaler Pro - AI-Powered Digital Art Tools</title>
     <meta name="description" content="Professional AI-powered image upscaling up to 4x, stunning mockups, print-ready formats, and automated Etsy listings. The ultimate platform for digital artists and Etsy sellers." />
     
-    <!-- Immediate canonical URL injection script (runs before React loads) -->
-    <script>
-      (function() {
-        const path = window.location.pathname;
-        const canonicalUrl = 'https://imageupscaler.app' + (path === '/' ? '' : path);
-        
-        // Create and inject canonical URL immediately
-        const canonical = document.createElement('link');
-        canonical.rel = 'canonical';
-        canonical.href = canonicalUrl;
-        canonical.id = 'canonical-url';
-        document.head.appendChild(canonical);
-        
-        // Also set basic Open Graph URL
-        const ogUrl = document.createElement('meta');
-        ogUrl.setAttribute('property', 'og:url');
-        ogUrl.setAttribute('content', canonicalUrl);
-        document.head.appendChild(ogUrl);
-      })();
-    </script>
-    
-    <!-- Static meta tags -->
-    <meta property="og:type" content="website" />
+    <!-- Default canonical URL (will be updated by client-side SEO) -->
+    <link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />
+    <meta property="og:url" content="https://imageupscaler.app/" id="og-url" />
+    <meta property="og:type" content="website" id="og-type" />
     <meta property="og:site_name" content="Image Upscaler Pro" />
     <meta name="twitter:card" content="summary_large_image" />
 
