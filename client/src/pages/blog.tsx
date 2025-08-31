@@ -104,9 +104,10 @@ export default function BlogPage() {
     
     try {
       const response = await apiRequest("POST", "/api/newsletter/subscribe", { email, source: "blog" });
-      console.log("Newsletter API response:", response);
+      const data = await response.json();
+      console.log("Newsletter API response:", data);
 
-      if (response.success) {
+      if (data.success) {
         console.log("Showing success toast");
         toast({
           title: "🎉 Successfully subscribed!",
@@ -116,11 +117,13 @@ export default function BlogPage() {
         });
         setEmail("");
       } else {
-        throw new Error(response.message || "Subscription failed");
+        throw new Error(data.message || "Subscription failed");
       }
     } catch (error: any) {
       console.error("Newsletter subscription error:", error);
-      if (error.message?.includes("already subscribed")) {
+      
+      // Handle 409 Conflict status (already subscribed)
+      if (error.status === 409 || error.message?.includes("already subscribed")) {
         toast({
           title: "Already subscribed",
           description: "This email is already subscribed to our newsletter.",
