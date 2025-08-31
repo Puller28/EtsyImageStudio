@@ -291,7 +291,7 @@ process.on('exit', cleanup);
     console.error('FastAPI server startup failed:', err);
   });
 
-  // Add canonical URL redirect middleware (www -> non-www)
+  // Add www redirect middleware (canonical headers managed in HTML only)
   app.use((req, res, next) => {
     const host = req.get('host');
     
@@ -305,13 +305,7 @@ process.on('exit', cleanup);
       return res.redirect(301, canonicalUrl);
     }
     
-    // Set canonical URL header for all requests
-    if (host && host.includes('imageupscaler')) {
-      const canonicalHost = host.replace('www.', '');
-      const canonicalUrl = `https://${canonicalHost}${req.path}`;
-      res.set('Link', `<${canonicalUrl}>; rel="canonical"`);
-    }
-    
+    // Canonical URLs are now managed only in HTML <link> tags to avoid Ahrefs conflicts
     next();
   });
 
