@@ -30,8 +30,8 @@ app.use(compression({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Remove the server-side HTML modification approach since Vite transforms HTML
-// Use enhanced client-side SEO that runs immediately in the head
+// Note: Server-side HTML modification doesn't work in development due to Vite
+// Canonical URLs are handled by SEOHead component for reliability
 
 // Health check endpoint for Autoscale readiness
 app.get("/health", (req, res) => {

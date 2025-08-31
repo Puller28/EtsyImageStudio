@@ -6,47 +6,10 @@
     <title>Etsy Art & Image Upscaler Pro - AI-Powered Digital Art Tools</title>
     <meta name="description" content="Professional AI-powered image upscaling up to 4x, stunning mockups, print-ready formats, and automated Etsy listings. The ultimate platform for digital artists and Etsy sellers." />
     
-    <!-- Canonical URL injection point - will be replaced by server -->
-    <script id="canonical-injection">
-      // This script runs immediately and injects canonical URLs before React loads
-      (function() {
-        const path = window.location.pathname;
-        let canonicalUrl = 'https://imageupscaler.app';
-        
-        // Generate correct canonical URL
-        let normalizedPath = path.split('?')[0].split('#')[0];
-        normalizedPath = normalizedPath.replace(/\/+$/, '');
-        if (normalizedPath === '') normalizedPath = '/';
-        if (normalizedPath === '/home') normalizedPath = '/';
-        
-        canonicalUrl += normalizedPath === '/' ? '' : normalizedPath;
-        
-        // Determine og:type
-        const isArticlePage = path.startsWith('/blog/') && path !== '/blog' && path !== '/blog/';
-        const ogType = isArticlePage ? 'article' : 'website';
-        
-        // Inject canonical link
-        const canonical = document.createElement('link');
-        canonical.rel = 'canonical';
-        canonical.href = canonicalUrl;
-        canonical.id = 'canonical-url';
-        document.head.appendChild(canonical);
-        
-        // Inject Open Graph URL
-        const ogUrl = document.createElement('meta');
-        ogUrl.setAttribute('property', 'og:url');
-        ogUrl.setAttribute('content', canonicalUrl);
-        ogUrl.id = 'og-url';
-        document.head.appendChild(ogUrl);
-        
-        // Inject Open Graph type
-        const ogTypeElem = document.createElement('meta');
-        ogTypeElem.setAttribute('property', 'og:type');
-        ogTypeElem.setAttribute('content', ogType);
-        ogTypeElem.id = 'og-type';
-        document.head.appendChild(ogTypeElem);
-      })();
-    </script>
+    <!-- Default canonical URLs - will be present in server response -->
+    <link rel="canonical" href="https://imageupscaler.app/" id="canonical-url" />
+    <meta property="og:url" content="https://imageupscaler.app/" id="og-url" />
+    <meta property="og:type" content="website" id="og-type" />
     
     <meta property="og:site_name" content="Image Upscaler Pro" />
     <meta name="twitter:card" content="summary_large_image" />

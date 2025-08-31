@@ -96,29 +96,45 @@ export function SEOHead({
       metaDescription.setAttribute('content', finalDescription);
     }
     
-    // Canonical URLs are now handled by the inline script in index.html
-    // This ensures they're present before search engines finish parsing the head
-    // Just ensure the existing ones are correct if they exist
+    // Generate canonical URL and meta tags - ensure they're always present
     const canonicalUrl = generateCanonicalUrl(currentPath);
     const isArticlePage = currentPath.startsWith('/blog/') && currentPath !== '/blog' && currentPath !== '/blog/';
     const ogType = isArticlePage ? 'article' : 'website';
     
-    // Update existing canonical if present
+    // Always ensure canonical link exists and is correct
     let canonicalLink = document.getElementById('canonical-url');
     if (canonicalLink) {
       canonicalLink.setAttribute('href', canonicalUrl);
+    } else {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      canonicalLink.setAttribute('href', canonicalUrl);
+      canonicalLink.id = 'canonical-url';
+      document.head.appendChild(canonicalLink);
     }
     
-    // Update existing og:url if present
+    // Always ensure og:url exists and is correct
     let ogUrl = document.getElementById('og-url');
     if (ogUrl) {
       ogUrl.setAttribute('content', canonicalUrl);
+    } else {
+      ogUrl = document.createElement('meta');
+      ogUrl.setAttribute('property', 'og:url');
+      ogUrl.setAttribute('content', canonicalUrl);
+      ogUrl.id = 'og-url';
+      document.head.appendChild(ogUrl);
     }
     
-    // Update existing og:type if present
+    // Always ensure og:type exists and is correct
     let ogTypeElement = document.getElementById('og-type');
     if (ogTypeElement) {
       ogTypeElement.setAttribute('content', ogType);
+    } else {
+      ogTypeElement = document.createElement('meta');
+      ogTypeElement.setAttribute('property', 'og:type');
+      ogTypeElement.setAttribute('content', ogType);
+      ogTypeElement.id = 'og-type';
+      document.head.appendChild(ogTypeElement);
     }
     
     // Update Open Graph title
