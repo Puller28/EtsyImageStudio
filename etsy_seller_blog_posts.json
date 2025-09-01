@@ -1,0 +1,55 @@
+{
+  "targetAudience": "Etsy sellers, digital artists, print-on-demand entrepreneurs",
+  "blogPosts": [
+    {
+      "slug": "etsy-digital-downloads-passive-income-guide",
+      "title": "How to Build a $5,000/Month Passive Income Selling Digital Downloads on Etsy",
+      "excerpt": "Discover the step-by-step strategy successful Etsy sellers use to create profitable digital download businesses. Learn product ideas, pricing, SEO, and scaling techniques.",
+      "targetKeywords": ["etsy digital downloads", "passive income etsy", "digital products etsy", "etsy seller guide"],
+      "category": "Business",
+      "estimatedSearchVolume": "15,000 monthly searches"
+    },
+    {
+      "slug": "ai-art-etsy-seller-complete-strategy",
+      "title": "AI Art for Etsy Sellers: Turn AI into a $10K+ Digital Art Business",
+      "excerpt": "Master AI art creation for Etsy success. Learn the best AI tools, prompt engineering, legal considerations, and proven strategies to build a profitable digital art business.",
+      "targetKeywords": ["ai art etsy", "ai generated art business", "sell ai art online", "digital art business"],
+      "category": "AI Art",
+      "estimatedSearchVolume": "22,000 monthly searches"
+    },
+    {
+      "slug": "print-on-demand-design-trends-2025",
+      "title": "Print-on-Demand Design Trends 2025: What's Selling Right Now",
+      "excerpt": "Stay ahead of the competition with the latest print-on-demand design trends. Discover what styles, themes, and products are driving sales in 2025.",
+      "targetKeywords": ["print on demand trends", "design trends 2025", "what sells on etsy", "trending designs"],
+      "category": "Design Trends",
+      "estimatedSearchVolume": "8,500 monthly searches"
+    },
+    {
+      "slug": "etsy-seo-algorithm-update-2025",
+      "title": "Etsy Algorithm Changes 2025: How to Rank Higher and Get More Sales",
+      "excerpt": "Navigate Etsy's latest algorithm updates with proven SEO strategies. Learn how to optimize listings, improve search rankings, and increase organic traffic.",
+      "targetKeywords": ["etsy algorithm 2025", "etsy seo tips", "etsy ranking factors", "increase etsy sales"],
+      "category": "SEO",
+      "estimatedSearchVolume": "18,000 monthly searches"
+    },
+    {
+      "slug": "digital-art-pricing-psychology-guide",
+      "title": "Digital Art Pricing Psychology: Price Your Art to Sell (Not Sit)",
+      "excerpt": "Stop underpricing your digital art. Learn the psychology behind pricing strategies that convert browsers into buyers and maximize your profit margins.",
+      "targetKeywords": ["digital art pricing", "how to price art", "art pricing strategy", "etsy pricing tips"],
+      "category": "Business",
+      "estimatedSearchVolume": "12,000 monthly searches"
+    }
+  ],
+  "contentStrategy": {
+    "primaryGoal": "Drive qualified traffic to imageupscaler.app",
+    "secondaryGoals": [
+      "Build email list of Etsy sellers",
+      "Establish authority in digital art space",
+      "Generate leads for AI upscaling services",
+      "Improve domain authority through quality content"
+    ],
+    "ctaStrategy": "Subtle integration of upscaling/optimization tools within valuable educational content"
+  }
+}
