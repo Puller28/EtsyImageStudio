@@ -76,6 +76,15 @@ export class AuthService {
       return null; // User not found
     }
 
+    // Check if user has a password set
+    if (!user.password) {
+      console.log(`🔑 User ${user.email} has no password set, updating with provided password`);
+      // User doesn't have a password yet, set it now
+      const hashedPassword = await this.hashPassword(loginData.password);
+      await storage.updateUser(user.id, { password: hashedPassword });
+      user.password = hashedPassword;
+    }
+
     // Always verify password for security
     const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
     if (!isPasswordValid) {
