@@ -1,0 +1,84 @@
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+⚠️ Failed to persist credit transaction f4fad8b6-97ad-4e58-aef9-7c1d1718cf8a to database: PostgresError: relation "credit_transactions" does not exist
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at TLSSocket.emit (node:events:524:28)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+at MemStorage.createCreditTransaction (file:///home/runner/workspace/dist/index.js:538:21) {
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+severity_local: 'ERROR',
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+severity: 'ERROR',
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+code: '42P01',
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+position: '22',
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+file: 'parse_relation.c',
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+line: '1449',
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+routine: 'parserOpenTable'
+2025-09-01 21:56:38.58
+c07fb8a8
+User
+}

@@ -1,4 +1,4 @@
-import { User, Project, CreditTransaction, NewsletterSubscriber, InsertNewsletterSubscriber } from "../shared/schema";
+import type { User, Project, ProcessedPayment } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 
@@ -29,33 +29,15 @@ export interface IStorage {
   getProjectsByUserId(userId: string): Promise<Project[]>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
 
-  // Credit management
-  updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean>;
-  logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void>;
-  createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'createdAt'>): Promise<CreditTransaction>;
-  getCreditTransactions(userId: string): Promise<CreditTransaction[]>;
-
   // Payment management
   isPaymentProcessed(paymentReference: string): Promise<boolean>;
   markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void>;
-
-  // Contact management
-  getContactMessages(): Promise<any[]>;
-  createContactMessage(message: any): Promise<any>;
-
-  // Newsletter management
-  createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber>;
-  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
-  unsubscribeNewsletter(email: string): Promise<boolean>;
 }
 
 class MemStorage implements IStorage {
   private users = new Map<string, User>();
   private projects = new Map<string, Project>();
-  private creditTransactions = new Map<string, CreditTransaction>();
   private processedPayments = new Set<string>();
-  private contactMessages = new Map<string, any>();
-  private newsletterSubscribers = new Map<string, NewsletterSubscriber>();
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const user = Array.from(this.users.values()).find(u => u.email === email);
@@ -167,8 +149,8 @@ class MemStorage implements IStorage {
       const sql = createDbConnection();
 
       await sql`
-        INSERT INTO public.users (id, email, name, password, credits, subscription_status, subscription_plan, created_at)
-        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.password}, ${user.credits || 100}, ${'free'}, ${null}, ${user.createdAt})
+        INSERT INTO public.users (id, email, name, credits, created_at)
+        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.credits || 100}, ${user.createdAt})
       `;
       
       await sql.end();
@@ -198,10 +180,7 @@ class MemStorage implements IStorage {
         UPDATE public.users 
         SET 
           email = ${updatedUser.email},
-          password = ${updatedUser.password},
-          credits = ${updatedUser.credits},
-          subscription_plan = ${updatedUser.subscriptionPlan || 'free'},
-          stripe_customer_id = ${updatedUser.subscriptionId || null}
+          credits = ${updatedUser.credits}
         WHERE id = ${id}
       `;
       
