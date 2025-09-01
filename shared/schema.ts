@@ -80,25 +80,6 @@ export const newsletterSubscribers = pgTable("newsletter_subscribers", {
   unsubscribedAt: timestamp("unsubscribed_at"),
 });
 
-export const blogPosts = pgTable("blog_posts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  slug: text("slug").notNull().unique(),
-  title: text("title").notNull(),
-  excerpt: text("excerpt").notNull(),
-  content: text("content").notNull(),
-  author: text("author").notNull().default("Digital Art Team"),
-  category: text("category").notNull(),
-  tags: jsonb("tags").$type<string[]>().default([]),
-  status: text("status").notNull().default("draft"), // draft, published, archived
-  featured: boolean("featured").notNull().default(false),
-  readTime: text("read_time").notNull().default("5 min read"),
-  seoTitle: text("seo_title"),
-  seoDescription: text("seo_description"),
-  publishedAt: timestamp("published_at"),
-  createdAt: timestamp("created_at").default(sql`now()`),
-  updatedAt: timestamp("updated_at").default(sql`now()`),
-});
-
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
@@ -142,21 +123,6 @@ export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSub
   unsubscribedAt: true,
 });
 
-export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
-  title: z.string().min(1).max(200),
-  excerpt: z.string().min(1).max(500),
-  content: z.string().min(1),
-  category: z.string().min(1),
-  status: z.enum(["draft", "published", "archived"]).optional(),
-});
-
-export const updateBlogPostSchema = insertBlogPostSchema.partial();
-
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
@@ -167,6 +133,3 @@ export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
-export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
-export type UpdateBlogPost = z.infer<typeof updateBlogPostSchema>;
-export type BlogPost = typeof blogPosts.$inferSelect;

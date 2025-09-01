@@ -81,41 +81,6 @@ async function initializeDatabase() {
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_newsletter_status ON newsletter_subscribers(status)
     `);
-
-    // Create blog_posts table
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS blog_posts (
-        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        slug TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        excerpt TEXT NOT NULL,
-        content TEXT NOT NULL,
-        author TEXT NOT NULL DEFAULT 'Digital Art Team',
-        category TEXT NOT NULL,
-        tags JSONB DEFAULT '[]'::jsonb,
-        status TEXT NOT NULL DEFAULT 'draft',
-        featured BOOLEAN NOT NULL DEFAULT false,
-        read_time TEXT NOT NULL DEFAULT '5 min read',
-        seo_title TEXT,
-        seo_description TEXT,
-        published_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT now(),
-        updated_at TIMESTAMP DEFAULT now()
-      )
-    `);
-
-    // Add indexes for blog_posts table
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)
-    `);
-
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)
-    `);
-
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at)
-    `);
     
     console.log('✅ Database tables initialized successfully');
   } catch (error) {
@@ -124,7 +89,7 @@ async function initializeDatabase() {
 }
 
 // Run initialization
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   initializeDatabase().then(() => process.exit(0));
 }
 
