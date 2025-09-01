@@ -1,0 +1,84 @@
+2025-09-01 22:32:15.51
+46d1f494
+User
+⚠️ Failed to load credit transactions from database for user d0ab62aa-9f5c-406f-b7b6-4e2119c4ef40: PostgresError: relation "credit_transactions" does not exist
+2025-09-01 22:32:15.51
+46d1f494
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at TLSSocket.emit (node:events:524:28)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-09-01 22:32:15.51
+46d1f494
+User
+at MemStorage.getCreditTransactions (file:///home/runner/workspace/dist/index.js:561:46) {
+2025-09-01 22:32:15.51
+46d1f494
+User
+severity_local: 'ERROR',
+2025-09-01 22:32:15.51
+46d1f494
+User
+severity: 'ERROR',
+2025-09-01 22:32:15.51
+46d1f494
+User
+code: '42P01',
+2025-09-01 22:32:15.51
+46d1f494
+User
+position: '124',
+2025-09-01 22:32:15.51
+46d1f494
+User
+file: 'parse_relation.c',
+2025-09-01 22:32:15.51
+46d1f494
+User
+line: '1449',
+2025-09-01 22:32:15.51
+46d1f494
+User
+routine: 'parserOpenTable'
+2025-09-01 22:32:15.51
+46d1f494
+User
+}
