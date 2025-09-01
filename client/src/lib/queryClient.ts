@@ -7,97 +7,63 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Get auth token from localStorage with FORCED production debugging
+// Get auth token from localStorage with robust error handling
 function getAuthToken(): string | null {
   try {
-    // EMERGENCY PRODUCTION FIX: Force token retrieval with all possible methods
-    let authStorage = localStorage.getItem('auth-storage');
-    let authStorageBackup = localStorage.getItem('auth-storage-backup');
-    let sessionAuth = sessionStorage.getItem('auth-storage');
+    // Primary storage location
+    const authStorage = localStorage.getItem('auth-storage');
     
-    // Reduced debug logging for security
-    if (import.meta.env.DEV) {
-      console.log('🔍 Auth Debug:', { 
-        hasStorage: !!authStorage,
-        hasBackupStorage: !!authStorageBackup,
-        hasSessionStorage: !!sessionAuth,
-        environment: window.location.hostname
-      });
-    }
-    
-    // FORCE all storage locations to be checked
-    if (!authStorage && authStorageBackup) {
-      authStorage = authStorageBackup;
-      if (import.meta.env.DEV) console.warn('🚨 Using backup storage for token');
-    }
-    if (!authStorage && sessionAuth) {
-      authStorage = sessionAuth;  
-      if (import.meta.env.DEV) console.warn('🚨 Using session storage for token');
-    }
-    
-    // Try multiple storage sources for production compatibility
-    const storageToTry = authStorage || authStorageBackup || sessionAuth;
-    
-    if (storageToTry) {
-      const parsed = JSON.parse(storageToTry);
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
       const token = parsed.token || parsed.state?.token;
-      if (import.meta.env.DEV) {
-        console.log('🔍 Parsed Auth Data:', { 
-          hasState: !!parsed.state,
-          hasToken: !!token,
-          hasUser: !!(parsed.user || parsed.state?.user),
-          tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
-          tokenExpiry: token ? 'checking...' : 'no token'
-        });
-      }
       
-      // Check if token is expired - enhanced safety checks
-      if (token && typeof token === 'string' && token.includes('.') && token.split('.').length === 3) {
+      // Validate token format (JWT should have 3 parts separated by dots)
+      if (token && typeof token === 'string' && token.split('.').length === 3) {
         try {
+          // Check if token is expired
           const tokenParts = token.split('.');
           const payload = JSON.parse(atob(tokenParts[1]));
           const isExpired = payload.exp * 1000 < Date.now();
-          if (import.meta.env.DEV) {
-            console.log('🔍 Token Status:', {
-              expired: isExpired,
-              expiresAt: new Date(payload.exp * 1000).toISOString(),
-              userId: payload.userId
-            });
-          }
           
           if (isExpired) {
-            if (import.meta.env.DEV) {
-              console.warn('🔍 Token is expired, clearing authentication');
-            }
-            localStorage.removeItem('auth-storage');
-            localStorage.removeItem('auth-storage-backup');
-            sessionStorage.clear();
-            // Force re-authentication for production
-            if (window.location.hostname.includes('replit.dev')) {
-              if (import.meta.env.DEV) {
-                console.log('🔄 Production environment detected, forcing re-authentication');
-              }
-              window.location.reload();
-            }
+            console.warn('🔍 Token expired, clearing storage');
+            clearAllAuthStorage();
             return null;
           }
-        } catch (error) {
-          console.error('🔍 Token decode error:', error);
-          // Clear invalid token data
-          localStorage.removeItem('auth-storage');
-          localStorage.removeItem('auth-storage-backup');
-          sessionStorage.clear();
+          
+          return token;
+        } catch (decodeError) {
+          console.error('🔍 Token decode error, clearing corrupted token:', decodeError);
+          clearAllAuthStorage();
           return null;
         }
+      } else {
+        console.error('🔍 Invalid token format, clearing corrupted data');
+        clearAllAuthStorage();
+        return null;
       }
-      
-      // Handle both direct storage and nested state structure
-      return token;
     }
   } catch (error) {
-    console.error('🔍 Auth Storage Parse Error:', error);
+    console.error('🔍 Auth storage parse error, clearing corrupted data:', error);
+    clearAllAuthStorage();
   }
+  
   return null;
+}
+
+// Helper function to clear all authentication storage
+function clearAllAuthStorage() {
+  localStorage.removeItem('auth-storage');
+  localStorage.removeItem('auth-storage-backup');
+  localStorage.removeItem('auth-storage-backup-production');
+  sessionStorage.removeItem('auth-storage');
+  
+  // Clear any other potential corrupted auth keys
+  Object.keys(localStorage).forEach(key => {
+    if (key.includes('auth') && key !== 'auth-storage') {
+      localStorage.removeItem(key);
+    }
+  });
 }
 
 export async function apiRequest(
@@ -108,34 +74,15 @@ export async function apiRequest(
   const token = getAuthToken();
   const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
   
-  // Add Authorization header if token exists - FORCE INCLUSION FOR PRODUCTION
+  // Add Authorization header if token exists
   if (token) {
-    (headers as any).Authorization = `Bearer ${token}`;
-  }
-  
-  // Enhanced API request logging for debugging
-  if (import.meta.env.DEV) {
-    console.log('🔍 API Request Debug:', {
-      method,
-      url,
-      hasToken: !!token,
-      hasAuthHeader: !!((headers as any).Authorization),
-      tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-      data: data ? JSON.stringify(data).substring(0, 100) + '...' : 'none'
-    });
-  }
-
-  // Final verification before sending request
-  const finalHeaders = { ...headers };
-  if (token && !finalHeaders.Authorization) {
-    (finalHeaders as any).Authorization = `Bearer ${token}`;
-    console.warn('🔍 EMERGENCY: Re-added missing Authorization header');
+    headers.Authorization = `Bearer ${token}`;
   }
 
   // Only include body for methods that support it
   const fetchOptions: RequestInit = {
     method,
-    headers: finalHeaders,
+    headers,
     credentials: "include",
   };
 
@@ -157,8 +104,7 @@ export async function apiRequest(
     // Handle authentication failures (invalid/expired tokens)
     if (res.status === 401 || res.status === 403) {
       console.warn('🔍 Authentication failed, clearing invalid token');
-      localStorage.removeItem('auth-storage');
-      sessionStorage.clear();
+      clearAllAuthStorage();
       
       // Show user-friendly notification
       const message = 'Your session has expired. Please refresh the page and log in again to continue.';
@@ -232,8 +178,16 @@ function getCurrentUserFromStorage() {
     }
   } catch (error) {
     console.error('Error getting current user:', error);
+    clearAllAuthStorage();
   }
   return null;
+}
+
+// Utility to clear corrupted tokens - call this if experiencing auth issues
+export function clearCorruptedTokens() {
+  console.log('📴 Clearing all potentially corrupted authentication data');
+  clearAllAuthStorage();
+  console.log('✅ Authentication storage cleared - please log in again');
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
