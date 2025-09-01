@@ -1,0 +1,88 @@
+2025-09-01 21:25:28.99
+073d72bf
+User
+Failed to get blog posts: PostgresError: relation "blog_posts" does not exist
+2025-09-01 21:25:28.99
+073d72bf
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at TLSSocket.emit (node:events:524:28)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-09-01 21:25:28.99
+073d72bf
+User
+at MemStorage.getAllBlogPosts (file:///home/runner/workspace/dist/index.js:704:44) {
+2025-09-01 21:25:28.99
+073d72bf
+User
+severity_local: 'ERROR',
+2025-09-01 21:25:28.99
+073d72bf
+User
+severity: 'ERROR',
+2025-09-01 21:25:28.99
+073d72bf
+User
+code: '42P01',
+2025-09-01 21:25:28.99
+073d72bf
+User
+position: '15',
+2025-09-01 21:25:28.99
+073d72bf
+User
+file: 'parse_relation.c',
+2025-09-01 21:25:28.99
+073d72bf
+User
+line: '1449',
+2025-09-01 21:25:28.99
+073d72bf
+User
+routine: 'parserOpenTable'
+2025-09-01 21:25:28.99
+073d72bf
+User
+}
+2025-09-01 21:25:29.00
+073d72bf
+User
+7:25:29 PM [express] GET /api/blog/posts 304 in 2272ms :: {"count":0,"posts":[]}
