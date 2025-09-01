@@ -168,27 +168,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
-      // Enhanced production debugging
-      console.log('🔍 PRODUCTION Login attempt:', {
-        email,
-        hasPassword: !!password,
-        passwordLength: password?.length || 0,
-        environment: process.env.NODE_ENV,
-        host: req.headers.host
-      });
-      
       const result = await AuthService.login({ email, password });
       
       if (!result) {
-        console.log('🚨 PRODUCTION Login failed - AuthService.login returned null for:', email);
         return res.status(401).json({ error: "Invalid email or password" });
       }
       
-      console.log('✅ PRODUCTION Login successful for:', email);
       res.json(result);
     } catch (error) {
-      console.error("🚨 PRODUCTION Login error:", error);
+      console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
     }
   });
@@ -213,34 +201,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Registration error:", error);
       res.status(500).json({ error: "Registration failed" });
-    }
-  });
-
-  // Production debugging endpoint - check user data
-  app.get('/api/debug/user/:email', async (req, res) => {
-    try {
-      const { email } = req.params;
-      console.log('🔍 PRODUCTION Debug endpoint called for:', email);
-      
-      const user = await storage.getUserByEmail(email);
-      
-      res.json({
-        found: !!user,
-        email: user?.email,
-        hasPassword: !!user?.password,
-        passwordLength: user?.password?.length || 0,
-        passwordPreview: user?.password ? `${user.password.substring(0, 7)}...` : 'none',
-        credits: user?.credits,
-        environment: process.env.NODE_ENV,
-        databaseUrl: process.env.DATABASE_URL?.substring(0, 50) + '...',
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('🚨 PRODUCTION Debug endpoint error:', error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      });
     }
   });
 
