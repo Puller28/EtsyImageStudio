@@ -1,4 +1,4 @@
-import type { User, Project, ProcessedPayment } from "../shared/schema";
+import type { User, Project, ProcessedPayment, CreditTransaction, ContactMessage, NewsletterSubscriber, InsertNewsletterSubscriber } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 

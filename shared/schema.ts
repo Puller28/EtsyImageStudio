@@ -7,8 +7,14 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  password: text("password"),
   avatar: text("avatar"),
   credits: integer("credits").notNull().default(100),
+  subscriptionStatus: text("subscription_status").default("free"),
+  subscriptionPlan: text("subscription_plan"),
+  subscriptionId: text("subscription_id"),
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
@@ -30,6 +36,9 @@ export const projects = pgTable("projects", {
   upscaleOption: text("upscale_option").notNull().default("2x"),
   status: text("status").notNull().default("uploading"), // uploading, processing, completed, failed, ai-generated
   zipUrl: text("zip_url"),
+  thumbnailUrl: text("thumbnail_url"),
+  aiPrompt: text("ai_prompt"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
@@ -41,11 +50,53 @@ export const processedPayments = pgTable("processed_payments", {
   processedAt: timestamp("processed_at").default(sql`now()`),
 });
 
+export const creditTransactions = pgTable("credit_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  amount: integer("amount").notNull(), // Negative for deductions, positive for additions
+  transactionType: text("transaction_type").notNull(), // "deduction" | "purchase" | "refund"
+  description: text("description").notNull(), // "AI Art Generation", "2x Upscaling", "Mockup Generation", etc.
+  balanceAfter: integer("balance_after").notNull(),
+  projectId: varchar("project_id"), // Optional reference to project
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const contactMessages = pgTable("contact_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("unread"), // unread, read, replied
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  status: text("status").notNull().default("active"), // active, unsubscribed
+  source: text("source").notNull().default("blog"), // Track where they signed up
+  createdAt: timestamp("created_at").default(sql`now()`),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+});
+
 // Schema validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
+  password: true,
   avatar: true,
+});
+
+export const registerUserSchema = createInsertSchema(users).pick({
+  email: true,
+  name: true,
+  password: true,
+});
+
+export const loginUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
@@ -56,9 +107,32 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   styleKeywords: z.string().min(1, "Style keywords are required"),
 });
 
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSubscribers).omit({
+  id: true,
+  createdAt: true,
+  unsubscribedAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type ProcessedPayment = typeof processedPayments.$inferSelect;
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
+export type ContactMessage = typeof contactMessages.$inferSelect;
+export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;

@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { ProjectImageStorage } from "./objectStorage";
-import { insertProjectSchema, insertUserSchema, type Project } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, type Project } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
