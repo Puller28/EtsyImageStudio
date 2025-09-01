@@ -45,9 +45,120 @@ export default function BlogPage() {
     },
   });
 
-  const blogPosts: BlogPost[] = blogData?.posts || [];
-  const featuredPosts = blogPosts.filter(post => post.featured);
-  const regularPosts = blogPosts.filter(post => !post.featured);
+  // Static blog posts that already exist (to preserve existing content)
+  const staticBlogPosts = [
+    {
+      id: "static-ai-art-etsy-success-2025",
+      slug: "ai-art-etsy-success-2025",
+      title: "AI Art Etsy Success Guide 2025",
+      excerpt: "Master AI art generation and turn your creativity into a profitable Etsy business with proven strategies and tools.",
+      author: "Digital Art Team",
+      category: "AI Art",
+      tags: ["ai art", "etsy", "business"],
+      status: "published",
+      featured: true,
+      read_time: "12 min read",
+      published_at: "2025-01-01T00:00:00Z",
+      created_at: "2025-01-01T00:00:00Z",
+      updated_at: "2025-01-01T00:00:00Z"
+    },
+    {
+      id: "static-best-print-sizes-digital-art-etsy",
+      slug: "best-print-sizes-digital-art-etsy",
+      title: "Best Print Sizes for Digital Art",
+      excerpt: "Discover the most profitable print sizes and formats for your digital art on Etsy and other print-on-demand platforms.",
+      author: "Digital Art Team",
+      category: "Digital Tools",
+      tags: ["print sizes", "digital art", "etsy"],
+      status: "published",
+      featured: false,
+      read_time: "8 min read",
+      published_at: "2025-01-02T00:00:00Z",
+      created_at: "2025-01-02T00:00:00Z",
+      updated_at: "2025-01-02T00:00:00Z"
+    },
+    {
+      id: "static-ai-image-upscaling-print-on-demand",
+      slug: "ai-image-upscaling-print-on-demand",
+      title: "AI Image Upscaling for Print-on-Demand",
+      excerpt: "Transform low-resolution AI art into high-quality prints with advanced upscaling techniques and tools.",
+      author: "Digital Art Team",
+      category: "Digital Tools",
+      tags: ["ai upscaling", "print on demand", "image quality"],
+      status: "published",
+      featured: false,
+      read_time: "10 min read",
+      published_at: "2025-01-03T00:00:00Z",
+      created_at: "2025-01-03T00:00:00Z",
+      updated_at: "2025-01-03T00:00:00Z"
+    },
+    {
+      id: "static-room-mockup-templates-etsy-sales",
+      slug: "room-mockup-templates-etsy-sales",
+      title: "Room Mockup Templates That Boost Sales",
+      excerpt: "Learn how professional room mockups can increase your Etsy conversion rates and sales performance.",
+      author: "Digital Art Team",
+      category: "Business",
+      tags: ["mockups", "etsy sales", "templates"],
+      status: "published",
+      featured: false,
+      read_time: "7 min read",
+      published_at: "2025-01-04T00:00:00Z",
+      created_at: "2025-01-04T00:00:00Z",
+      updated_at: "2025-01-04T00:00:00Z"
+    },
+    {
+      id: "static-etsy-seo-ai-listing-optimization",
+      slug: "etsy-seo-ai-listing-optimization",
+      title: "Etsy SEO & AI Listing Optimization",
+      excerpt: "Use AI-powered tools to optimize your Etsy listings for better search rankings and increased visibility.",
+      author: "Digital Art Team",
+      category: "SEO",
+      tags: ["etsy seo", "ai optimization", "listings"],
+      status: "published",
+      featured: true,
+      read_time: "15 min read",
+      published_at: "2025-01-05T00:00:00Z",
+      created_at: "2025-01-05T00:00:00Z",
+      updated_at: "2025-01-05T00:00:00Z"
+    },
+    {
+      id: "static-mockup-generation-digital-art",
+      slug: "mockup-generation-digital-art",
+      title: "Mockup Generation for Digital Art",
+      excerpt: "Create stunning room mockups that showcase your digital art in realistic settings to boost customer confidence.",
+      author: "Digital Art Team",
+      category: "Digital Tools",
+      tags: ["mockups", "digital art", "room settings"],
+      status: "published",
+      featured: false,
+      read_time: "9 min read",
+      published_at: "2025-01-06T00:00:00Z",
+      created_at: "2025-01-06T00:00:00Z",
+      updated_at: "2025-01-06T00:00:00Z"
+    },
+    {
+      id: "static-automate-digital-art-business-workflow",
+      slug: "automate-digital-art-business-workflow",
+      title: "Automate Your Digital Art Workflow",
+      excerpt: "Streamline your digital art business with automation tools and workflows that save time and increase productivity.",
+      author: "Digital Art Team",
+      category: "Business",
+      tags: ["automation", "workflow", "digital art business"],
+      status: "published",
+      featured: false,
+      read_time: "11 min read",
+      published_at: "2025-01-07T00:00:00Z",
+      created_at: "2025-01-07T00:00:00Z",
+      updated_at: "2025-01-07T00:00:00Z"
+    }
+  ];
+
+  // Combine API posts with static posts, API posts first (most recent)
+  const apiPosts: BlogPost[] = blogData?.posts || [];
+  const allBlogPosts = [...apiPosts, ...staticBlogPosts];
+  const featuredPosts = allBlogPosts.filter(post => post.featured);
+  const regularPosts = allBlogPosts.filter(post => !post.featured);
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,11 +351,11 @@ export default function BlogPage() {
         )}
 
         {/* Show all posts in one section if no featured posts */}
-        {!isLoading && !error && featuredPosts.length === 0 && blogPosts.length > 0 && (
+        {!isLoading && !error && featuredPosts.length === 0 && allBlogPosts.length > 0 && (
           <section className="mb-16">
             <h2 className="text-2xl font-bold mb-8">Latest Articles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {blogPosts.map((post) => (
+              {allBlogPosts.map((post) => (
                 <Card key={post.id} className="border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between mb-2">
@@ -289,12 +400,12 @@ export default function BlogPage() {
         )}
 
         {/* Categories - Dynamic based on actual blog posts */}
-        {!isLoading && !error && blogPosts.length > 0 && (
+        {!isLoading && !error && allBlogPosts.length > 0 && (
           <section className="mb-16">
             <h2 className="text-2xl font-bold mb-8">Browse by Category</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* AI Art Category */}
-              {blogPosts.some(post => post.category === "AI Art") && (
+              {allBlogPosts.some(post => post.category === "AI Art") && (
                 <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
                   <CardContent className="p-6">
                     <Sparkles className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
@@ -305,7 +416,7 @@ export default function BlogPage() {
               )}
 
               {/* Business Category */}
-              {blogPosts.some(post => post.category === "Business") && (
+              {allBlogPosts.some(post => post.category === "Business") && (
                 <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
                   <CardContent className="p-6">
                     <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
@@ -316,7 +427,7 @@ export default function BlogPage() {
               )}
 
               {/* SEO Category */}
-              {blogPosts.some(post => post.category === "SEO") && (
+              {allBlogPosts.some(post => post.category === "SEO") && (
                 <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
                   <CardContent className="p-6">
                     <Zap className="h-8 w-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
