@@ -159,10 +159,8 @@ class MemStorage implements IStorage {
       ...userData,
       createdAt
     };
-    
-    this.users.set(id, user);
 
-    // Persist to database
+    // First persist to database - this MUST succeed
     try {
       const sql = createDbConnection();
 
@@ -174,8 +172,12 @@ class MemStorage implements IStorage {
       await sql.end();
       console.log(`✅ Persisted user ${user.email} to database`);
       
+      // Only add to memory after successful database save
+      this.users.set(id, user);
+      
     } catch (dbError) {
-      console.error(`⚠️ Failed to persist user ${user.email} to database:`, dbError);
+      console.error(`🚨 CRITICAL: Failed to persist user ${user.email} to database:`, dbError);
+      throw new Error(`Registration failed: Unable to save user data to database`);
     }
     
     return user;
@@ -224,12 +226,8 @@ class MemStorage implements IStorage {
       ...projectData,
       createdAt
     };
-    
-    console.log(`💾 MemStorage: Creating project "${project.title}" with ID ${id}`);
-    this.projects.set(id, project);
-    console.log(`💾 MemStorage: Project stored in memory, total projects: ${this.projects.size}`);
 
-    // Persist to database
+    // First persist to database - this MUST succeed
     try {
       console.log(`💾 Database: Attempting to save project ${id} to database`);
       const sql = createDbConnection();
@@ -252,8 +250,14 @@ class MemStorage implements IStorage {
       await sql.end();
       console.log(`💾 Database: Project ${id} successfully saved to database`);
       
+      // Only add to memory after successful database save
+      console.log(`💾 MemStorage: Adding project "${project.title}" to memory cache`);
+      this.projects.set(id, project);
+      console.log(`💾 MemStorage: Project stored in memory, total projects: ${this.projects.size}`);
+      
     } catch (dbError) {
-      console.error(`💾 Database: Failed to persist project ${id} to database:`, dbError);
+      console.error(`🚨 CRITICAL: Failed to persist project ${id} to database:`, dbError);
+      throw new Error(`Project creation failed: Unable to save project data to database`);
     }
     
     return project;
