@@ -1,4 +1,4 @@
-import type { User, Project, ProcessedPayment, CreditTransaction, ContactMessage, NewsletterSubscriber, InsertNewsletterSubscriber } from "../shared/schema";
+import { User, Project, CreditTransaction, NewsletterSubscriber, InsertNewsletterSubscriber } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
 
@@ -22,8 +22,6 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   createUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
-  updateUserCredits(userId: string, newCredits: number): Promise<User | undefined>;
-  updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean>;
 
   // Project management
   createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
@@ -31,37 +29,39 @@ export interface IStorage {
   getProjectsByUserId(userId: string): Promise<Project[]>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
 
-  // Credit transaction management
-  getCreditTransactions(userId: string, forceRefresh?: boolean): Promise<CreditTransaction[]>;
-
-  // Contact and newsletter management
-  createContactMessage(message: Omit<ContactMessage, 'id' | 'createdAt'>): Promise<ContactMessage>;
-  getContactMessages(): Promise<ContactMessage[]>;
-  createNewsletterSubscriber(subscriber: Omit<NewsletterSubscriber, 'id' | 'createdAt'>): Promise<NewsletterSubscriber>;
-  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  // Credit management
+  updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean>;
+  logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void>;
+  createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'createdAt'>): Promise<CreditTransaction>;
+  getCreditTransactions(userId: string): Promise<CreditTransaction[]>;
 
   // Payment management
   isPaymentProcessed(paymentReference: string): Promise<boolean>;
   markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void>;
+
+  // Contact management
+  getContactMessages(): Promise<any[]>;
+  createContactMessage(message: any): Promise<any>;
+
+  // Newsletter management
+  createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber>;
+  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  unsubscribeNewsletter(email: string): Promise<boolean>;
 }
 
 class MemStorage implements IStorage {
   private users = new Map<string, User>();
   private projects = new Map<string, Project>();
-  private processedPayments = new Set<string>();
   private creditTransactions = new Map<string, CreditTransaction>();
-  private contactMessages = new Map<string, ContactMessage>();
+  private processedPayments = new Set<string>();
+  private contactMessages = new Map<string, any>();
   private newsletterSubscribers = new Map<string, NewsletterSubscriber>();
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    // Force fresh database lookup for login attempts to ensure we have latest password
-    console.log(`🔍 Looking up user ${email} - checking database first for fresh data`);
-    
-    // Clear from memory cache to force fresh database load
-    const existingUser = Array.from(this.users.values()).find(u => u.email === email);
-    if (existingUser) {
-      this.users.delete(existingUser.id);
-      console.log(`🗑️ Cleared ${email} from memory cache for fresh database lookup`);
+    const user = Array.from(this.users.values()).find(u => u.email === email);
+    if (user) {
+      console.log(`✅ Found user in memory: ${email}`);
+      return user;
     }
 
     // Try to load from database
@@ -167,8 +167,8 @@ class MemStorage implements IStorage {
       const sql = createDbConnection();
 
       await sql`
-        INSERT INTO public.users (id, email, name, credits, created_at)
-        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.credits || 100}, ${user.createdAt})
+        INSERT INTO public.users (id, email, name, password, credits, subscription_status, subscription_plan, created_at)
+        VALUES (${user.id}, ${user.email}, ${user.name || user.email.split('@')[0]}, ${user.password}, ${user.credits || 100}, ${'free'}, ${null}, ${user.createdAt})
       `;
       
       await sql.end();
@@ -198,7 +198,10 @@ class MemStorage implements IStorage {
         UPDATE public.users 
         SET 
           email = ${updatedUser.email},
-          credits = ${updatedUser.credits}
+          password = ${updatedUser.password},
+          credits = ${updatedUser.credits},
+          subscription_plan = ${updatedUser.subscriptionPlan || 'free'},
+          stripe_customer_id = ${updatedUser.subscriptionId || null}
         WHERE id = ${id}
       `;
       
@@ -576,32 +579,6 @@ class MemStorage implements IStorage {
     this.processedPayments.add(paymentReference);
   }
 
-  async updateUserCredits(userId: string, newCredits: number): Promise<User | undefined> {
-    const user = this.users.get(userId);
-    if (!user) {
-      return undefined;
-    }
-
-    user.credits = newCredits;
-    this.users.set(userId, user);
-
-    // Update in database
-    try {
-      const sql = createDbConnection();
-      await sql`
-        UPDATE public.users 
-        SET credits = ${newCredits}
-        WHERE id = ${userId}
-      `;
-      await sql.end();
-      console.log(`✅ Updated user ${userId} credits to ${newCredits}`);
-    } catch (error) {
-      console.warn(`⚠️ Failed to update user ${userId} credits in database:`, error);
-    }
-
-    return user;
-  }
-
   async logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void> {
     console.log(`💰 Credit Transaction - User: ${userId}, Type: ${type}, Amount: ${amount}, Description: ${description}`);
     
@@ -742,21 +719,17 @@ class MemStorage implements IStorage {
     return memoryTransactions.sort((a, b) => (b.createdAt || new Date()).getTime() - (a.createdAt || new Date()).getTime());
   }
 
-  async getContactMessages(): Promise<ContactMessage[]> {
+  async getContactMessages(): Promise<any[]> {
     return Array.from(this.contactMessages.values())
-      .sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  async createContactMessage(message: Omit<ContactMessage, 'id' | 'createdAt'>): Promise<ContactMessage> {
+  async createContactMessage(message: any): Promise<any> {
     const id = crypto.randomUUID();
-    const contactMessage: ContactMessage = {
+    const contactMessage = {
       id,
       ...message,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     };
     
     this.contactMessages.set(id, contactMessage);
@@ -769,9 +742,7 @@ class MemStorage implements IStorage {
     
     const subscriber: NewsletterSubscriber = {
       id,
-      email: subscriberData.email,
-      status: subscriberData.status || 'active',
-      source: subscriberData.source || 'blog',
+      ...subscriberData,
       createdAt,
       unsubscribedAt: null
     };
@@ -800,11 +771,7 @@ class MemStorage implements IStorage {
   async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
     return Array.from(this.newsletterSubscribers.values())
       .filter(sub => sub.status === 'active')
-      .sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async unsubscribeNewsletter(email: string): Promise<boolean> {

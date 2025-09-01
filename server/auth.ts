@@ -73,35 +73,13 @@ export class AuthService {
   static async login(loginData: LoginData): Promise<{ user: any; token: string } | null> {
     const user = await storage.getUserByEmail(loginData.email);
     if (!user) {
-      console.log(`🔑 Login failed: User ${loginData.email} not found`);
       return null; // User not found
     }
 
-    console.log(`🔑 Login attempt for user ${user.email}:`, {
-      hasPassword: !!user.password,
-      passwordLength: user.password?.length || 0,
-      passwordPreview: user.password?.substring(0, 10) + '...'
-    });
-
-    // Check if user has a password set
-    if (!user.password) {
-      console.log(`🔑 User ${user.email} has no password set, updating with provided password`);
-      // User doesn't have a password yet, set it now
-      const hashedPassword = await this.hashPassword(loginData.password);
-      await storage.updateUser(user.id, { password: hashedPassword });
-      user.password = hashedPassword;
-    }
-
     // Always verify password for security
-    try {
-      const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
-      console.log(`🔑 Password verification result for ${user.email}:`, isPasswordValid);
-      if (!isPasswordValid) {
-        return null; // Invalid password
-      }
-    } catch (error) {
-      console.error(`🔑 Password verification error for ${user.email}:`, error);
-      return null;
+    const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
+    if (!isPasswordValid) {
+      return null; // Invalid password
     }
 
     const token = this.generateToken(user.id);
