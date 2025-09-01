@@ -5,6 +5,7 @@ import { Link, useParams } from "wouter";
 import { ArrowLeft, Calendar, Clock, CheckCircle, Sparkles, Star } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
+import { SEOHead } from "@/components/seo-head";
 
 // Related articles for internal linking to resolve orphan pages
 const relatedArticles = {
@@ -1024,6 +1025,11 @@ export default function BlogPostPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead 
+        title={`${post.title} - Digital Art Blog | Image Upscaler Pro`}
+        description={post.title.length > 50 ? post.title.substring(0, 147) + "..." : post.title}
+        path={`/blog/${slug}`}
+      />
       <PublicNavigation />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
