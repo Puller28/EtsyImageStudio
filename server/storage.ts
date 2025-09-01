@@ -22,12 +22,23 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   createUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  updateUserCredits(userId: string, newCredits: number): Promise<User | undefined>;
+  updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean>;
 
   // Project management
   createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByUserId(userId: string): Promise<Project[]>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
+
+  // Credit transaction management
+  getCreditTransactions(userId: string, forceRefresh?: boolean): Promise<CreditTransaction[]>;
+
+  // Contact and newsletter management
+  createContactMessage(message: Omit<ContactMessage, 'id' | 'createdAt'>): Promise<ContactMessage>;
+  getContactMessages(): Promise<ContactMessage[]>;
+  createNewsletterSubscriber(subscriber: Omit<NewsletterSubscriber, 'id' | 'createdAt'>): Promise<NewsletterSubscriber>;
+  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
 
   // Payment management
   isPaymentProcessed(paymentReference: string): Promise<boolean>;
@@ -38,6 +49,9 @@ class MemStorage implements IStorage {
   private users = new Map<string, User>();
   private projects = new Map<string, Project>();
   private processedPayments = new Set<string>();
+  private creditTransactions = new Map<string, CreditTransaction>();
+  private contactMessages = new Map<string, ContactMessage>();
+  private newsletterSubscribers = new Map<string, NewsletterSubscriber>();
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     // Force fresh database lookup for login attempts to ensure we have latest password
@@ -562,6 +576,32 @@ class MemStorage implements IStorage {
     this.processedPayments.add(paymentReference);
   }
 
+  async updateUserCredits(userId: string, newCredits: number): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) {
+      return undefined;
+    }
+
+    user.credits = newCredits;
+    this.users.set(userId, user);
+
+    // Update in database
+    try {
+      const sql = createDbConnection();
+      await sql`
+        UPDATE public.users 
+        SET credits = ${newCredits}
+        WHERE id = ${userId}
+      `;
+      await sql.end();
+      console.log(`✅ Updated user ${userId} credits to ${newCredits}`);
+    } catch (error) {
+      console.warn(`⚠️ Failed to update user ${userId} credits in database:`, error);
+    }
+
+    return user;
+  }
+
   async logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void> {
     console.log(`💰 Credit Transaction - User: ${userId}, Type: ${type}, Amount: ${amount}, Description: ${description}`);
     
@@ -702,17 +742,21 @@ class MemStorage implements IStorage {
     return memoryTransactions.sort((a, b) => (b.createdAt || new Date()).getTime() - (a.createdAt || new Date()).getTime());
   }
 
-  async getContactMessages(): Promise<any[]> {
+  async getContactMessages(): Promise<ContactMessage[]> {
     return Array.from(this.contactMessages.values())
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
   }
 
-  async createContactMessage(message: any): Promise<any> {
+  async createContactMessage(message: Omit<ContactMessage, 'id' | 'createdAt'>): Promise<ContactMessage> {
     const id = crypto.randomUUID();
-    const contactMessage = {
+    const contactMessage: ContactMessage = {
       id,
       ...message,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
     
     this.contactMessages.set(id, contactMessage);
@@ -725,7 +769,9 @@ class MemStorage implements IStorage {
     
     const subscriber: NewsletterSubscriber = {
       id,
-      ...subscriberData,
+      email: subscriberData.email,
+      status: subscriberData.status || 'active',
+      source: subscriberData.source || 'blog',
       createdAt,
       unsubscribedAt: null
     };
@@ -754,7 +800,11 @@ class MemStorage implements IStorage {
   async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
     return Array.from(this.newsletterSubscribers.values())
       .filter(sub => sub.status === 'active')
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
   }
 
   async unsubscribeNewsletter(email: string): Promise<boolean> {
