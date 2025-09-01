@@ -71,16 +71,24 @@ export class AuthService {
   }
 
   static async login(loginData: LoginData): Promise<{ user: any; token: string } | null> {
+    console.log('🔍 PRODUCTION AuthService.login called for:', loginData.email);
+    
     const user = await storage.getUserByEmail(loginData.email);
     if (!user) {
+      console.log('🚨 PRODUCTION User not found in storage for:', loginData.email);
       return null; // User not found
     }
+
+    console.log('✅ PRODUCTION User found in storage for:', loginData.email);
 
     // Always verify password for security
     const isPasswordValid = await this.verifyPassword(loginData.password, user.password);
     if (!isPasswordValid) {
+      console.log('🚨 PRODUCTION Password verification failed for:', loginData.email);
       return null; // Invalid password
     }
+
+    console.log('✅ PRODUCTION Password verification successful for:', loginData.email);
 
     const token = this.generateToken(user.id);
     
