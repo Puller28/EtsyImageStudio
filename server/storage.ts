@@ -866,11 +866,12 @@ class MemStorage implements IStorage {
       `;
       
       await sql.end();
+      console.log(`✅ Retrieved blog post: ${slug}, found: ${posts.length > 0}`);
       return posts[0] || undefined;
       
     } catch (error) {
       console.error('Failed to get blog post:', error);
-      return undefined;
+      throw error; // Re-throw to see the actual error in production
     }
   }
 
@@ -883,11 +884,12 @@ class MemStorage implements IStorage {
         : await sql`SELECT * FROM blog_posts ORDER BY created_at DESC`;
       
       await sql.end();
+      console.log(`✅ Retrieved ${posts.length} blog posts from database`);
       return posts;
       
     } catch (error) {
       console.error('Failed to get blog posts:', error);
-      return [];
+      throw error; // Re-throw to see the actual error in production
     }
   }
 
