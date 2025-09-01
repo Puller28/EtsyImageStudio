@@ -40,10 +40,14 @@ class MemStorage implements IStorage {
   private processedPayments = new Set<string>();
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const user = Array.from(this.users.values()).find(u => u.email === email);
-    if (user) {
-      console.log(`✅ Found user in memory: ${email}`);
-      return user;
+    // Force fresh database lookup for login attempts to ensure we have latest password
+    console.log(`🔍 Looking up user ${email} - checking database first for fresh data`);
+    
+    // Clear from memory cache to force fresh database load
+    const existingUser = Array.from(this.users.values()).find(u => u.email === email);
+    if (existingUser) {
+      this.users.delete(existingUser.id);
+      console.log(`🗑️ Cleared ${email} from memory cache for fresh database lookup`);
     }
 
     // Try to load from database
