@@ -1075,6 +1075,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Blog Management API Endpoints
 
+  // Admin route to create blog table if needed
+  app.post('/api/admin/setup-blog-table', async (req, res) => {
+    try {
+      // Direct SQL to create blog_posts table
+      const { Pool } = require('pg');
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS blog_posts (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          slug TEXT NOT NULL UNIQUE,
+          title TEXT NOT NULL,
+          excerpt TEXT NOT NULL,
+          content TEXT NOT NULL,
+          author TEXT NOT NULL DEFAULT 'Digital Art Team',
+          category TEXT NOT NULL,
+          tags JSONB DEFAULT '[]'::jsonb,
+          status TEXT NOT NULL DEFAULT 'draft',
+          featured BOOLEAN NOT NULL DEFAULT false,
+          read_time TEXT NOT NULL DEFAULT '5 min read',
+          seo_title TEXT,
+          seo_description TEXT,
+          published_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT now(),
+          updated_at TIMESTAMP DEFAULT now()
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+      `);
+      
+      await pool.end();
+      res.json({ success: true, message: 'Blog table created successfully' });
+    } catch (error) {
+      console.error('Failed to create blog table:', error);
+      res.status(500).json({ error: 'Failed to create blog table' });
+    }
+  });
+
   // Create a new blog post
   app.post("/api/blog/posts", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
