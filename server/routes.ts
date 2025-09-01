@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { ProjectImageStorage } from "./objectStorage";
-import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, type Project, projects } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, insertBlogPostSchema, updateBlogPostSchema, type Project, projects } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -1070,6 +1070,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Newsletter unsubscribe error:", error);
       res.status(500).json({ error: "Failed to unsubscribe from newsletter" });
+    }
+  });
+
+  // Blog Management API Endpoints
+
+  // Create a new blog post
+  app.post("/api/blog/posts", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const blogPostData = insertBlogPostSchema.parse(req.body);
+      
+      // Check if slug already exists
+      const existingPost = await storage.getBlogPost(blogPostData.slug);
+      if (existingPost) {
+        return res.status(409).json({ 
+          error: "Blog post with this slug already exists",
+          slug: blogPostData.slug 
+        });
+      }
+      
+      const blogPost = await storage.createBlogPost(blogPostData);
+      
+      // Submit to IndexNow for SEO if published
+      if (blogPost.status === 'published') {
+        try {
+          await fetch(`${req.protocol}://${req.get('host')}/api/indexnow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: [`/blog/${blogPost.slug}`] })
+          });
+        } catch (seoError) {
+          console.error('Failed to submit to IndexNow:', seoError);
+        }
+      }
+      
+      console.log(`📝 Blog post created: ${blogPost.slug} (${blogPost.status})`);
+      res.status(201).json({ 
+        success: true, 
+        message: "Blog post created successfully",
+        blogPost 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid blog post data", 
+          details: error.errors 
+        });
+      }
+      
+      console.error("Blog post creation error:", error);
+      res.status(500).json({ error: "Failed to create blog post" });
+    }
+  });
+
+  // Get all blog posts (with optional status filter)
+  app.get("/api/blog/posts", async (req, res) => {
+    try {
+      const { status } = req.query;
+      const posts = await storage.getAllBlogPosts(status as string);
+      
+      res.json({
+        count: posts.length,
+        posts: posts
+      });
+    } catch (error) {
+      console.error("Failed to get blog posts:", error);
+      res.status(500).json({ error: "Failed to get blog posts" });
+    }
+  });
+
+  // Get a specific blog post by slug
+  app.get("/api/blog/posts/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const post = await storage.getBlogPost(slug);
+      
+      if (!post) {
+        return res.status(404).json({ 
+          error: "Blog post not found",
+          slug 
+        });
+      }
+      
+      res.json(post);
+    } catch (error) {
+      console.error("Failed to get blog post:", error);
+      res.status(500).json({ error: "Failed to get blog post" });
+    }
+  });
+
+  // Update a blog post
+  app.put("/api/blog/posts/:slug", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { slug } = req.params;
+      const updateData = updateBlogPostSchema.parse(req.body);
+      
+      const updatedPost = await storage.updateBlogPost(slug, updateData);
+      
+      if (!updatedPost) {
+        return res.status(404).json({ 
+          error: "Blog post not found",
+          slug 
+        });
+      }
+      
+      // Submit to IndexNow for SEO if published
+      if (updatedPost.status === 'published') {
+        try {
+          await fetch(`${req.protocol}://${req.get('host')}/api/indexnow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: [`/blog/${slug}`] })
+          });
+        } catch (seoError) {
+          console.error('Failed to submit to IndexNow:', seoError);
+        }
+      }
+      
+      console.log(`📝 Blog post updated: ${slug} (${updatedPost.status})`);
+      res.json({ 
+        success: true, 
+        message: "Blog post updated successfully",
+        blogPost: updatedPost 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid update data", 
+          details: error.errors 
+        });
+      }
+      
+      console.error("Blog post update error:", error);
+      res.status(500).json({ error: "Failed to update blog post" });
+    }
+  });
+
+  // Publish a blog post (shortcut for status update)
+  app.post("/api/blog/posts/:slug/publish", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { slug } = req.params;
+      const publishedPost = await storage.publishBlogPost(slug);
+      
+      if (!publishedPost) {
+        return res.status(404).json({ 
+          error: "Blog post not found",
+          slug 
+        });
+      }
+      
+      // Submit to IndexNow for immediate SEO indexing
+      try {
+        await fetch(`${req.protocol}://${req.get('host')}/api/indexnow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: [`/blog/${slug}`, '/blog', '/sitemap.xml'] })
+        });
+      } catch (seoError) {
+        console.error('Failed to submit to IndexNow:', seoError);
+      }
+      
+      console.log(`🚀 Blog post published: ${slug}`);
+      res.json({ 
+        success: true, 
+        message: "Blog post published successfully",
+        blogPost: publishedPost 
+      });
+    } catch (error) {
+      console.error("Blog post publish error:", error);
+      res.status(500).json({ error: "Failed to publish blog post" });
+    }
+  });
+
+  // Delete a blog post
+  app.delete("/api/blog/posts/:slug", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { slug } = req.params;
+      const deleted = await storage.deleteBlogPost(slug);
+      
+      if (!deleted) {
+        return res.status(404).json({ 
+          error: "Blog post not found",
+          slug 
+        });
+      }
+      
+      console.log(`🗑️ Blog post deleted: ${slug}`);
+      res.json({ 
+        success: true, 
+        message: "Blog post deleted successfully" 
+      });
+    } catch (error) {
+      console.error("Blog post delete error:", error);
+      res.status(500).json({ error: "Failed to delete blog post" });
     }
   });
 

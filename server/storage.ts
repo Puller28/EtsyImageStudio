@@ -47,6 +47,14 @@ export interface IStorage {
   createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber>;
   getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
   unsubscribeNewsletter(email: string): Promise<boolean>;
+
+  // Blog management
+  createBlogPost(blogPost: any): Promise<any>;
+  getBlogPost(slug: string): Promise<any | undefined>;
+  getAllBlogPosts(status?: string): Promise<any[]>;
+  updateBlogPost(slug: string, updates: any): Promise<any | undefined>;
+  deleteBlogPost(slug: string): Promise<boolean>;
+  publishBlogPost(slug: string): Promise<any | undefined>;
 }
 
 class MemStorage implements IStorage {
@@ -808,6 +816,140 @@ class MemStorage implements IStorage {
     }
 
     return true;
+  }
+
+  // Blog management methods
+  async createBlogPost(blogPost: any): Promise<any> {
+    const id = crypto.randomUUID();
+    const now = new Date();
+    const newPost = {
+      id,
+      ...blogPost,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    try {
+      const sql = createDbConnection();
+      
+      await sql`
+        INSERT INTO blog_posts (
+          id, slug, title, excerpt, content, author, category, 
+          tags, status, featured, read_time, seo_title, seo_description,
+          published_at, created_at, updated_at
+        ) VALUES (
+          ${id}, ${blogPost.slug}, ${blogPost.title}, ${blogPost.excerpt}, 
+          ${blogPost.content}, ${blogPost.author || 'Digital Art Team'}, ${blogPost.category},
+          ${JSON.stringify(blogPost.tags || [])}, ${blogPost.status || 'draft'}, 
+          ${blogPost.featured || false}, ${blogPost.readTime || '5 min read'},
+          ${blogPost.seoTitle || null}, ${blogPost.seoDescription || null},
+          ${blogPost.status === 'published' ? now : null}, ${now}, ${now}
+        )
+      `;
+      
+      await sql.end();
+      console.log(`✅ Created blog post: ${blogPost.slug}`);
+      return newPost;
+      
+    } catch (error) {
+      console.error('Failed to create blog post:', error);
+      throw error;
+    }
+  }
+
+  async getBlogPost(slug: string): Promise<any | undefined> {
+    try {
+      const sql = createDbConnection();
+      
+      const posts = await sql`
+        SELECT * FROM blog_posts WHERE slug = ${slug} LIMIT 1
+      `;
+      
+      await sql.end();
+      return posts[0] || undefined;
+      
+    } catch (error) {
+      console.error('Failed to get blog post:', error);
+      return undefined;
+    }
+  }
+
+  async getAllBlogPosts(status?: string): Promise<any[]> {
+    try {
+      const sql = createDbConnection();
+      
+      const posts = status 
+        ? await sql`SELECT * FROM blog_posts WHERE status = ${status} ORDER BY created_at DESC`
+        : await sql`SELECT * FROM blog_posts ORDER BY created_at DESC`;
+      
+      await sql.end();
+      return posts;
+      
+    } catch (error) {
+      console.error('Failed to get blog posts:', error);
+      return [];
+    }
+  }
+
+  async updateBlogPost(slug: string, updates: any): Promise<any | undefined> {
+    try {
+      const sql = createDbConnection();
+      
+      // Build dynamic update query
+      const setFields = [];
+      if (updates.title !== undefined) setFields.push(`title = '${updates.title}'`);
+      if (updates.excerpt !== undefined) setFields.push(`excerpt = '${updates.excerpt}'`);
+      if (updates.content !== undefined) setFields.push(`content = '${updates.content}'`);
+      if (updates.category !== undefined) setFields.push(`category = '${updates.category}'`);
+      if (updates.tags !== undefined) setFields.push(`tags = '${JSON.stringify(updates.tags)}'`);
+      if (updates.status !== undefined) {
+        setFields.push(`status = '${updates.status}'`);
+        if (updates.status === 'published') {
+          setFields.push('published_at = NOW()');
+        }
+      }
+      if (updates.featured !== undefined) setFields.push(`featured = ${updates.featured}`);
+      if (updates.readTime !== undefined) setFields.push(`read_time = '${updates.readTime}'`);
+      if (updates.seoTitle !== undefined) setFields.push(`seo_title = '${updates.seoTitle}'`);
+      if (updates.seoDescription !== undefined) setFields.push(`seo_description = '${updates.seoDescription}'`);
+      
+      setFields.push('updated_at = NOW()');
+      
+      const result = await sql.unsafe(`
+        UPDATE blog_posts 
+        SET ${setFields.join(', ')} 
+        WHERE slug = '${slug}' 
+        RETURNING *
+      `);
+      
+      await sql.end();
+      return result[0] || undefined;
+      
+    } catch (error) {
+      console.error('Failed to update blog post:', error);
+      throw error;
+    }
+  }
+
+  async deleteBlogPost(slug: string): Promise<boolean> {
+    try {
+      const sql = createDbConnection();
+      
+      const result = await sql`
+        DELETE FROM blog_posts WHERE slug = ${slug}
+      `;
+      
+      await sql.end();
+      return result.count > 0;
+      
+    } catch (error) {
+      console.error('Failed to delete blog post:', error);
+      return false;
+    }
+  }
+
+  async publishBlogPost(slug: string): Promise<any | undefined> {
+    return this.updateBlogPost(slug, { status: 'published' });
   }
 }
 
