@@ -23,9 +23,16 @@ export class SEOService {
       // Public marketing pages - only root path, not /home (duplicate content)
       { path: '/', priority: '1.0', changefreq: 'weekly' },
       { path: '/features', priority: '0.9', changefreq: 'monthly' },
+      { path: '/pricing', priority: '0.9', changefreq: 'monthly' },
       { path: '/about-us', priority: '0.7', changefreq: 'monthly' },
       { path: '/contact', priority: '0.6', changefreq: 'monthly' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
+      
+      // Feature landing pages for SEO
+      { path: '/generate', priority: '0.8', changefreq: 'monthly' },
+      { path: '/upscale', priority: '0.8', changefreq: 'monthly' },
+      { path: '/resize', priority: '0.7', changefreq: 'monthly' },
+      { path: '/etsy-seo', priority: '0.7', changefreq: 'monthly' },
       
       // Legal pages
       { path: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },
