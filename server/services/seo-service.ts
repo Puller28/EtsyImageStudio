@@ -38,7 +38,18 @@ export class SEOService {
       { path: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },
       { path: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
       
-      // Blog posts (individual articles)
+      // Blog posts (individual articles) - Latest posts first for indexing priority
+      { path: '/blog/minimalist-digital-art-guide', priority: '0.8', changefreq: 'monthly' },
+      { path: '/blog/cottagecore-art-prints-guide', priority: '0.8', changefreq: 'monthly' },
+      { path: '/blog/etsy-digital-art-pricing-guide', priority: '0.8', changefreq: 'monthly' },
+      { path: '/blog/tshirt-mockup-bella-canvas-guide', priority: '0.8', changefreq: 'monthly' },
+      { path: '/blog/ai-prompt-to-etsy-sale-workflow', priority: '0.8', changefreq: 'monthly' },
+      { path: '/blog/halloween-digital-art-collection', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/printable-wall-art-sizes-guide', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/ai-generated-art-vs-traditional', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/300-dpi-digital-downloads-guide', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/boho-digital-art-trends-2025', priority: '0.7', changefreq: 'monthly' },
+      { path: '/blog/ai-art-etsy-success-2025', priority: '0.7', changefreq: 'monthly' },
       { path: '/blog/ai-image-upscaling-print-on-demand', priority: '0.7', changefreq: 'monthly' },
       { path: '/blog/mockup-generation-digital-art', priority: '0.7', changefreq: 'monthly' },
       { path: '/blog/etsy-seo-ai-listing-optimization', priority: '0.7', changefreq: 'monthly' },
