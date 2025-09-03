@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
-const blogPosts = [
+const allBlogPosts = [
   {
     id: "minimalist-digital-art-guide",
     title: "Minimalist Digital Art: Complete Guide to Clean, Modern Designs",
@@ -190,6 +190,16 @@ const blogPosts = [
 ];
 
 export default function BlogPage() {
+  // Filter posts to only show published ones (current date or earlier)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+  
+  const blogPosts = allBlogPosts.filter(post => {
+    const postDate = new Date(post.date);
+    postDate.setHours(0, 0, 0, 0); // Start of post date
+    return postDate <= today; // Only show posts from today or earlier
+  });
+
   const featuredPosts = blogPosts.filter(post => post.featured);
   const regularPosts = blogPosts.filter(post => !post.featured);
   const [email, setEmail] = useState("");

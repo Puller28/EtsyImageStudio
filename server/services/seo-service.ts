@@ -16,10 +16,39 @@ export class SEOService {
   }
 
   static generateSitemap(): string {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today for comparison
+    const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
-    // Only include indexable pages that are self-canonical
-    const indexablePages = [
+    // Blog posts data - will be automatically filtered by date
+    const allBlogPosts = [
+      { slug: "minimalist-digital-art-guide", date: "2025-09-03", priority: "0.8" },
+      { slug: "cottagecore-art-prints-guide", date: "2025-09-04", priority: "0.8" },
+      { slug: "etsy-digital-art-pricing-guide", date: "2025-09-05", priority: "0.8" },
+      { slug: "tshirt-mockup-bella-canvas-guide", date: "2025-09-06", priority: "0.8" },
+      { slug: "ai-prompt-to-etsy-sale-workflow", date: "2025-09-07", priority: "0.8" },
+      { slug: "halloween-digital-art-collection", date: "2025-09-08", priority: "0.7" },
+      { slug: "printable-wall-art-sizes-guide", date: "2025-01-16", priority: "0.7" },
+      { slug: "ai-generated-art-vs-traditional", date: "2025-01-17", priority: "0.7" },
+      { slug: "300-dpi-digital-downloads-guide", date: "2025-01-18", priority: "0.7" },
+      { slug: "boho-digital-art-trends-2025", date: "2025-01-19", priority: "0.7" },
+      { slug: "ai-art-etsy-success-2025", date: "2025-01-15", priority: "0.7" },
+      { slug: "ai-image-upscaling-print-on-demand", date: "2025-01-10", priority: "0.7" },
+      { slug: "mockup-generation-digital-art", date: "2024-12-28", priority: "0.7" },
+      { slug: "etsy-seo-ai-listing-optimization", date: "2024-12-25", priority: "0.7" },
+      { slug: "best-print-sizes-digital-art-etsy", date: "2024-12-20", priority: "0.7" },
+      { slug: "automate-digital-art-business-workflow", date: "2024-12-15", priority: "0.7" }
+    ];
+
+    // Filter blog posts to only published ones (current date or earlier)
+    const publishedBlogPosts = allBlogPosts.filter(post => {
+      const postDate = new Date(post.date);
+      postDate.setHours(0, 0, 0, 0);
+      return postDate <= today;
+    });
+
+    // Static pages
+    const staticPages = [
       // Public marketing pages - only root path, not /home (duplicate content)
       { path: '/', priority: '1.0', changefreq: 'weekly' },
       { path: '/features', priority: '0.9', changefreq: 'monthly' },
@@ -36,26 +65,18 @@ export class SEOService {
       
       // Legal pages
       { path: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },
-      { path: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
-      
-      // Blog posts (individual articles) - Latest posts first for indexing priority
-      { path: '/blog/minimalist-digital-art-guide', priority: '0.8', changefreq: 'monthly' },
-      { path: '/blog/cottagecore-art-prints-guide', priority: '0.8', changefreq: 'monthly' },
-      { path: '/blog/etsy-digital-art-pricing-guide', priority: '0.8', changefreq: 'monthly' },
-      { path: '/blog/tshirt-mockup-bella-canvas-guide', priority: '0.8', changefreq: 'monthly' },
-      { path: '/blog/ai-prompt-to-etsy-sale-workflow', priority: '0.8', changefreq: 'monthly' },
-      { path: '/blog/halloween-digital-art-collection', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/printable-wall-art-sizes-guide', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/ai-generated-art-vs-traditional', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/300-dpi-digital-downloads-guide', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/boho-digital-art-trends-2025', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/ai-art-etsy-success-2025', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/ai-image-upscaling-print-on-demand', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/mockup-generation-digital-art', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/etsy-seo-ai-listing-optimization', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/best-print-sizes-digital-art-etsy', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog/automate-digital-art-business-workflow', priority: '0.7', changefreq: 'monthly' }
+      { path: '/privacy-policy', priority: '0.3', changefreq: 'yearly' }
     ];
+
+    // Convert published blog posts to sitemap entries
+    const blogPages = publishedBlogPosts.map(post => ({
+      path: `/blog/${post.slug}`,
+      priority: post.priority,
+      changefreq: 'monthly'
+    }));
+
+    // Combine all pages
+    const indexablePages = [...staticPages, ...blogPages];
 
     const urls = indexablePages.map(page => 
       `  <url>
