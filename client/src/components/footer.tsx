@@ -93,6 +93,48 @@ export function Footer() {
                   </span>
                 </Link>
               </div>
+              <div>
+                <Link href="/blog/minimalist-digital-art-guide">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Minimalist Digital Art Guide
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/cottagecore-art-prints-guide">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Cottagecore Art Prints Guide
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/boho-digital-art-trends-2025">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Boho Digital Art Trends
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/printable-wall-art-sizes-guide">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    Printable Wall Art Sizes
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/300-dpi-digital-downloads-guide">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    300 DPI Digital Downloads Guide
+                  </span>
+                </Link>
+              </div>
+              <div>
+                <Link href="/blog/ai-generated-art-vs-traditional">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    AI vs Traditional Art
+                  </span>
+                </Link>
+              </div>
             </div>
           </div>
 

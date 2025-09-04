@@ -205,6 +205,46 @@ export default function HomePage() {
             </Card>
           </div>
 
+          {/* Additional SEO Links - Prevents Orphan Pages */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-sm p-4 border rounded-lg">
+              <Link href="/blog/minimalist-digital-art-guide" className="text-primary hover:underline font-medium">
+                Minimalist Digital Art Guide
+              </Link>
+              <p className="text-muted-foreground mt-1">Clean, modern designs that sell consistently.</p>
+            </div>
+            <div className="text-sm p-4 border rounded-lg">
+              <Link href="/blog/cottagecore-art-prints-guide" className="text-primary hover:underline font-medium">
+                Cottagecore Art Prints Guide
+              </Link>
+              <p className="text-muted-foreground mt-1">Capture the $1.2B cottagecore market.</p>
+            </div>
+            <div className="text-sm p-4 border rounded-lg">
+              <Link href="/blog/boho-digital-art-trends-2025" className="text-primary hover:underline font-medium">
+                Boho Digital Art Trends 2025
+              </Link>
+              <p className="text-muted-foreground mt-1">$2M trend taking over Etsy.</p>
+            </div>
+            <div className="text-sm p-4 border rounded-lg">
+              <Link href="/blog/printable-wall-art-sizes-guide" className="text-primary hover:underline font-medium">
+                Printable Wall Art Sizes Guide
+              </Link>
+              <p className="text-muted-foreground mt-1">Essential 5 print sizes for maximum sales.</p>
+            </div>
+            <div className="text-sm p-4 border rounded-lg">
+              <Link href="/blog/300-dpi-digital-downloads-guide" className="text-primary hover:underline font-medium">
+                300 DPI Digital Downloads Guide
+              </Link>
+              <p className="text-muted-foreground mt-1">Make-or-break factor for digital art success.</p>
+            </div>
+            <div className="text-sm p-4 border rounded-lg">
+              <Link href="/blog/ai-generated-art-vs-traditional" className="text-primary hover:underline font-medium">
+                AI vs Traditional Digital Art
+              </Link>
+              <p className="text-muted-foreground mt-1">Quality analysis for commercial success.</p>
+            </div>
+          </div>
+
           <div className="text-center mt-12">
             <Link href="/blog">
               <Button variant="outline" size="lg">
