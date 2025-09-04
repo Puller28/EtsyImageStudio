@@ -37,6 +37,16 @@ export function PublicNavigation() {
                 Blog
               </span>
             </Link>
+            <Link href="/generate">
+              <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Generate
+              </span>
+            </Link>
+            <Link href="/upscale">
+              <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Upscale
+              </span>
+            </Link>
             <Link href="/template-mockups">
               <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                 Mockups

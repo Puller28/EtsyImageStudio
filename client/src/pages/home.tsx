@@ -293,7 +293,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-lg font-semibold">1. Upload or Generate</h3>
               <p className="text-sm text-muted-foreground">
-                Upload your artwork or create new AI art using Imagen 3 with custom prompts.
+                Upload your artwork or <Link href="/generate" className="text-primary hover:underline">create new AI art</Link> using Imagen 3 with custom prompts.
               </p>
             </div>
 
@@ -303,7 +303,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-lg font-semibold">2. AI Enhancement</h3>
               <p className="text-sm text-muted-foreground">
-                Automatically upscale images (2x for free, up to 4x for Pro+) and generate 5 print-ready format sizes.
+                Automatically <Link href="/upscale" className="text-primary hover:underline">upscale images</Link> (2x for free, up to 4x for Pro+) and <Link href="/resize" className="text-primary hover:underline">generate print-ready format sizes</Link>.
               </p>
             </div>
 
@@ -349,7 +349,7 @@ export default function HomePage() {
                   <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-foreground">Professional Quality Output</h3>
-                    <p className="text-muted-foreground">AI-powered upscaling (2x-4x depending on plan) ensures crisp, print-ready artwork every time.</p>
+                    <p className="text-muted-foreground">AI-powered <Link href="/upscale" className="text-primary hover:underline">upscaling</Link> (2x-4x depending on plan) and <Link href="/resize" className="text-primary hover:underline">format resizing</Link> ensures crisp, print-ready artwork every time.</p>
                   </div>
                 </div>
 
