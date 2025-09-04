@@ -43,6 +43,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(SEOService.generateRobots());
   });
 
+  // Internal links page - provides all blog internal links for SEO crawlers
+  app.get('/internal-links', (req, res) => {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internal Links - Image Upscaler Pro</title>
+    <meta name="robots" content="index, follow">
+</head>
+<body>
+    <h1>Digital Art Guides & Resources</h1>
+    <nav>
+        <ul>
+            <li><a href="/blog/ai-art-etsy-success-2025">AI Art for Etsy Success 2025</a></li>
+            <li><a href="/blog/ai-image-upscaling-print-on-demand">AI Image Upscaling for Print on Demand</a></li>
+            <li><a href="/blog/automate-digital-art-business-workflow">Automate Your Digital Art Business Workflow</a></li>
+            <li><a href="/blog/best-print-sizes-digital-art-etsy">Best Print Sizes for Digital Art on Etsy</a></li>
+            <li><a href="/blog/etsy-seo-ai-listing-optimization">Etsy SEO with AI Listing Optimization</a></li>
+            <li><a href="/blog/mockup-generation-digital-art">Mockup Generation for Digital Art</a></li>
+            <li><a href="/blog/room-mockup-templates-etsy-sales">Room Mockup Templates That Boost Etsy Sales</a></li>
+            <li><a href="/blog/minimalist-digital-art-guide">Minimalist Digital Art Guide</a></li>
+            <li><a href="/blog/cottagecore-art-prints-guide">Cottagecore Art Prints Guide</a></li>
+            <li><a href="/blog/boho-digital-art-trends-2025">Boho Digital Art Trends 2025</a></li>
+            <li><a href="/blog/printable-wall-art-sizes-guide">Printable Wall Art Sizes Guide</a></li>
+            <li><a href="/blog/300-dpi-digital-downloads-guide">300 DPI Digital Downloads Guide</a></li>
+            <li><a href="/blog/ai-generated-art-vs-traditional">AI Generated Art vs Traditional Digital Art</a></li>
+        </ul>
+    </nav>
+    <p><a href="/">Return to Homepage</a></p>
+</body>
+</html>`;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.send(html);
+  });
+
   // IndexNow API endpoint for instant search engine notifications
   app.post('/api/indexnow', async (req, res) => {
     const { urls } = req.body;

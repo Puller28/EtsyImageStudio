@@ -245,13 +245,31 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="text-center mt-12">
+          {/* Simple SEO Links - Visible to Crawlers */}
+          <div className="mt-8 text-center text-sm space-y-1">
+            <p className="text-muted-foreground mb-3">More digital art guides:</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/blog/minimalist-digital-art-guide" className="text-primary hover:underline">Minimalist Art Guide</Link>
+              <Link href="/blog/cottagecore-art-prints-guide" className="text-primary hover:underline">Cottagecore Art</Link>
+              <Link href="/blog/boho-digital-art-trends-2025" className="text-primary hover:underline">Boho Art Trends</Link>
+              <Link href="/blog/printable-wall-art-sizes-guide" className="text-primary hover:underline">Print Sizes Guide</Link>
+              <Link href="/blog/300-dpi-digital-downloads-guide" className="text-primary hover:underline">300 DPI Guide</Link>
+              <Link href="/blog/ai-generated-art-vs-traditional" className="text-primary hover:underline">AI vs Traditional Art</Link>
+            </div>
+          </div>
+
+          <div className="text-center mt-8 space-y-4">
             <Link href="/blog">
               <Button variant="outline" size="lg">
                 View All Articles
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </Link>
+            <div>
+              <a href="/internal-links" className="text-sm text-muted-foreground hover:text-primary underline">
+                Complete Guide Index
+              </a>
+            </div>
           </div>
         </div>
       </section>

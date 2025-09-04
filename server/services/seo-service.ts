@@ -45,6 +45,7 @@ export class SEOService {
       { path: '/about-us', priority: '0.7', changefreq: 'monthly' },
       { path: '/contact', priority: '0.6', changefreq: 'monthly' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
+      { path: '/internal-links', priority: '0.7', changefreq: 'weekly' },
       
       // Feature landing pages for SEO - only actual working routes
       { path: '/generate', priority: '0.8', changefreq: 'monthly' },
@@ -82,6 +83,14 @@ export class SEOService {
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
 ${urls}
+
+<!-- Internal links for search engines to prevent orphan pages -->
+<!-- <a href="https://imageupscaler.app/blog/minimalist-digital-art-guide">Minimalist Digital Art Guide</a> -->
+<!-- <a href="https://imageupscaler.app/blog/cottagecore-art-prints-guide">Cottagecore Art Prints Guide</a> -->
+<!-- <a href="https://imageupscaler.app/blog/boho-digital-art-trends-2025">Boho Digital Art Trends 2025</a> -->
+<!-- <a href="https://imageupscaler.app/blog/printable-wall-art-sizes-guide">Printable Wall Art Sizes Guide</a> -->
+<!-- <a href="https://imageupscaler.app/blog/300-dpi-digital-downloads-guide">300 DPI Digital Downloads Guide</a> -->
+<!-- <a href="https://imageupscaler.app/blog/ai-generated-art-vs-traditional">AI Generated Art vs Traditional</a> -->
 
 </urlset>`;
   }

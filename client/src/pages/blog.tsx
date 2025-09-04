@@ -297,6 +297,70 @@ export default function BlogPage() {
             </CardContent>
           </Card>
         </section>
+
+        {/* SEO Internal Links Section - Prevents Orphan Pages */}
+        <section className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-4">Complete Digital Art Guide Library</h2>
+            <p className="text-muted-foreground">Explore our comprehensive collection of digital art guides and tutorials</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <Link href="/blog/minimalist-digital-art-guide" className="block">
+                  <h3 className="font-medium text-primary hover:underline mb-2">Minimalist Digital Art Guide</h3>
+                  <p className="text-sm text-muted-foreground">Master clean, modern designs that sell consistently on Etsy and other platforms.</p>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <Link href="/blog/cottagecore-art-prints-guide" className="block">
+                  <h3 className="font-medium text-primary hover:underline mb-2">Cottagecore Art Prints Guide</h3>
+                  <p className="text-sm text-muted-foreground">Capture the $1.2B cottagecore market with authentic, nature-inspired designs.</p>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <Link href="/blog/boho-digital-art-trends-2025" className="block">
+                  <h3 className="font-medium text-primary hover:underline mb-2">Boho Digital Art Trends 2025</h3>
+                  <p className="text-sm text-muted-foreground">Boho style is the $2M trend taking over Etsy - learn the essential elements.</p>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <Link href="/blog/printable-wall-art-sizes-guide" className="block">
+                  <h3 className="font-medium text-primary hover:underline mb-2">Printable Wall Art Sizes Guide</h3>
+                  <p className="text-sm text-muted-foreground">Master the essential 5 print sizes for maximum sales and customer satisfaction.</p>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <Link href="/blog/300-dpi-digital-downloads-guide" className="block">
+                  <h3 className="font-medium text-primary hover:underline mb-2">300 DPI Digital Downloads Guide</h3>
+                  <p className="text-sm text-muted-foreground">300 DPI is the make-or-break factor for digital art success - get it right.</p>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <Link href="/blog/ai-generated-art-vs-traditional" className="block">
+                  <h3 className="font-medium text-primary hover:underline mb-2">AI Generated Art vs Traditional Digital Art</h3>
+                  <p className="text-sm text-muted-foreground">Quality analysis reveals the truth about AI vs traditional art for commercial success.</p>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </div>
       <Footer />
     </div>
