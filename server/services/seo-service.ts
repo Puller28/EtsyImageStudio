@@ -57,11 +57,10 @@ export class SEOService {
       { path: '/contact', priority: '0.6', changefreq: 'monthly' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       
-      // Feature landing pages for SEO
+      // Feature landing pages for SEO - only actual working routes
       { path: '/generate', priority: '0.8', changefreq: 'monthly' },
       { path: '/upscale', priority: '0.8', changefreq: 'monthly' },
       { path: '/resize', priority: '0.7', changefreq: 'monthly' },
-      { path: '/etsy-seo', priority: '0.7', changefreq: 'monthly' },
       
       // Legal pages
       { path: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },

@@ -374,6 +374,37 @@ export default function BlogPage() {
           </div>
         </section>
 
+        {/* All Articles Archive */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold mb-8">All Articles</h2>
+          <div className="space-y-4">
+            {blogPosts.map((post) => (
+              <div key={post.id} className="border-l-4 border-primary/20 pl-4 hover:border-primary/50 transition-colors">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div className="flex-1">
+                    <Link href={`/blog/${post.slug}`}>
+                      <h3 className="font-semibold hover:text-primary transition-colors cursor-pointer" data-testid={`link-article-${post.id}`}>
+                        {post.title}
+                      </h3>
+                    </Link>
+                    <p className="text-sm text-muted-foreground mt-1">{post.excerpt}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <Badge variant="outline" className="text-xs">{post.category}</Badge>
+                      <span>{post.readTime}</span>
+                      <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+                  <Link href={`/blog/${post.slug}`}>
+                    <Button variant="outline" size="sm" data-testid={`button-read-full-${post.id}`}>
+                      Read Article
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Categories */}
         <section className="mb-16">
           <h2 className="text-2xl font-bold mb-8">Browse by Category</h2>

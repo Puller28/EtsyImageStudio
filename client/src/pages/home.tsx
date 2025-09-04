@@ -27,7 +27,7 @@ export default function HomePage() {
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling up to 4x, 
-              stunning mockups, print-ready formats, and automated Etsy listings - everything you need in one place. Read our <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">essential print sizes guide</span></Link> and learn about <Link href="/blog/room-mockup-templates-etsy-sales"><span className="text-primary hover:underline">room mockup templates that boost sales</span></Link>.
+              stunning mockups, print-ready formats, and automated Etsy listings - everything you need in one place. Read our <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">essential print sizes guide</span></Link> and learn about <Link href="/blog/mockup-generation-digital-art"><span className="text-primary hover:underline">mockup generation strategies</span></Link>.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
