@@ -1,4 +1,6 @@
 // SEO Service - Sitemap and Robots.txt generation
+import { BLOG_POSTS } from "@shared/blog-data";
+
 export class SEOService {
   // Generate canonical URL following SEO best practices
   static generateCanonicalUrl(reqPath: string): string {
@@ -20,25 +22,12 @@ export class SEOService {
     today.setHours(0, 0, 0, 0); // Start of today for comparison
     const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
-    // Blog posts data - will be automatically filtered by date
-    const allBlogPosts = [
-      { slug: "minimalist-digital-art-guide", date: "2025-09-03", priority: "0.8" },
-      { slug: "cottagecore-art-prints-guide", date: "2025-09-04", priority: "0.8" },
-      { slug: "etsy-digital-art-pricing-guide", date: "2025-09-05", priority: "0.8" },
-      { slug: "tshirt-mockup-bella-canvas-guide", date: "2025-09-06", priority: "0.8" },
-      { slug: "ai-prompt-to-etsy-sale-workflow", date: "2025-09-07", priority: "0.8" },
-      { slug: "halloween-digital-art-collection", date: "2025-09-08", priority: "0.7" },
-      { slug: "printable-wall-art-sizes-guide", date: "2025-01-16", priority: "0.7" },
-      { slug: "ai-generated-art-vs-traditional", date: "2025-01-17", priority: "0.7" },
-      { slug: "300-dpi-digital-downloads-guide", date: "2025-01-18", priority: "0.7" },
-      { slug: "boho-digital-art-trends-2025", date: "2025-01-19", priority: "0.7" },
-      { slug: "ai-art-etsy-success-2025", date: "2025-01-15", priority: "0.7" },
-      { slug: "ai-image-upscaling-print-on-demand", date: "2025-01-10", priority: "0.7" },
-      { slug: "mockup-generation-digital-art", date: "2024-12-28", priority: "0.7" },
-      { slug: "etsy-seo-ai-listing-optimization", date: "2024-12-25", priority: "0.7" },
-      { slug: "best-print-sizes-digital-art-etsy", date: "2024-12-20", priority: "0.7" },
-      { slug: "automate-digital-art-business-workflow", date: "2024-12-15", priority: "0.7" }
-    ];
+    // Use shared blog post data for consistency
+    const allBlogPosts = BLOG_POSTS.map(post => ({
+      slug: post.slug,
+      date: post.date,
+      priority: post.featured ? "0.8" : "0.7"
+    }));
 
     // Filter blog posts to only published ones (current date or earlier)
     const publishedBlogPosts = allBlogPosts.filter(post => {
