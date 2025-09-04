@@ -43,6 +43,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(SEOService.generateRobots());
   });
 
+  // SEO-friendly feature page routes with crawler-visible internal links
+  const featurePageTemplate = (title: string, description: string, path: string) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} - Etsy Art & Image Upscaler Pro</title>
+  <meta name="description" content="${description}">
+  <link rel="canonical" href="https://imageupscaler.app${path}">
+  <script>setTimeout(() => window.location.href = "/auth", 3000);</script>
+</head>
+<body>
+  <h1>${title}</h1>
+  <p>${description}</p>
+  
+  <!-- Internal Links for SEO -->
+  <nav>
+    <a href="/">Homepage - AI Image Upscaler</a> |
+    <a href="/features">Features & Tools</a> |
+    <a href="/blog">Digital Art Blog</a> |
+    <a href="/generate">AI Art Generator</a> |
+    <a href="/upscale">Image Upscaler</a> |
+    <a href="/resize">Print Size Generator</a> |
+    <a href="/pricing">Pricing Plans</a>
+  </nav>
+  
+  <div>
+    <h2>Popular Guides</h2>
+    <a href="/blog/ai-generated-art-vs-traditional">AI vs Traditional Art</a> |
+    <a href="/blog/printable-wall-art-sizes-guide">Print Sizes Guide</a> |
+    <a href="/blog/300-dpi-digital-downloads-guide">300 DPI Guide</a> |
+    <a href="/internal-links">Complete Guide Index</a>
+  </div>
+  
+  <p><em>Redirecting to login in 3 seconds...</em></p>
+</body>
+</html>`;
+
+  app.get('/generate', (req, res) => {
+    const html = featurePageTemplate(
+      'AI Art Generator',
+      'Create stunning AI artwork using Imagen 3. Generate digital art with custom prompts for your Etsy store.',
+      '/generate'
+    );
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  });
+
+  app.get('/upscale', (req, res) => {
+    const html = featurePageTemplate(
+      'AI Image Upscaler',
+      'Upscale images up to 4x resolution with AI. Transform low-resolution artwork into crisp, print-ready images.',
+      '/upscale'
+    );
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  });
+
+  app.get('/resize', (req, res) => {
+    const html = featurePageTemplate(
+      'Print Size Generator',
+      'Generate print-ready format sizes for your artwork. Create 5 optimized sizes for digital downloads and prints.',
+      '/resize'
+    );
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  });
+
   // Internal links page - provides all blog internal links for SEO crawlers
   app.get('/internal-links', (req, res) => {
     const html = `<!DOCTYPE html>
