@@ -72,13 +72,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   <div>
     <h2>Popular Guides</h2>
+    <a href="/blog/etsy-digital-art-pricing-guide">Digital Art Pricing Guide</a> |
+    <a href="/blog/ai-prompt-to-etsy-sale-workflow">AI to Etsy Sale Workflow</a> |
+    <a href="/blog/tshirt-mockup-bella-canvas-guide">T-Shirt Mockup Guide</a> |
     <a href="/blog/ai-generated-art-vs-traditional">AI vs Traditional Art</a> |
     <a href="/blog/printable-wall-art-sizes-guide">Print Sizes Guide</a> |
-    <a href="/blog/300-dpi-digital-downloads-guide">300 DPI Guide</a> |
     <a href="/internal-links">Complete Guide Index</a>
   </div>
   
   <p><em>Redirecting to login in 3 seconds...</em></p>
+</body>
+</html>`;
+
+  // Server-rendered blog post pages for orphaned posts
+  const blogPostTemplate = (title: string, description: string, slug: string) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} - Etsy Art & Image Upscaler Pro</title>
+  <meta name="description" content="${description}">
+  <link rel="canonical" href="https://imageupscaler.app/blog/${slug}">
+  <script>setTimeout(() => window.location.href = "/blog/${slug}", 2000);</script>
+</head>
+<body>
+  <h1>${title}</h1>
+  <p>${description}</p>
+  
+  <!-- Internal Links for SEO -->
+  <nav>
+    <a href="/">Homepage - AI Image Upscaler</a> |
+    <a href="/blog">All Digital Art Guides</a> |
+    <a href="/features">Platform Features</a> |
+    <a href="/pricing">Pricing Plans</a>
+  </nav>
+  
+  <div>
+    <h2>Related Articles</h2>
+    <a href="/blog/etsy-digital-art-pricing-guide">Digital Art Pricing Strategy</a> |
+    <a href="/blog/ai-prompt-to-etsy-sale-workflow">AI Prompt to Etsy Sale Workflow</a> |
+    <a href="/blog/tshirt-mockup-bella-canvas-guide">T-Shirt Mockup Photography Guide</a> |
+    <a href="/blog/halloween-digital-art-collection">Halloween Art Collection</a> |
+    <a href="/blog/minimalist-digital-art-guide">Minimalist Art Guide</a> |
+    <a href="/internal-links">Complete Guide Index</a>
+  </div>
+  
+  <p><em>Loading full article...</em></p>
 </body>
 </html>`;
 
@@ -107,6 +147,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       'Print Size Generator',
       'Generate print-ready format sizes for your artwork. Create 5 optimized sizes for digital downloads and prints.',
       '/resize'
+    );
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  });
+
+  // Server routes for orphaned blog posts to provide immediate internal links
+  app.get('/blog/etsy-digital-art-pricing-guide', (req, res) => {
+    const html = blogPostTemplate(
+      'Etsy Digital Art Pricing Strategy: How Much to Charge in 2025',
+      'Master digital art pricing from $2 to $65 per download. Real market data, psychology-based strategies, and profit optimization techniques.',
+      'etsy-digital-art-pricing-guide'
+    );
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  });
+
+  app.get('/blog/ai-prompt-to-etsy-sale-workflow', (req, res) => {
+    const html = blogPostTemplate(
+      'From AI Prompt to Etsy Sale: Complete Digital Art Workflow',
+      'Step-by-step blueprint from AI prompt to profitable Etsy sales. Real case studies showing $0 to $5K/month in 90 days.',
+      'ai-prompt-to-etsy-sale-workflow'
+    );
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  });
+
+  app.get('/blog/tshirt-mockup-bella-canvas-guide', (req, res) => {
+    const html = blogPostTemplate(
+      'T-Shirt Mockup Photography: Bella Canvas 3001 Setup Guide',
+      'Master professional Bella Canvas 3001 mockups that increase conversions by 340%. Complete photography setup and design placement guide.',
+      'tshirt-mockup-bella-canvas-guide'
     );
     res.set('Content-Type', 'text/html');
     res.send(html);
