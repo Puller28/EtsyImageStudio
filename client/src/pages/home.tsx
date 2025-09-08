@@ -249,12 +249,12 @@ export default function HomePage() {
           <div className="mt-8 text-center text-sm space-y-1">
             <p className="text-muted-foreground mb-3">More digital art guides:</p>
             <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/blog/halloween-digital-art-collection" className="text-primary hover:underline">Halloween Art Collection</Link>
+              <Link href="/blog/ai-prompt-to-etsy-sale-workflow" className="text-primary hover:underline">AI to Etsy Sale Workflow</Link>
+              <Link href="/blog/tshirt-mockup-bella-canvas-guide" className="text-primary hover:underline">T-Shirt Mockup Guide</Link>
+              <Link href="/blog/etsy-digital-art-pricing-guide" className="text-primary hover:underline">Digital Art Pricing</Link>
               <Link href="/blog/minimalist-digital-art-guide" className="text-primary hover:underline">Minimalist Art Guide</Link>
               <Link href="/blog/cottagecore-art-prints-guide" className="text-primary hover:underline">Cottagecore Art</Link>
-              <Link href="/blog/boho-digital-art-trends-2025" className="text-primary hover:underline">Boho Art Trends</Link>
-              <Link href="/blog/printable-wall-art-sizes-guide" className="text-primary hover:underline">Print Sizes Guide</Link>
-              <Link href="/blog/300-dpi-digital-downloads-guide" className="text-primary hover:underline">300 DPI Guide</Link>
-              <Link href="/blog/ai-generated-art-vs-traditional" className="text-primary hover:underline">AI vs Traditional Art</Link>
             </div>
           </div>
 

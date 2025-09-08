@@ -133,6 +133,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <li><a href="/blog/etsy-seo-ai-listing-optimization">Etsy SEO with AI Listing Optimization</a></li>
             <li><a href="/blog/mockup-generation-digital-art">Mockup Generation for Digital Art</a></li>
             <li><a href="/blog/room-mockup-templates-etsy-sales">Room Mockup Templates That Boost Etsy Sales</a></li>
+            <li><a href="/blog/halloween-digital-art-collection">Digital Halloween Art Collection: Spooky Prints That Sell Fast</a></li>
+            <li><a href="/blog/ai-prompt-to-etsy-sale-workflow">From AI Prompt to Etsy Sale: Complete Digital Art Workflow</a></li>
+            <li><a href="/blog/tshirt-mockup-bella-canvas-guide">T-Shirt Mockup Photography: Bella Canvas 3001 Setup Guide</a></li>
+            <li><a href="/blog/etsy-digital-art-pricing-guide">Etsy Digital Art Pricing Strategy: How Much to Charge in 2025</a></li>
             <li><a href="/blog/minimalist-digital-art-guide">Minimalist Digital Art Guide</a></li>
             <li><a href="/blog/cottagecore-art-prints-guide">Cottagecore Art Prints Guide</a></li>
             <li><a href="/blog/boho-digital-art-trends-2025">Boho Digital Art Trends 2025</a></li>
