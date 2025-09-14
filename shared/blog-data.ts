@@ -67,6 +67,83 @@ export const BLOG_POSTS = [
     slug: "halloween-digital-art-collection"
   },
   {
+    id: "christmas-digital-downloads-strategy",
+    title: "Christmas Digital Downloads: $50K Holiday Revenue Strategy",
+    excerpt: "Master the $8B Christmas market with strategic digital art. Proven holiday design formulas and marketing tactics that drive massive December sales.",
+    author: "Digital Art Team",
+    date: "2025-09-09",
+    readTime: "11 min read",
+    category: "Seasonal Marketing",
+    featured: true,
+    slug: "christmas-digital-downloads-strategy"
+  },
+  {
+    id: "etsy-shop-branding-design",
+    title: "Etsy Shop Branding: Design Elements That Build Customer Trust",
+    excerpt: "Professional branding increases Etsy sales by 287%. Complete guide to logos, banners, colors, and visual identity that converts browsers to buyers.",
+    author: "Digital Art Team",
+    date: "2025-09-10",
+    readTime: "10 min read",
+    category: "Etsy Marketing",
+    featured: true,
+    slug: "etsy-shop-branding-design"
+  },
+  {
+    id: "digital-art-color-psychology",
+    title: "Color Psychology for Digital Art Sales: What Colors Convert Best",
+    excerpt: "Color choice impacts sales by 85%. Scientific analysis of high-converting color palettes and psychology-based design strategies for maximum profit.",
+    author: "Digital Art Team",
+    date: "2025-09-11",
+    readTime: "8 min read",
+    category: "Design Psychology",
+    featured: true,
+    slug: "digital-art-color-psychology"
+  },
+  {
+    id: "instagram-digital-art-marketing",
+    title: "Instagram Marketing for Digital Artists: 100K Followers to Sales",
+    excerpt: "Turn Instagram into your biggest sales channel. Proven content strategies, hashtag research, and conversion tactics that generate $10K+ monthly revenue.",
+    author: "Digital Art Team",
+    date: "2025-09-12",
+    readTime: "12 min read",
+    category: "Social Media Marketing",
+    featured: true,
+    slug: "instagram-digital-art-marketing"
+  },
+  {
+    id: "printful-etsy-integration-guide",
+    title: "Printful + Etsy Integration: Complete Print-on-Demand Setup",
+    excerpt: "Automate your digital art business with Printful. Step-by-step integration guide, profit margins, and optimization strategies for passive income.",
+    author: "Digital Art Team",
+    date: "2025-09-13",
+    readTime: "14 min read",
+    category: "Print-on-Demand",
+    featured: true,
+    slug: "printful-etsy-integration-guide"
+  },
+  {
+    id: "typography-digital-art-trends",
+    title: "Typography in Digital Art: Font Trends That Sell in 2025",
+    excerpt: "Typography drives 73% of digital art conversions. Master trending fonts, pairing strategies, and text-based designs that dominate Etsy bestsellers.",
+    author: "Digital Art Team",
+    date: "2025-09-14",
+    readTime: "9 min read",
+    category: "Design Trends",
+    featured: true,
+    slug: "typography-digital-art-trends"
+  },
+  {
+    id: "competitor-analysis-etsy-success",
+    title: "Etsy Competitor Analysis: Reverse Engineer Bestselling Shops",
+    excerpt: "Spy on successful competitors legally. Advanced research tools, pricing strategies, and market gaps that reveal $25K+ revenue opportunities.",
+    author: "Digital Art Team",
+    date: "2025-09-15",
+    readTime: "13 min read",
+    category: "Business Strategy",
+    featured: true,
+    slug: "competitor-analysis-etsy-success"
+  },
+  {
     id: "ai-art-etsy-success",
     title: "How AI Art Generation is Revolutionizing Etsy Success in 2025",
     excerpt: "Discover how digital artists are using AI tools like Imagen 3 to create profitable Etsy stores, including real case studies and proven strategies.",
