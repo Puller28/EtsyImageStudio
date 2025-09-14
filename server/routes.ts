@@ -204,6 +204,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <li><a href="/blog/etsy-seo-ai-listing-optimization">Etsy SEO with AI Listing Optimization</a></li>
             <li><a href="/blog/mockup-generation-digital-art">Mockup Generation for Digital Art</a></li>
             <li><a href="/blog/room-mockup-templates-etsy-sales">Room Mockup Templates That Boost Etsy Sales</a></li>
+            <li><a href="/blog/christmas-digital-downloads-strategy">Christmas Digital Downloads: $50K Holiday Revenue Strategy</a></li>
+            <li><a href="/blog/etsy-shop-branding-design">Etsy Shop Branding: Design Elements That Build Customer Trust</a></li>
+            <li><a href="/blog/digital-art-color-psychology">Color Psychology for Digital Art Sales: What Colors Convert Best</a></li>
+            <li><a href="/blog/instagram-digital-art-marketing">Instagram Marketing for Digital Artists: 100K Followers to Sales</a></li>
+            <li><a href="/blog/printful-etsy-integration-guide">Printful + Etsy Integration: Complete Print-on-Demand Setup</a></li>
+            <li><a href="/blog/typography-digital-art-trends">Typography in Digital Art: Font Trends That Sell in 2025</a></li>
+            <li><a href="/blog/competitor-analysis-etsy-success">Etsy Competitor Analysis: Reverse Engineer Bestselling Shops</a></li>
             <li><a href="/blog/halloween-digital-art-collection">Digital Halloween Art Collection: Spooky Prints That Sell Fast</a></li>
             <li><a href="/blog/ai-prompt-to-etsy-sale-workflow">From AI Prompt to Etsy Sale: Complete Digital Art Workflow</a></li>
             <li><a href="/blog/tshirt-mockup-bella-canvas-guide">T-Shirt Mockup Photography: Bella Canvas 3001 Setup Guide</a></li>

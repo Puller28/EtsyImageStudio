@@ -249,12 +249,12 @@ export default function HomePage() {
           <div className="mt-8 text-center text-sm space-y-1">
             <p className="text-muted-foreground mb-3">More digital art guides:</p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/blog/halloween-digital-art-collection" className="text-primary hover:underline">Halloween Art Collection</Link>
-              <Link href="/blog/ai-prompt-to-etsy-sale-workflow" className="text-primary hover:underline">AI to Etsy Sale Workflow</Link>
-              <Link href="/blog/tshirt-mockup-bella-canvas-guide" className="text-primary hover:underline">T-Shirt Mockup Guide</Link>
-              <Link href="/blog/etsy-digital-art-pricing-guide" className="text-primary hover:underline">Digital Art Pricing</Link>
-              <Link href="/blog/minimalist-digital-art-guide" className="text-primary hover:underline">Minimalist Art Guide</Link>
-              <Link href="/blog/cottagecore-art-prints-guide" className="text-primary hover:underline">Cottagecore Art</Link>
+              <Link href="/blog/christmas-digital-downloads-strategy" className="text-primary hover:underline">Christmas Downloads Strategy</Link>
+              <Link href="/blog/instagram-digital-art-marketing" className="text-primary hover:underline">Instagram Marketing</Link>
+              <Link href="/blog/etsy-shop-branding-design" className="text-primary hover:underline">Etsy Shop Branding</Link>
+              <Link href="/blog/competitor-analysis-etsy-success" className="text-primary hover:underline">Competitor Analysis</Link>
+              <Link href="/blog/digital-art-color-psychology" className="text-primary hover:underline">Color Psychology</Link>
+              <Link href="/blog/typography-digital-art-trends" className="text-primary hover:underline">Typography Trends</Link>
             </div>
           </div>
 
