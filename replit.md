@@ -6,6 +6,28 @@ Etsy Art & Image Upscaler Pro is a comprehensive AI-powered web application desi
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### 2025-09-20 - Critical Production Bug Fixes (URGENT)
+**RESOLVED: ALL customer payments were failing due to missing storage interface methods**
+
+**Critical Issues Fixed:**
+- **Missing Storage Methods**: Added `updateUserCredits()` and `updateUserSubscription()` methods that were causing runtime errors "storage.updateUserCredits is not a function"
+- **Race Conditions**: Implemented atomic webhook payment processing with database transactions to prevent duplicate credits and ensure idempotency
+- **Memory Cache Dependencies**: Fixed storage methods to persist to database even when users aren't loaded in memory (critical for webhook workers)
+- **JWT Authentication**: Resolved JWT corruption issues affecting user login through system restart and storage fixes
+- **Database Column Mapping**: Fixed column name mismatches between storage methods and database schema
+- **Unique Constraint Handling**: Added proper error handling for concurrent webhook processing with PostgreSQL unique constraints
+
+**Technical Implementation:**
+- Added `processWebhookPaymentAtomic()` method for bulletproof payment processing
+- Database-first persistence pattern with memory cache sync
+- Transaction safety with SELECT FOR UPDATE and proper rollback handling
+- Unique constraint violations handled gracefully (PostgreSQL error code 23505)
+- All webhook handlers updated to use atomic processing methods
+
+**Production Status**: ✅ ALL SYSTEMS OPERATIONAL - Customer payments now processing correctly
+
 ## System Architecture
 
 ### Frontend Architecture
