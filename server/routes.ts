@@ -25,6 +25,49 @@ import { spawn } from "child_process";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
+// Server-side Google Analytics tracking using GA4 Measurement Protocol
+async function trackServerAnalyticsEvent(eventName: string, parameters: Record<string, any>) {
+  try {
+    const measurementId = process.env.VITE_GA_MEASUREMENT_ID;
+    const apiSecret = process.env.GA4_API_SECRET; // You'll need to add this to your environment
+    
+    if (!measurementId || !apiSecret) {
+      console.warn('⚠️ GA4 server tracking disabled: Missing VITE_GA_MEASUREMENT_ID or GA4_API_SECRET');
+      return;
+    }
+
+    const payload = {
+      client_id: parameters.userId || 'server_webhook',
+      events: [{
+        name: eventName,
+        params: {
+          ...parameters,
+          engagement_time_msec: '1',
+        }
+      }]
+    };
+
+    const response = await fetch(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${apiSecret}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.ok) {
+      console.log(`✅ GA4 Server Event: ${eventName}`, parameters);
+    } else {
+      console.error(`❌ GA4 Server Event Failed: ${eventName}`, await response.text());
+    }
+  } catch (error) {
+    console.error('❌ Server analytics tracking error:', error);
+  }
+}
+
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
@@ -1069,6 +1112,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 startDate: new Date(),
                 endDate: endDate,
               });
+              
+              // Track successful subscription completion in GA4
+              const amount = parseFloat(event.data.amount) / 100; // Paystack amounts are in kobo
+              await trackServerAnalyticsEvent('subscriptionComplete', {
+                planType: metadata.planId,
+                amount: amount,
+                currency: 'ZAR',
+                userId: metadata.userId,
+                paymentReference: reference
+              });
+              
               console.log(`✅ Webhook: Activated subscription ${metadata.planId} for user ${metadata.userId} (${subscription?.subscription_code ? 'recurring' : 'one-time'})`);
             }
             
@@ -1084,6 +1138,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 await storage.updateUserCredits(metadata.userId, newCredits);
                 await storage.markPaymentProcessed(reference, metadata.userId, creditsToAdd);
+                
+                // Track successful credit purchase completion in GA4
+                const amount = parseFloat(event.data.amount) / 100; // Paystack amounts are in kobo
+                await trackServerAnalyticsEvent('creditPurchaseComplete', {
+                  creditsAdded: creditsToAdd,
+                  amount: amount,
+                  currency: 'ZAR',
+                  userId: metadata.userId,
+                  paymentReference: reference
+                });
+                
                 console.log(`✅ Webhook: Added ${creditsToAdd} credits to user ${metadata.userId} via ${reference} (first time processing)`);
               }
             }
