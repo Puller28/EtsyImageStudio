@@ -708,12 +708,10 @@ class MemStorage implements IStorage {
       
       await sql.end();
       
-      // Update memory cache
-      const user = this.users.get(userId);
-      if (user) {
-        user.credits = result.newCredits;
-        this.users.set(userId, user);
-      }
+      // CRITICAL FIX: Clear memory cache and force fresh load from database
+      // This ensures next API call gets updated credits
+      this.users.delete(userId);
+      console.log(`🔄 Cleared memory cache for user ${userId} - next API call will load fresh data from DB`);
       
       return { success: result.success, alreadyProcessed: result.alreadyProcessed };
       
