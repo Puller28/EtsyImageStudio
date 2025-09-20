@@ -238,11 +238,11 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
     try {
       console.log("🛒 Starting credit purchase for package:", packageId);
       
-      // Find package details for tracking
+      // Track checkout initiation (not purchase completion)
       const creditPackage = allPlans?.creditPackages.find(pkg => pkg.id === packageId);
       if (creditPackage) {
-        analytics.creditPurchase(creditPackage.zarPrice, creditPackage.credits, 'paystack');
         analytics.funnelStep('credit_purchase_checkout', 5);
+        // Note: analytics.creditPurchase() moved to payment callback on success
       }
       
       const response = await apiRequest("POST", "/api/purchase-credits", {

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2, Home } from "lucide-react";
 import { Link } from "wouter";
+import { analytics } from "@/lib/analytics";
 
 export default function PaymentCallback() {
   const [, params] = useRoute("/payment-callback/:reference");
@@ -38,6 +39,17 @@ export default function PaymentCallback() {
         credits?: number;
         error?: string;
       });
+      
+      // Track successful payment completion in GA
+      if ((data as any).success && (data as any).credits) {
+        const credits = (data as any).credits;
+        // Estimate ZAR amount based on credits (average ~R0.50 per credit)
+        const estimatedAmount = Math.round(credits * 0.5);
+        
+        analytics.creditPurchase(estimatedAmount, credits, 'paystack');
+        analytics.funnelStep('credit_purchase_complete', 6);
+        console.log(`📊 GA Event: Credit purchase completed - ${credits} credits, ~R${estimatedAmount}`);
+      }
       
       // Redirect to dashboard after 3 seconds on successful payment
       if ((data as any).success) {
