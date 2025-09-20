@@ -649,86 +649,75 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
     
     try {
-      // Start transaction
-      await sql`BEGIN`;
+      // Use proper postgres transaction method
+      const result = await sql.begin(async (sql) => {
+        // Check if already processed (with SELECT FOR UPDATE to prevent race conditions)
+        const existingPayment = await sql`
+          SELECT payment_reference FROM processed_payments 
+          WHERE payment_reference = ${paymentReference} 
+          FOR UPDATE
+        `;
+        
+        if (existingPayment.length > 0) {
+          console.log(`⚠️ Payment ${paymentReference} already processed, skipping`);
+          return { success: true, alreadyProcessed: true };
+        }
+        
+        // Get current user credits
+        const users = await sql`
+          SELECT credits FROM public.users 
+          WHERE id = ${userId}
+          FOR UPDATE
+        `;
+        
+        if (users.length === 0) {
+          console.error(`❌ User ${userId} not found for payment ${paymentReference}`);
+          throw new Error(`User ${userId} not found`);
+        }
+        
+        const currentCredits = users[0].credits;
+        const newCredits = currentCredits + creditsToAdd;
+        
+        // Update user credits
+        await sql`
+          UPDATE public.users 
+          SET credits = ${newCredits}
+          WHERE id = ${userId}
+        `;
+        
+        // Mark payment as processed - unique constraint will prevent duplicates
+        await sql`
+          INSERT INTO processed_payments (payment_reference, user_id, credits_allocated, processed_at)
+          VALUES (${paymentReference}, ${userId}, ${creditsToAdd}, NOW())
+        `;
+        
+        // Log credit transaction
+        const transactionId = crypto.randomUUID();
+        await sql`
+          INSERT INTO credit_transactions (
+            id, user_id, amount, transaction_type, description, balance_after, created_at
+          ) VALUES (
+            ${transactionId}, ${userId}, ${creditsToAdd}, ${transactionType}, 
+            ${'Webhook payment: ' + paymentReference}, ${newCredits}, NOW()
+          )
+        `;
+        
+        console.log(`✅ Atomically processed payment ${paymentReference}: ${currentCredits} → ${newCredits} credits for user ${userId}`);
+        return { success: true, alreadyProcessed: false, currentCredits, newCredits };
+      });
       
-      // Check if already processed (with SELECT FOR UPDATE to prevent race conditions)
-      const existingPayment = await sql`
-        SELECT payment_reference FROM processed_payments 
-        WHERE payment_reference = ${paymentReference} 
-        FOR UPDATE
-      `;
-      
-      if (existingPayment.length > 0) {
-        await sql`ROLLBACK`;
-        await sql.end();
-        console.log(`⚠️ Payment ${paymentReference} already processed, skipping`);
-        return { success: true, alreadyProcessed: true };
-      }
-      
-      // Get current user credits
-      const users = await sql`
-        SELECT credits FROM public.users 
-        WHERE id = ${userId}
-        FOR UPDATE
-      `;
-      
-      if (users.length === 0) {
-        await sql`ROLLBACK`;
-        await sql.end();
-        console.error(`❌ User ${userId} not found for payment ${paymentReference}`);
-        return { success: false, alreadyProcessed: false };
-      }
-      
-      const currentCredits = users[0].credits;
-      const newCredits = currentCredits + creditsToAdd;
-      
-      // Update user credits
-      await sql`
-        UPDATE public.users 
-        SET credits = ${newCredits}
-        WHERE id = ${userId}
-      `;
-      
-      // Mark payment as processed - unique constraint will prevent duplicates
-      await sql`
-        INSERT INTO processed_payments (payment_reference, user_id, credits_allocated, processed_at)
-        VALUES (${paymentReference}, ${userId}, ${creditsToAdd}, NOW())
-      `;
-      
-      // Log credit transaction
-      const transactionId = crypto.randomUUID();
-      await sql`
-        INSERT INTO credit_transactions (
-          id, user_id, amount, transaction_type, description, balance_after, created_at
-        ) VALUES (
-          ${transactionId}, ${userId}, ${creditsToAdd}, ${transactionType}, 
-          ${'Webhook payment: ' + paymentReference}, ${newCredits}, NOW()
-        )
-      `;
-      
-      // Commit transaction
-      await sql`COMMIT`;
       await sql.end();
       
       // Update memory cache
       const user = this.users.get(userId);
       if (user) {
-        user.credits = newCredits;
+        user.credits = result.newCredits;
         this.users.set(userId, user);
       }
       
-      console.log(`✅ Atomically processed payment ${paymentReference}: ${currentCredits} → ${newCredits} credits for user ${userId}`);
-      return { success: true, alreadyProcessed: false };
+      return { success: result.success, alreadyProcessed: result.alreadyProcessed };
       
     } catch (error) {
-      // Rollback on any error
-      try {
-        await sql`ROLLBACK`;
-      } catch (rollbackError) {
-        console.error('Failed to rollback transaction:', rollbackError);
-      }
-      
       // Handle unique constraint violations (duplicate payments)
       if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
         // Unique constraint violation - payment already processed concurrently

@@ -1,0 +1,156 @@
+2025-09-20 08:28:08.50
+96f4e816
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-09-20 08:28:08.50
+96f4e816
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-09-20 08:28:08.50
+96f4e816
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23)
+2025-09-20 08:28:08.50
+96f4e816
+User
+at cachedError (file:///home/runner/workspace/node_modules/postgres/src/query.js:170:23)
+2025-09-20 08:28:08.50
+96f4e816
+User
+at new Query (file:///home/runner/workspace/node_modules/postgres/src/query.js:36:24)
+2025-09-20 08:28:08.50
+96f4e816
+User
+at sql (file:///home/runner/workspace/node_modules/postgres/src/index.js:112:11)
+2025-09-20 08:28:08.50
+96f4e816
+User
+at MemStorage.processWebhookPaymentAtomic (file:///home/runner/workspace/dist/index.js:533:21) {
+2025-09-20 08:28:08.50
+96f4e816
+User
+code: 'UNSAFE_TRANSACTION'
+2025-09-20 08:28:08.50
+96f4e816
+User
+}
+2025-09-20 08:28:08.53
+96f4e816
+User
+❌ Failed to process payment gjaaddrj45 for user 8d6005ec-537b-444a-98cd-456272a16b34
+2025-09-20 08:28:08.53
+96f4e816
+User
+6:28:08 AM [express] GET /api/verify-payment/gjaaddrj45 200 in 646ms :: {"success":true,"credits":30…
+2025-09-20 08:28:12.61
+96f4e816
+User
+🔍 PRODUCTION OptionalAuth Debug: {
+2025-09-20 08:28:12.61
+96f4e816
+User
+hasToken: true,
+2025-09-20 08:28:12.61
+96f4e816
+User
+hasAuthHeader: true,
+2025-09-20 08:28:12.61
+96f4e816
+User
+endpoint: 'GET /api/projects',
+2025-09-20 08:28:12.61
+96f4e816
+User
+host: 'imageupscaler.app',
+2025-09-20 08:28:12.61
+96f4e816
+User
+tokenPreview: 'eyJhbGciOi...'
+2025-09-20 08:28:12.61
+96f4e816
+User
+}
+2025-09-20 08:28:12.61
+96f4e816
+User
+🔍 PRODUCTION User lookup result: { userId: '8d6005ec-537b-444a-98cd-456272a16b34', found: true }
+2025-09-20 08:28:12.61
+96f4e816
+User
+✅ PRODUCTION Token auth successful: 8d6005ec-537b-444a-98cd-456272a16b34
+2025-09-20 08:28:12.61
+96f4e816
+User
+🔍 PRODUCTION DEBUG - /api/projects endpoint called
+2025-09-20 08:28:12.61
+96f4e816
+User
+🔍 API /projects called for user: 8d6005ec-537b-444a-98cd-456272a16b34
+2025-09-20 08:28:12.61
+96f4e816
+User
+🔄 Loading projects list for user 8d6005ec-537b-444a-98cd-456272a16b34 (optimized query)
+2025-09-20 08:28:12.62
+96f4e816
+User
+🔍 PRODUCTION OptionalAuth Debug: {
+2025-09-20 08:28:12.62
+96f4e816
+User
+hasToken: true,
+2025-09-20 08:28:12.62
+96f4e816
+User
+hasAuthHeader: true,
+2025-09-20 08:28:12.62
+96f4e816
+User
+endpoint: 'GET /api/user',
+2025-09-20 08:28:12.62
+96f4e816
+User
+host: 'imageupscaler.app',
+2025-09-20 08:28:12.62
+96f4e816
+User
+tokenPreview: 'eyJhbGciOi...'
+2025-09-20 08:28:12.62
+96f4e816
+User
+}
+2025-09-20 08:28:12.62
+96f4e816
+User
+🔍 PRODUCTION User lookup result: { userId: '8d6005ec-537b-444a-98cd-456272a16b34', found: true }
+2025-09-20 08:28:12.62
+96f4e816
+User
+✅ PRODUCTION Token auth successful: 8d6005ec-537b-444a-98cd-456272a16b34
+2025-09-20 08:28:12.62
+96f4e816
+User
+6:28:12 AM [express] GET /api/user 200 in 1ms :: {"id":"8d6005ec-537b-444a-98cd-456272a16b34","name"…
+2025-09-20 08:28:12.66
+96f4e816
+User
+🔍 RAW PATH DEBUG: originalUrl="/favicon.ico", path="/", cleaned="/favicon.ico"
+2025-09-20 08:28:12.66
+96f4e816
+User
+🔍 CANONICAL: Processing /favicon.ico → https://imageupscaler.app/favicon.ico (website)
+2025-09-20 08:28:12.66
+96f4e816
+User
+✅ CANONICAL: Set to https://imageupscaler.app/favicon.ico
+2025-09-20 08:28:12.94
+96f4e816
+User
+✅ Retrieved 0 projects (optimized) for user 8d6005ec-537b-444a-98cd-456272a16b34
+2025-09-20 08:28:12.97
+96f4e816
+User
+✅ Projects API completed in 359ms, found 0 projects
+2025-09-20 08:28:12.97
+96f4e816
+User
+6:28:12 AM [express] GET /api/projects 304 in 360ms :: []
