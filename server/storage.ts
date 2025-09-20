@@ -30,6 +30,14 @@ export interface IStorage {
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
 
   // Credit management
+  updateUserCredits(userId: string, credits: number): Promise<void>;
+  updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
+  }): Promise<void>;
   updateUserCreditsWithTransaction(userId: string, creditChange: number, transactionType: string, description: string, projectId?: string): Promise<boolean>;
   logCreditTransaction(userId: string, type: string, amount: number, description: string): Promise<void>;
   createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'createdAt'>): Promise<CreditTransaction>;
@@ -38,6 +46,7 @@ export interface IStorage {
   // Payment management
   isPaymentProcessed(paymentReference: string): Promise<boolean>;
   markPaymentProcessed(paymentReference: string, userId: string, creditsAllocated: number): Promise<void>;
+  processWebhookPaymentAtomic(paymentReference: string, userId: string, creditsToAdd: number, transactionType: string): Promise<{success: boolean, alreadyProcessed: boolean}>;
 
   // Contact management
   getContactMessages(): Promise<any[]>;
@@ -632,6 +641,230 @@ class MemStorage implements IStorage {
     }
 
     return true;
+  }
+
+  async processWebhookPaymentAtomic(paymentReference: string, userId: string, creditsToAdd: number, transactionType: string): Promise<{success: boolean, alreadyProcessed: boolean}> {
+    console.log(`🔒 Processing webhook payment atomically: ${paymentReference} for user ${userId}, credits: ${creditsToAdd}`);
+    
+    const sql = createDbConnection();
+    
+    try {
+      // Start transaction
+      await sql`BEGIN`;
+      
+      // Check if already processed (with SELECT FOR UPDATE to prevent race conditions)
+      const existingPayment = await sql`
+        SELECT payment_reference FROM processed_payments 
+        WHERE payment_reference = ${paymentReference} 
+        FOR UPDATE
+      `;
+      
+      if (existingPayment.length > 0) {
+        await sql`ROLLBACK`;
+        await sql.end();
+        console.log(`⚠️ Payment ${paymentReference} already processed, skipping`);
+        return { success: true, alreadyProcessed: true };
+      }
+      
+      // Get current user credits
+      const users = await sql`
+        SELECT credits FROM public.users 
+        WHERE id = ${userId}
+        FOR UPDATE
+      `;
+      
+      if (users.length === 0) {
+        await sql`ROLLBACK`;
+        await sql.end();
+        console.error(`❌ User ${userId} not found for payment ${paymentReference}`);
+        return { success: false, alreadyProcessed: false };
+      }
+      
+      const currentCredits = users[0].credits;
+      const newCredits = currentCredits + creditsToAdd;
+      
+      // Update user credits
+      await sql`
+        UPDATE public.users 
+        SET credits = ${newCredits}
+        WHERE id = ${userId}
+      `;
+      
+      // Mark payment as processed - unique constraint will prevent duplicates
+      await sql`
+        INSERT INTO processed_payments (payment_reference, user_id, credits_allocated, processed_at)
+        VALUES (${paymentReference}, ${userId}, ${creditsToAdd}, NOW())
+      `;
+      
+      // Log credit transaction
+      const transactionId = crypto.randomUUID();
+      await sql`
+        INSERT INTO credit_transactions (
+          id, user_id, amount, transaction_type, description, balance_after, created_at
+        ) VALUES (
+          ${transactionId}, ${userId}, ${creditsToAdd}, ${transactionType}, 
+          ${'Webhook payment: ' + paymentReference}, ${newCredits}, NOW()
+        )
+      `;
+      
+      // Commit transaction
+      await sql`COMMIT`;
+      await sql.end();
+      
+      // Update memory cache
+      const user = this.users.get(userId);
+      if (user) {
+        user.credits = newCredits;
+        this.users.set(userId, user);
+      }
+      
+      console.log(`✅ Atomically processed payment ${paymentReference}: ${currentCredits} → ${newCredits} credits for user ${userId}`);
+      return { success: true, alreadyProcessed: false };
+      
+    } catch (error) {
+      // Rollback on any error
+      try {
+        await sql`ROLLBACK`;
+      } catch (rollbackError) {
+        console.error('Failed to rollback transaction:', rollbackError);
+      }
+      
+      // Handle unique constraint violations (duplicate payments)
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        // Unique constraint violation - payment already processed concurrently
+        console.log(`⚠️ Payment ${paymentReference} already processed by concurrent transaction`);
+        try {
+          await sql.end();
+        } catch (endError) {
+          console.error('Failed to end connection after unique violation:', endError);
+        }
+        return { success: true, alreadyProcessed: true };
+      }
+      
+      console.error(`❌ Failed to process payment ${paymentReference} atomically:`, error);
+      try {
+        await sql.end();
+      } catch (endError) {
+        console.error('Failed to end connection after error:', endError);
+      }
+      return { success: false, alreadyProcessed: false };
+    }
+  }
+
+  async updateUserCredits(userId: string, credits: number): Promise<void> {
+    try {
+      const sql = createDbConnection();
+      
+      // Always update database first
+      const result = await sql`
+        UPDATE public.users 
+        SET credits = ${credits}
+        WHERE id = ${userId}
+        RETURNING *
+      `;
+      
+      await sql.end();
+      
+      if (result.length === 0) {
+        console.error(`❌ User ${userId} not found in database for credit update`);
+        return;
+      }
+      
+      // Update memory cache if user exists there
+      const user = this.users.get(userId);
+      if (user) {
+        user.credits = credits;
+        this.users.set(userId, user);
+      } else {
+        // Load user from database to memory if not present
+        const dbUser = result[0];
+        const memoryUser: User = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          credits: dbUser.credits,
+          subscriptionStatus: dbUser.subscription_status || 'free',
+          subscriptionPlan: dbUser.subscription_plan,
+          subscriptionId: dbUser.subscription_id,
+          subscriptionStartDate: dbUser.subscription_start_date,
+          subscriptionEndDate: dbUser.subscription_end_date,
+          createdAt: dbUser.created_at
+        };
+        this.users.set(userId, memoryUser);
+      }
+      
+      console.log(`✅ Updated credits for user ${userId}: ${credits}`);
+    } catch (dbError) {
+      console.error(`❌ Failed to update credits for user ${userId}:`, dbError);
+      throw dbError;
+    }
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionPlan?: string;
+    subscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
+  }): Promise<void> {
+    try {
+      const sql = createDbConnection();
+      
+      // Always update database first
+      const result = await sql`
+        UPDATE public.users 
+        SET 
+          subscription_status = ${subscriptionData.subscriptionStatus},
+          subscription_plan = ${subscriptionData.subscriptionPlan || null},
+          subscription_id = ${subscriptionData.subscriptionId || null},
+          subscription_start_date = ${subscriptionData.subscriptionStartDate || null},
+          subscription_end_date = ${subscriptionData.subscriptionEndDate || null}
+        WHERE id = ${userId}
+        RETURNING *
+      `;
+      
+      await sql.end();
+      
+      if (result.length === 0) {
+        console.error(`❌ User ${userId} not found in database for subscription update`);
+        return;
+      }
+      
+      // Update memory cache
+      const user = this.users.get(userId);
+      if (user) {
+        const updatedUser = { 
+          ...user, 
+          subscriptionStatus: subscriptionData.subscriptionStatus,
+          subscriptionPlan: subscriptionData.subscriptionPlan || null,
+          subscriptionId: subscriptionData.subscriptionId || null,
+          subscriptionStartDate: subscriptionData.subscriptionStartDate || null,
+          subscriptionEndDate: subscriptionData.subscriptionEndDate || null,
+        };
+        this.users.set(userId, updatedUser);
+      } else {
+        // Load user from database to memory if not present
+        const dbUser = result[0];
+        const memoryUser: User = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          credits: dbUser.credits,
+          subscriptionStatus: dbUser.subscription_status || 'free',
+          subscriptionPlan: dbUser.subscription_plan,
+          subscriptionId: dbUser.subscription_id,
+          subscriptionStartDate: dbUser.subscription_start_date,
+          subscriptionEndDate: dbUser.subscription_end_date,
+          createdAt: dbUser.created_at
+        };
+        this.users.set(userId, memoryUser);
+      }
+      
+      console.log(`✅ Updated subscription for user ${userId}: ${subscriptionData.subscriptionStatus}`);
+    } catch (dbError) {
+      console.error(`❌ Failed to update subscription for user ${userId}:`, dbError);
+      throw dbError;
+    }
   }
 
   async createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'createdAt'>): Promise<CreditTransaction> {

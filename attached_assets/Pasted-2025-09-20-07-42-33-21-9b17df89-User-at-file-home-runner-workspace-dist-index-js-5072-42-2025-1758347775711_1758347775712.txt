@@ -1,0 +1,116 @@
+2025-09-20 07:42:33.21
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5072:42
+2025-09-20 07:42:33.21
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:42:33.24
+9b17df89
+User
+Webhook error: TypeError: storage.updateUserCredits is not a function
+2025-09-20 07:42:33.24
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5095:31
+2025-09-20 07:42:33.24
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:42:35.22
+9b17df89
+User
+Failed to update user credits, payment processed but credits not added: TypeError: storage.updateUserCredits is not a function
+2025-09-20 07:42:35.22
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:4929:31
+2025-09-20 07:42:35.22
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:48:01.90
+9b17df89
+User
+Error activating subscription: TypeError: storage.updateUserSubscription is not a function
+2025-09-20 07:48:01.90
+9b17df89
+User
+at SubscriptionService.activateSubscription (file:///home/runner/workspace/dist/index.js:1527:25)
+2025-09-20 07:48:01.90
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5072:42
+2025-09-20 07:48:01.90
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:48:01.92
+9b17df89
+User
+Webhook error: TypeError: storage.updateUserCredits is not a function
+2025-09-20 07:48:01.92
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5095:31
+2025-09-20 07:48:01.92
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:51:17.91
+9b17df89
+User
+Error activating subscription: TypeError: storage.updateUserSubscription is not a function
+2025-09-20 07:51:17.91
+9b17df89
+User
+at SubscriptionService.activateSubscription (file:///home/runner/workspace/dist/index.js:1527:25)
+2025-09-20 07:51:17.91
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5072:42
+2025-09-20 07:51:17.91
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:51:17.95
+9b17df89
+User
+Webhook error: TypeError: storage.updateUserCredits is not a function
+2025-09-20 07:51:17.95
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5095:31
+2025-09-20 07:51:17.95
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:54:21.22
+9b17df89
+User
+Error activating subscription: TypeError: storage.updateUserSubscription is not a function
+2025-09-20 07:54:21.22
+9b17df89
+User
+at SubscriptionService.activateSubscription (file:///home/runner/workspace/dist/index.js:1527:25)
+2025-09-20 07:54:21.22
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5072:42
+2025-09-20 07:54:21.22
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-20 07:54:21.23
+9b17df89
+User
+Webhook error: TypeError: storage.updateUserCredits is not a function
+2025-09-20 07:54:21.23
+9b17df89
+User
+at file:///home/runner/workspace/dist/index.js:5095:31
+2025-09-20 07:54:21.23
+9b17df89
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)

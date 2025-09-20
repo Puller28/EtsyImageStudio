@@ -921,20 +921,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Add credits to user account (with idempotency check)
             const creditsToAdd = parseInt(metadata.credits) || 0;
             
-            // Check if payment has already been processed to prevent double crediting
-            const isProcessed = await storage.isPaymentProcessed(reference);
-            if (isProcessed) {
-              console.log(`⚠️ Payment ${reference} already processed, skipping credit allocation`);
-            } else {
-              const newCredits = user.credits + creditsToAdd;
-              
-              try {
-                await storage.updateUserCredits(user.id, newCredits);
-                await storage.markPaymentProcessed(reference, user.id, creditsToAdd);
-                console.log(`✅ Added ${creditsToAdd} credits to user ${user.id} (first time processing ${reference})`);
-              } catch (error) {
-                console.warn('Failed to update user credits, payment processed but credits not added:', error);
+            // Process payment atomically to prevent race conditions
+            try {
+              const result = await storage.processWebhookPaymentAtomic(reference, user.id, creditsToAdd, 'purchase');
+              if (result.success) {
+                if (result.alreadyProcessed) {
+                  console.log(`✅ Payment ${reference} already processed for user ${user.id}`);
+                } else {
+                  console.log(`✅ Atomically processed payment ${reference}: added ${creditsToAdd} credits to user ${user.id}`);
+                }
+              } else {
+                console.error(`❌ Failed to process payment ${reference} for user ${user.id}`);
               }
+            } catch (error) {
+              console.error('Failed to process webhook payment atomically:', error);
             }
             
             res.json({
@@ -1126,30 +1126,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`✅ Webhook: Activated subscription ${metadata.planId} for user ${metadata.userId} (${subscription?.subscription_code ? 'recurring' : 'one-time'})`);
             }
             
-            // Add credits to user account (with idempotency check)
+            // Add credits to user account atomically
             if (metadata.credits) {
-              // Check if payment has already been processed to prevent double crediting
-              const isProcessed = await storage.isPaymentProcessed(reference);
-              if (isProcessed) {
-                console.log(`⚠️ Webhook: Payment ${reference} already processed, skipping credit allocation`);
-              } else {
-                const creditsToAdd = parseInt(metadata.credits);
-                const newCredits = user.credits + creditsToAdd;
-                
-                await storage.updateUserCredits(metadata.userId, newCredits);
-                await storage.markPaymentProcessed(reference, metadata.userId, creditsToAdd);
-                
-                // Track successful credit purchase completion in GA4
-                const amount = parseFloat(event.data.amount) / 100; // Paystack amounts are in kobo
-                await trackServerAnalyticsEvent('creditPurchaseComplete', {
-                  creditsAdded: creditsToAdd,
-                  amount: amount,
-                  currency: 'ZAR',
-                  userId: metadata.userId,
-                  paymentReference: reference
-                });
-                
-                console.log(`✅ Webhook: Added ${creditsToAdd} credits to user ${metadata.userId} via ${reference} (first time processing)`);
+              const creditsToAdd = parseInt(metadata.credits);
+              
+              try {
+                const result = await storage.processWebhookPaymentAtomic(reference, metadata.userId, creditsToAdd, 'purchase');
+                if (result.success) {
+                  if (result.alreadyProcessed) {
+                    console.log(`✅ Webhook: Payment ${reference} already processed, skipping credit allocation`);
+                  } else {
+                    // Track successful credit purchase completion in GA4
+                    const amount = parseFloat(event.data.amount) / 100; // Paystack amounts are in kobo
+                    await trackServerAnalyticsEvent('creditPurchaseComplete', {
+                      creditsAdded: creditsToAdd,
+                      amount: amount,
+                      currency: 'ZAR',
+                      userId: metadata.userId,
+                      paymentReference: reference
+                    });
+                    
+                    console.log(`✅ Webhook: Atomically added ${creditsToAdd} credits to user ${metadata.userId} via ${reference}`);
+                  }
+                } else {
+                  console.error(`❌ Webhook: Failed to process payment ${reference} for user ${metadata.userId}`);
+                }
+              } catch (error) {
+                console.error('Webhook: Failed to process payment atomically:', error);
               }
             }
           }
@@ -1364,15 +1367,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get current user credits
           const user = await storage.getUserById(metadata.userId);
           if (user) {
-            // Add credits to user account
-            const newCredits = user.credits + parseInt(metadata.credits);
-            await storage.updateUserCredits(metadata.userId, newCredits);
-            
-            return res.json({
-              success: true,
-              credits: parseInt(metadata.credits),
-              message: `Added ${metadata.credits} credits to your account`
-            });
+            // Add credits to user account (using atomic method for consistency)
+            const creditsToAdd = parseInt(metadata.credits);
+            try {
+              const result = await storage.processWebhookPaymentAtomic(reference, metadata.userId, creditsToAdd, 'test-payment');
+              if (result.success && !result.alreadyProcessed) {
+                return res.json({
+                  success: true,
+                  credits: creditsToAdd,
+                  message: `Added ${creditsToAdd} credits to your account`
+                });
+              } else if (result.alreadyProcessed) {
+                return res.json({
+                  success: true,
+                  credits: 0,
+                  message: `Payment ${reference} already processed`
+                });
+              } else {
+                throw new Error('Atomic payment processing failed');
+              }
+            } catch (error) {
+              console.error('Test payment atomic processing failed:', error);
+              return res.json({
+                success: false,
+                error: "Failed to process test payment atomically"
+              });
+            }
           }
         }
       }
