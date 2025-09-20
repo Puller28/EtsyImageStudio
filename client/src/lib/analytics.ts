@@ -76,8 +76,12 @@ export const analytics = {
     trackEvent('login', 'authentication', method);
   },
 
-  signup: (method: string = 'email') => {
-    trackEvent('sign_up', 'authentication', method);
+  signup: (method: string = 'email', userType: string = 'new_user') => {
+    trackEvent('sign_up', 'authentication', method, undefined, {
+      method: method,
+      user_type: userType,
+      signup_location: window.location.pathname
+    });
   },
 
   logout: () => {
