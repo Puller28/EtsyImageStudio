@@ -520,12 +520,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description
       );
       
-      console.log(`💳 Deducted ${credits} credits. User ${req.userId} new balance: ${result.newBalance}`);
+      if (!result) {
+        return res.status(400).json({ error: "Failed to deduct credits" });
+      }
+      
+      // Get updated user to return new balance
+      const updatedUser = await storage.getUserById(req.userId!);
+      const newBalance = updatedUser?.credits || 0;
+      
+      console.log(`💳 Deducted ${credits} credits. User ${req.userId} new balance: ${newBalance}`);
       
       res.json({ 
         success: true, 
         creditsDeducted: credits,
-        newBalance: result.newBalance 
+        newBalance: newBalance 
       });
     } catch (error) {
       console.error("Error deducting credits:", error);
@@ -1611,9 +1619,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: artworkTitle || "Untitled Artwork",
         originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
         upscaleOption: upscaleOption || "2x",
-
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
+        mockupImages: {},
+        resizedImages: [],
+        etsyListing: null,
+        zipUrl: null,
+        thumbnailUrl: null,
+        mockupTemplate: null,
         artworkTitle: artworkTitle || "Untitled Artwork",
-        styleKeywords: styleKeywords || "digital art"
+        styleKeywords: styleKeywords || "digital art",
+        aiPrompt: null,
+        metadata: {}
       });
 
       const project = await storage.createProject(projectData);
@@ -1951,10 +1968,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.userId!,
         title: projectName.trim(),
         originalImageUrl: `data:image/jpeg;base64,${base64Image}`,
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
+        mockupImages: {},
+        resizedImages: [],
+        etsyListing: null,
+        zipUrl: null,
         artworkTitle: projectName.trim(), // Use project name as artwork title
         styleKeywords: category || 'ai-generated, digital art', // Required field
         status: 'ai-generated', // New status for AI-generated images
         upscaleOption: '2x', // Required field with default value
+        mockupTemplate: null,
         thumbnailUrl: `data:image/jpeg;base64,${base64Image}`, // Use full image as thumbnail
         aiPrompt: optimizedPrompt, // Store the prompt used
         metadata: {
@@ -2785,16 +2809,22 @@ else:
         userId,
         title: projectTitle,
         originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
-        artworkTitle: projectTitle,
-        styleKeywords: 'mockup, template-based, professional',
-        status: 'completed',
-        upscaleOption: '2x',
+        upscaledImageUrl: null,
+        mockupImageUrl: null,
         mockupImages: mockups.reduce((acc, m, index) => {
           acc[`${m.template.room}_${m.template.id}`] = m.image_data;
           return acc;
         }, {} as Record<string, string>), // Store all mockup images as key-value pairs
+        resizedImages: [],
+        etsyListing: null,
+        zipUrl: null,
+        artworkTitle: projectTitle,
+        styleKeywords: 'mockup, template-based, professional',
+        status: 'completed',
+        upscaleOption: '2x',
         mockupTemplate: selectedTemplates.length === 1 ? `${selectedTemplates[0].room}/${selectedTemplates[0].id}` : 'multiple',
         thumbnailUrl: mockups[0]?.image_data || `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
+        aiPrompt: null,
         metadata: {
           mockupSet: 'true',
           templatesUsed: JSON.stringify(selectedTemplates),
