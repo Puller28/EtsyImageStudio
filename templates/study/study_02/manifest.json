@@ -1,0 +1,15 @@
+{
+  "id": "study_02",
+  "background": "study_02_bg.png",
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [315, 300],
+    [701, 300],
+    [701, 831],
+    [314, 831]
+  ],
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 5.0,
+  "pad_inset_px": 5.0
+}
