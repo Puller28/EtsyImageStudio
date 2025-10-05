@@ -1614,26 +1614,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const projectData = insertProjectSchema.parse({
+      // Validate required fields
+      insertProjectSchema.parse({
         userId: req.userId,
         title: artworkTitle || "Untitled Artwork",
         originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
         upscaleOption: upscaleOption || "2x",
+        artworkTitle: artworkTitle || "Untitled Artwork",
+        styleKeywords: styleKeywords || "digital art",
+        status: "uploading",
+      });
+      
+      // Create project with explicit typing
+      const project = await storage.createProject({
+        userId: req.userId,
+        title: artworkTitle || "Untitled Artwork",
+        originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
+        upscaleOption: upscaleOption || "2x",
+        status: "uploading",
         upscaledImageUrl: null,
         mockupImageUrl: null,
-        mockupImages: {},
+        mockupImages: null,
         resizedImages: [],
         etsyListing: null,
         zipUrl: null,
         thumbnailUrl: null,
         mockupTemplate: null,
-        artworkTitle: artworkTitle || "Untitled Artwork",
-        styleKeywords: styleKeywords || "digital art",
         aiPrompt: null,
-        metadata: {}
+        metadata: null,
       });
-
-      const project = await storage.createProject(projectData);
       
       // Deduct credits based on upscale option with transaction record
       await storage.updateUserCreditsWithTransaction(req.userId, -creditsRequired, 'Image Upscaling', `${upscaleOption} image upscaling`);
