@@ -1,13 +1,13 @@
 {
-  "id": "bedroom_05",
-  "background": "bedroom_05_bg.png",
+  "id": "kids_02",
+  "background": "kids_02_bg.png",
   "width": 1024,
   "height": 1024,
   "corners": [
-    [260, 183],
-    [576, 225],
-    [576, 418],
-    [260, 405]
+    [369, 105],
+    [658, 105],
+    [658, 475],
+    [369, 475]
   ],
   "blend": { "mode": "normal", "opacity": 1.0 },
   "feather_px": 1.0,
