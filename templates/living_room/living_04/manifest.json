@@ -1,0 +1,15 @@
+{
+  "id": "living_04",
+  "background": "living_04_bg.png",
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [247, 175],
+    [532, 217],
+    [532, 423],
+    [247, 411]
+  ],
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 1.0,
+  "pad_inset_px": 0
+}
