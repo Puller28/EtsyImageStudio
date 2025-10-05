@@ -40,17 +40,27 @@ export class AIArtGeneratorService {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         
-        // Check if this is a retryable error
-        const isRetryable = errorMessage.includes('No images were generated') || 
-                           errorMessage.includes('safety') ||
-                           errorMessage.includes('content policy');
+        // Don't retry content safety blocks - the prompt is the issue, not a transient error
+        const isContentSafetyBlock = errorMessage.includes('CONTENT_SAFETY_BLOCK');
+        
+        if (isContentSafetyBlock) {
+          console.log(`🛡️ Content safety block detected - not retrying`);
+          throw error;
+        }
+        
+        // Check if this is a retryable error (network issues, temporary failures, etc.)
+        const isRetryable = errorMessage.includes('timeout') || 
+                           errorMessage.includes('network') ||
+                           errorMessage.includes('ECONNREFUSED') ||
+                           errorMessage.includes('503') ||
+                           errorMessage.includes('502');
         
         if (attempt < maxRetries && isRetryable) {
           console.log(`AI generation attempt ${attempt} failed with retryable error: ${errorMessage}`);
           console.log(`Retrying with attempt ${attempt + 1}/${maxRetries}...`);
           
-          // Wait a bit before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait a bit before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
           continue;
         }
         
@@ -102,6 +112,29 @@ export class AIArtGeneratorService {
           throw new Error('Insufficient credits in your Segmind account. Please add more credits.');
         } else if (response.status === 404) {
           throw new Error('Segmind Imagen 3 model not found. Please check the API documentation.');
+        } else if (response.status === 400) {
+          // Parse error to detect content safety blocks
+          let errorMessage = errorText;
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.error === 'No images were generated.' || 
+                errorJson.error?.includes('safety') || 
+                errorJson.error?.includes('content policy')) {
+              
+              // Content safety block - provide helpful user-facing message
+              throw new Error('CONTENT_SAFETY_BLOCK: Your prompt was blocked by our content safety filters. Please try:\n\n' +
+                '• Removing references to ages or minors (e.g., "7 years old", "child", "kid")\n' +
+                '• Using general terms like "people", "friends", or "family" instead\n' +
+                '• Avoiding sensitive or explicit content\n' +
+                '• Simplifying your prompt to focus on the main subject\n\n' +
+                'If you continue to have issues, try a different description of your desired artwork.');
+            }
+          } catch (parseError) {
+            // If JSON parsing fails, fall through to generic error
+          }
+          
+          throw new Error(`Unable to generate image: ${errorText}. Please try rephrasing your prompt or contact support if the issue persists.`);
         } else {
           throw new Error(`Segmind API error (${response.status}): ${errorText}`);
         }

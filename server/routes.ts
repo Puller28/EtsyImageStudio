@@ -2009,8 +2009,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error("AI art generation error:", error);
+      
+      // Clean up error message for user display
+      let errorMessage = error instanceof Error ? error.message : "Failed to generate artwork";
+      
+      // Remove internal error codes for cleaner user display
+      errorMessage = errorMessage.replace('CONTENT_SAFETY_BLOCK: ', '');
+      errorMessage = errorMessage.replace('Failed to generate artwork: ', '');
+      
       res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to generate artwork" 
+        error: errorMessage
       });
     }
   });
