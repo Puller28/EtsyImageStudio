@@ -1,6 +1,17 @@
 // Shared blog post data - single source of truth
 export const BLOG_POSTS = [
   {
+    id: "pinterest-marketing-etsy-digital-art",
+    title: "Pinterest Marketing for Etsy Digital Art: Drive 10K+ Monthly Visitors",
+    excerpt: "Pinterest drives 33% of all Etsy traffic. Master pin design, SEO strategies, and automation tools that generate thousands of monthly visitors and sales.",
+    author: "Digital Art Team",
+    date: "2025-10-05",
+    readTime: "14 min read",
+    category: "Social Media Marketing",
+    featured: true,
+    slug: "pinterest-marketing-etsy-digital-art"
+  },
+  {
     id: "minimalist-digital-art-guide",
     title: "Minimalist Digital Art: Complete Guide to Clean, Modern Designs", 
     excerpt: "Master minimalist art that sells consistently. Learn color palettes, composition principles, and marketing strategies for maximum conversions.",
