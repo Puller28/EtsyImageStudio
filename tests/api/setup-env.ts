@@ -1,0 +1,13 @@
+﻿process.env.NODE_ENV = process.env.NODE_ENV || "test";
+process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
+process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || "sk-test";
+process.env.PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "sk_test_dummy";
+process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || "test-bucket";
+process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "service-key";
+process.env.SUPABASE_PROJECT_ASSETS_URL = process.env.SUPABASE_PROJECT_ASSETS_URL || "https://example.supabase.co/storage/v1";
+process.env.DATABASE_URL = process.env.DATABASE_URL || "postgres://user:pass@localhost:5432/test";
+process.env.RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || "test";
+process.env.MOCK_MODE = process.env.MOCK_MODE || "true";
+process.env.SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "SG.test-sendgrid-key";
+process.env.CONTACT_NOTIFICATION_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "info@imageupscaler.app";
+process.env.CONTACT_FROM_EMAIL = process.env.CONTACT_FROM_EMAIL || "notifications@test.local";
