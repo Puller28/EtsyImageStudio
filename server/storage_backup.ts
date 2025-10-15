@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Backup for recovery - minimal working version
 import { randomUUID } from "crypto";
 import type { User, Project, InsertUser, InsertProject, CreditTransaction, InsertCreditTransaction, ContactMessage, InsertContactMessage } from "../shared/schema";

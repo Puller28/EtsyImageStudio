@@ -1,8 +1,7 @@
-import { ProjectImageStorage, objectStorageClient } from "../objectStorage";
+﻿import { ProjectImageStorage } from "../objectStorage";
 import { db } from "../db";
 import { projects } from "../../shared/schema";
 import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
 
 export interface MigrationProgress {
   totalProjects: number;
@@ -15,7 +14,6 @@ export interface MigrationProgress {
 
 export class ImageMigrationService {
   private objectStorage = new ProjectImageStorage();
-  private bucketName = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || "";
   private progress: MigrationProgress = {
     totalProjects: 0,
     processedProjects: 0,
@@ -42,36 +40,23 @@ export class ImageMigrationService {
    * Upload base64 image to object storage and return the URL
    */
   private async uploadImageToStorage(
-    base64Data: string, 
-    projectId: string, 
+    base64Data: string,
+    projectId: string,
     imageType: string
   ): Promise<string> {
     try {
-      // Remove data URL prefix if present
-      const cleanBase64 = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
-      const buffer = Buffer.from(cleanBase64, 'base64');
-      
-      const objectName = `projects/${projectId}/${imageType}/${randomUUID()}.jpg`;
-      const file = objectStorageClient.bucket(this.bucketName).file(objectName);
-      
-      // Save buffer directly to object storage
-      await file.save(buffer, {
-        metadata: {
-          contentType: 'image/jpeg',
-        },
-        public: false,
-      });
-      
-      const objectPath = `/objects/${objectName}`;
-      console.log(`✅ Migrated ${imageType} image to object storage: ${objectPath}`);
+      const normalized = base64Data.startsWith('data:image/')
+        ? base64Data
+        : `data:image/jpeg;base64,${base64Data}`;
+
+      const objectPath = await this.objectStorage.uploadImage(normalized, projectId, imageType);
+      console.log(`migration: Migrated ${imageType} image to object storage: ${objectPath}`);
       return objectPath;
-      
     } catch (error) {
-      console.error(`❌ Failed to upload ${imageType} image:`, error);
+      console.error(`migration: Failed to upload ${imageType} image:`, error);
       throw error;
     }
   }
-
   /**
    * Migrate a single project's images from base64 to object storage
    */
@@ -80,7 +65,11 @@ export class ImageMigrationService {
     migratedCount: number;
     errors: string[];
   }> {
-    const result = { success: true, migratedCount: 0, errors: [] };
+    const result: { success: boolean; migratedCount: number; errors: string[] } = {
+      success: true,
+      migratedCount: 0,
+      errors: [],
+    };
     
     try {
       // Fetch project from database
@@ -176,11 +165,12 @@ export class ImageMigrationService {
       }
 
       // Migrate resized images
-      if (project.resizedImages && project.resizedImages.length > 0) {
-        const migratedResized = [];
+      const resizedList = Array.isArray(project.resizedImages) ? project.resizedImages : [];
+      if (resizedList.length > 0) {
+        const migratedResized: Array<{ size: string; url: string }> = [];
         let resizedMigrated = false;
 
-        for (const resized of project.resizedImages) {
+        for (const resized of resizedList) {
           if (this.isBase64Url(resized.url)) {
             try {
               const objectUrl = await this.uploadImageToStorage(
@@ -220,7 +210,7 @@ export class ImageMigrationService {
           })
           .where(eq(projects.id, projectId));
 
-        console.log(`✅ Updated project ${projectId} with ${result.migratedCount} migrated images`);
+        console.log(`âœ… Updated project ${projectId} with ${result.migratedCount} migrated images`);
       }
 
       return result;
@@ -309,7 +299,7 @@ export class ImageMigrationService {
    * Run batch migration with progress tracking
    */
   async runBatchMigration(batchSize: number = 5): Promise<MigrationProgress> {
-    console.log(`🚀 Starting batch migration with batch size: ${batchSize}`);
+    console.log(`ðŸš€ Starting batch migration with batch size: ${batchSize}`);
     
     // Reset progress
     this.progress = {
@@ -339,13 +329,13 @@ export class ImageMigrationService {
       }
 
       this.progress.totalProjects = projectsNeedingMigration.length;
-      console.log(`📊 Found ${this.progress.totalProjects} projects needing migration`);
+      console.log(`ðŸ“Š Found ${this.progress.totalProjects} projects needing migration`);
 
       // Process in batches
       for (let i = 0; i < projectsNeedingMigration.length; i += batchSize) {
         const batch = projectsNeedingMigration.slice(i, i + batchSize);
         
-        console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(projectsNeedingMigration.length / batchSize)}`);
+        console.log(`ðŸ“¦ Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(projectsNeedingMigration.length / batchSize)}`);
 
         // Process batch in parallel
         const batchPromises = batch.map(projectId => this.migrateProjectImages(projectId));
@@ -374,7 +364,7 @@ export class ImageMigrationService {
           );
         }
 
-        console.log(`📈 Progress: ${this.progress.processedProjects}/${this.progress.totalProjects} projects (${this.progress.migratedImages} images migrated)`);
+        console.log(`ðŸ“ˆ Progress: ${this.progress.processedProjects}/${this.progress.totalProjects} projects (${this.progress.migratedImages} images migrated)`);
 
         // Small delay between batches to prevent overwhelming the system
         if (i + batchSize < projectsNeedingMigration.length) {
@@ -382,16 +372,16 @@ export class ImageMigrationService {
         }
       }
 
-      console.log(`✅ Migration completed: ${this.progress.migratedImages} images migrated from ${this.progress.processedProjects} projects`);
+      console.log(`âœ… Migration completed: ${this.progress.migratedImages} images migrated from ${this.progress.processedProjects} projects`);
       if (this.progress.errors.length > 0) {
-        console.log(`⚠️  Encountered ${this.progress.errors.length} errors during migration`);
+        console.log(`âš ï¸  Encountered ${this.progress.errors.length} errors during migration`);
       }
 
       return this.progress;
 
     } catch (error) {
       this.progress.errors.push(`Migration failed: ${error}`);
-      console.error('❌ Migration failed:', error);
+      console.error('âŒ Migration failed:', error);
       return this.progress;
     }
   }
@@ -403,3 +393,7 @@ export class ImageMigrationService {
     return this.progress;
   }
 }
+
+
+
+

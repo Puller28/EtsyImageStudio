@@ -4,13 +4,14 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-// Emergency production settings - optimized for Replit deployment conditions
-const sql = postgres(process.env.DATABASE_URL, { 
+type PostgresOptions = Exclude<Parameters<typeof postgres>[1], undefined>;
+
+const postgresOptions: PostgresOptions & { statement_timeout?: number } = {
   ssl: 'require',
-  max: 1, 
-  idle_timeout: 1, // Immediate cleanup
-  connect_timeout: 2, // Ultra-fast connection
-  max_lifetime: 3, // Extremely short lifetime
+  max: 1,
+  idle_timeout: 1,
+  connect_timeout: 2,
+  max_lifetime: 3,
   debug: false,
   prepare: false,
   transform: { undefined: null },
@@ -18,7 +19,10 @@ const sql = postgres(process.env.DATABASE_URL, {
   connection: { timezone: 'UTC' },
   fetch_types: false,
   // Emergency timeout settings
-  statement_timeout: 8000 // 8 second statement timeout
-});
+  statement_timeout: 8000,
+};
+
+// Emergency production settings - optimized for Replit deployment conditions
+const sql = postgres(process.env.DATABASE_URL, postgresOptions);
 
 export { sql };

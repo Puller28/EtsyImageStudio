@@ -110,7 +110,9 @@ export class ImprovedPinkPlacer {
       
       // Step 3: Draw the artwork with anti-aliasing for smooth edges
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      if ("imageSmoothingQuality" in ctx) {
+                (ctx as typeof ctx & { imageSmoothingQuality?: "low" | "medium" | "high" }).imageSmoothingQuality = "high";
+      }
       ctx.drawImage(artworkImage, offsetX, offsetY, newWidth, newHeight);
       
       return {

@@ -265,14 +265,15 @@ export class AdvancedMockupPlacer {
     
     const results: MockupPlacementResult[] = [];
     
-    for (const method of methods) {
-      try {
-        const result = await method();
-        results.push(result);
-      } catch (error) {
-        console.log(`Method failed: ${error.message}`);
-      }
+  for (const method of methods) {
+    try {
+      const result = await method();
+      results.push(result);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.log(`Method failed: ${err.message}`);
     }
+  }
     
     if (results.length === 0) {
       throw new Error('All detection methods failed');

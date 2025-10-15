@@ -26,7 +26,7 @@ export async function generateProjectZip(projectData: {
     });
   }
   
-  // Add all 5 mockups
+  // Add all generated mockups
   const mockupsFolder = zip.folder("mockups");
   if (mockupsFolder) {
     Object.entries(projectData.mockupImages).forEach(([mockupId, buffer], index) => {
@@ -49,7 +49,7 @@ ${projectData.etsyListing.description}
 
 FILES INCLUDED:
 - 5 High-resolution print formats (4x5, 3x4, 2x3, 11x14, A4)
-- 5 Professional styled mockups for your listings
+- Up to 10 professional styled mockups for your listings
 - All files are 300 DPI, ready for printing
 
 INSTANT DOWNLOAD - No physical item will be shipped.
