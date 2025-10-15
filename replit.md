@@ -45,7 +45,7 @@ The system uses JWT-based authentication for user registration, login, and secur
 ### Core Technical Implementations
 - **AI Art Generation**: Integration with Imagen 3.
 - **Image Processing**: Sharp library for resizing and format conversion, and Canvas API for programmatic mockup creation. Images over 1MB are automatically compressed before mockup generation.
-- **Mockup Generation**: Uses a template-based system via an external API and a local template API with corner-point mapping for precise artwork placement. Users select up to 5 templates from categorized rooms, and artwork is inserted using homography transformation.
+- **Mockup Generation**: Uses a template-based system via an external API and a local template API with corner-point mapping for precise artwork placement. Users select up to 10 templates from categorized rooms, and artwork is inserted using homography transformation.
 - **AI Content Generation**: OpenAI GPT-4o for automated Etsy listing content.
 - **Payment Processing**: Paystack integration for ZAR payments, credit package purchases, and subscription management.
 - **Credit Transaction Tracking**: Comprehensive audit trail system for all credit usage with detailed transaction history, types, and balances. Credit costs are aligned for AI generation, upscaling, Etsy listings, and mockup generation.

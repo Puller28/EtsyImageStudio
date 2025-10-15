@@ -4,3 +4,10 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+.venv/
+__pycache__/
+*.log
+fastapi*.log
+.env
+.local/
+.config/

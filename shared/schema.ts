@@ -39,7 +39,30 @@ export const projects = pgTable("projects", {
   thumbnailUrl: text("thumbnail_url"), // For project previews
   aiPrompt: text("ai_prompt"), // Store AI generation prompt
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}), // Additional flexible data
+  hasOriginalImage: boolean("has_original_image").notNull().default(false),
+  hasUpscaledImage: boolean("has_upscaled_image").notNull().default(false),
+  hasMockupImage: boolean("has_mockup_image").notNull().default(false),
+  hasMockupImages: boolean("has_mockup_images").notNull().default(false),
+  mockupCount: integer("mockup_count").notNull().default(0),
+  hasResizedImages: boolean("has_resized_images").notNull().default(false),
+  resizedCount: integer("resized_count").notNull().default(0),
+  hasEtsyListing: boolean("has_etsy_listing").notNull().default(false),
   createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const projectAssets = pgTable("project_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  source: text("source").notNull().default("upload"),
+  storagePath: text("storage_path").notNull(),
+  publicUrl: text("public_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
 export const processedPayments = pgTable("processed_payments", {
@@ -106,6 +129,12 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   styleKeywords: z.string().min(1, "Style keywords are required"),
 });
 
+export const insertProjectAssetSchema = createInsertSchema(projectAssets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).omit({
   id: true,
   createdAt: true,
@@ -127,6 +156,8 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
+export type InsertProjectAsset = z.infer<typeof insertProjectAssetSchema>;
+export type ProjectAsset = typeof projectAssets.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
