@@ -23,6 +23,19 @@ import BlogPostPage from "@/pages/blog-post";
 import ProjectsPage from "@/pages/projects";
 import ProjectDetailPage from "@/pages/project-detail";
 import Migration from "@/pages/migration";
+import MockupOutpaintPage from "@/pages/mockup-outpaint";
+import MockupFramedPage from "@/pages/mockup-framed";
+import TemplateCreatePage from "@/pages/template-create";
+import WorkspaceHomePage from "@/pages/workspace/workspace-home";
+import WorkspaceProjectsPage from "@/pages/workspace/workspace-projects";
+import UpscaleToolPage from "@/pages/tools/upscale-tool";
+import MockupToolPage from "@/pages/tools/mockup-tool";
+import PrintFormatsToolPage from "@/pages/tools/print-formats-tool";
+import ListingToolPage from "@/pages/tools/listing-tool";
+import WorkflowPage from "@/pages/workflow/workflow-hub";
+import WorkflowRunnerPage from "@/pages/workflow/workflow-runner";
+import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceProvider } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { initGA, identifyUser, trackUserPlan } from "./lib/analytics";
@@ -55,69 +68,63 @@ function Router() {
   // Debug authentication state
   console.log('🔍 Auth Debug:', { isAuthenticated, hasUser: !!user, currentPath: window.location.pathname });
 
+  if (isAuthenticated) {
+    return (
+      <>
+        <SEOHead path={location} />
+        <WorkspaceProvider>
+          <AppShell>
+            <Switch>
+              <Route path="/" component={WorkspaceHomePage} />
+              <Route path="/workspace" component={WorkspaceHomePage} />
+              <Route path="/workspace/projects" component={WorkspaceProjectsPage} />
+              <Route path="/workspace/projects/:id" component={() => <ProjectDetailPage showChrome={false} />} />
+              <Route path="/settings" component={Settings} />
+              <Route path="/buy-credits" component={BuyCredits} />
+              <Route path="/tools/upscale" component={() => <UpscaleToolPage />} />
+              <Route path="/tools/mockups" component={MockupToolPage} />
+              <Route path="/tools/print-formats" component={() => <PrintFormatsToolPage />} />
+              <Route path="/tools/listing" component={() => <ListingToolPage />} />
+              <Route path="/workflow" component={WorkflowPage} />
+              <Route path="/workflow/run" component={WorkflowRunnerPage} />
+              <Route path="/projects/:id" component={() => <ProjectDetailPage showChrome={false} />} />
+              <Route path="/projects" component={WorkspaceProjectsPage} />
+              <Route path="/migration" component={Migration} />
+              <Route path="/mockups/outpaint" component={MockupOutpaintPage} />
+              <Route path="/mockups/frame" component={MockupFramedPage} />
+              <Route path="/templates/create" component={TemplateCreatePage} />
+              <Route path="/template-mockups" component={() => <MockupPage showChrome={false} />} />
+              <Route path="/payment-callback/:reference" component={PaymentCallback} />
+              <Route path="/payment-callback" component={PaymentCallback} />
+              <Route component={NotFound} />
+            </Switch>
+          </AppShell>
+        </WorkspaceProvider>
+      </>
+    );
+  }
+
   return (
     <>
       <SEOHead path={location} />
       <Switch>
-        {/* Public routes */}
-      <Route path="/home" component={HomePage} />
-      <Route path="/features" component={FeaturesPage} />
-      <Route path="/blog" component={BlogPage} />
-      <Route path="/blog/:slug" component={BlogPostPage} />
-      <Route path="/about-us" component={AboutUsPage} />
-      <Route path="/terms-of-service" component={TermsOfServicePage} />
-      <Route path="/privacy-policy" component={PrivacyPolicyPage} />
-      <Route path="/contact" component={ContactPage} />
-      <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
-      <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      <Route path="/login" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      <Route path="/register" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      
-      {/* Feature routes - redirect to auth or dashboard based on authentication */}
-      <Route path="/generate" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      <Route path="/upscale" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      <Route path="/resize" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      <Route path="/etsy-seo" component={isAuthenticated ? Dashboard : () => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-      
-      {/* Legacy route redirects */}
-      <Route path="/terms" component={TermsOfServicePage} />
-      <Route path="/privacy" component={PrivacyPolicyPage} />
-      
-      {/* Protected routes */}
-      {isAuthenticated ? (
-        <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/projects" component={ProjectsPage} />
-          <Route path="/projects/:id" component={ProjectDetailPage} />
-          <Route path="/settings" component={Settings} />
-          <Route path="/migration" component={Migration} />
-          <Route path="/buy-credits" component={BuyCredits} />
-          <Route path="/template-mockups" component={MockupPage} />
-          <Route path="/template-mockup" component={MockupPage} />
-          <Route path="/mockup" component={MockupPage} />
-          <Route path="/mockups" component={MockupPage} />
-          <Route path="/payment-callback/:reference" component={PaymentCallback} />
-          <Route path="/payment-callback" component={PaymentCallback} />
-        </>
-      ) : (
-        <>
-          <Route path="/" component={HomePage} />
-          {/* Redirect protected routes to auth for unauthenticated users */}
-          <Route path="/projects" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/projects/:id" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/settings" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/buy-credits" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/template-mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/template-mockup" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/mockup" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/payment-callback/:reference" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-          <Route path="/payment-callback" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
-        </>
-      )}
-      
-      <Route component={NotFound} />
-    </Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/home" component={HomePage} />
+        <Route path="/features" component={FeaturesPage} />
+        <Route path="/blog" component={BlogPage} />
+        <Route path="/blog/:slug" component={BlogPostPage} />
+        <Route path="/about-us" component={AboutUsPage} />
+        <Route path="/terms-of-service" component={TermsOfServicePage} />
+        <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+        <Route path="/contact" component={ContactPage} />
+        <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
+        <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        <Route path="/login" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        <Route path="/register" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        <Route path="/terms" component={TermsOfServicePage} />
+        <Route path="/privacy" component={PrivacyPolicyPage} />
+        <Route component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+      </Switch>
     </>
   );
 }
@@ -144,3 +151,8 @@ function App() {
 }
 
 export default App;
+
+
+
+
+

@@ -1,15 +1,23 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
-import { Download, ArrowLeft, Clock, CheckCircle, Image, FileText, Package, RefreshCcw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, Link, useLocation } from "wouter";
+import { Download, ArrowLeft, Clock, CheckCircle, Image, FileText, Package, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, ReactNode, useRef } from "react";
 import Navigation from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/useAuth";
-import type { User } from "@shared/schema";
+import type { User, ProjectAsset } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useWorkspace } from "@/contexts/workspace-context";
+
+interface ProjectDetailPageProps {
+  showChrome?: boolean;
+}
 
 interface Project {
   id: string;
@@ -32,16 +40,41 @@ interface Project {
   thumbnailUrl?: string;
   aiPrompt?: string;
   metadata?: any;
+  updatedAt?: Date | string;
 }
 
-export default function ProjectDetailPage() {
+function getAuthToken(): string | null {
+  try {
+    const authStorage = localStorage.getItem("auth-storage");
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      return parsed?.state?.token ?? parsed?.token ?? null;
+    }
+  } catch (error) {
+    console.error("Failed to read auth token:", error);
+  }
+  return null;
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, power);
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[power]}`;
+}
+export default function ProjectDetailPage({ showChrome = true }: ProjectDetailPageProps = {}) {
   const params = useParams();
   const projectId = params?.id;
+  const [, setLocation] = useLocation();
   const [selectedMockup, setSelectedMockup] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { setSelectedProjectId } = useWorkspace();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -62,12 +95,134 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const { data: assetsResponse, isLoading: assetsLoading } = useQuery<{ assets: ProjectAsset[] }>({
+    queryKey: ["/api/projects", projectId, "assets"],
+    enabled: !!projectId,
+    queryFn: async () => {
+      if (!projectId) {
+        return { assets: [] };
+      }
+      const res = await apiRequest("GET", `/api/projects/${projectId}/assets`);
+      return res.json() as Promise<{ assets: ProjectAsset[] }>;
+    },
+  });
+
+  const assets = assetsResponse?.assets ?? [];
+
+  const uploadAssetMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!projectId) throw new Error("No project selected");
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = getAuthToken();
+      const response = await fetch(`/api/projects/${projectId}/assets`, {
+        method: "POST",
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to upload asset");
+      }
+
+      return response.json() as Promise<ProjectAsset>;
+    },
+    onSuccess: () => {
+      toast({ title: "Asset uploaded", description: "File stored in project workspace." });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "assets"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Upload failed",
+        description: error?.message || "Unable to upload asset right now.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAssetMutation = useMutation({
+    mutationFn: async (assetId: string) => {
+      if (!projectId) throw new Error("No project selected");
+      const token = getAuthToken();
+      const response = await fetch(`/api/projects/${projectId}/assets/${assetId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to delete asset");
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Asset removed", description: "The file has been deleted." });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "assets"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
+        description: error?.message || "Unable to delete asset right now.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) {
+        throw new Error("No project selected");
+      }
+
+      const response = await apiRequest("DELETE", `/api/projects/${projectId}`);
+      return response.json() as Promise<{ success: boolean }>;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Project deleted",
+        description: "The project and its assets have been removed.",
+      });
+
+      setSelectedProjectId(null);
+      queryClient.removeQueries({ queryKey: ["/api/projects", projectId] });
+      queryClient.removeQueries({ queryKey: ["/api/projects", projectId, "assets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setLocation("/workspace/projects");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Deletion failed",
+        description: error?.message || "Unable to delete project right now.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Use auth user data as fallback if API user data is not available
-  const currentUser = user || authUser ? {
-    name: (user || authUser)?.name || '',
-    avatar: (user || authUser)?.avatar || undefined,
-    credits: (user || authUser)?.credits || 0
-  } : undefined;
+  const baseUser = user || authUser;
+  const currentUser = baseUser
+    ? {
+        name: baseUser.name || "",
+        avatar: baseUser.avatar || undefined,
+        credits: baseUser.credits || 0,
+      }
+    : undefined;
+
+  const renderWithChrome = (node: ReactNode) => {
+    if (!showChrome) {
+      return <div className="min-h-full bg-slate-900/60 text-slate-100">{node}</div>;
+    }
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation user={currentUser} />
+        {node}
+        <Footer />
+      </div>
+    );
+  };
 
   // Force refresh project data from server
   const handleRefreshProject = async () => {
@@ -164,37 +319,31 @@ export default function ProjectDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation user={currentUser} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading project details...</p>
-          </div>
+    return renderWithChrome(
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-500"></div>
+          <p className="mt-4 text-slate-300">Loading project details...</p>
         </div>
-        <Footer />
       </div>
     );
   }
 
   if (error || !project) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation user={currentUser} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h1>
-            <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or has been deleted.</p>
-            <Link href="/projects">
-              <Button>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Projects
-              </Button>
-            </Link>
-          </div>
+    return renderWithChrome(
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-white mb-4">Project not found</h1>
+          <p className="text-sm text-slate-400 mb-6">
+            The project you're looking for doesn't exist or has been deleted.
+          </p>
+          <Link href="/workspace/projects">
+            <Button className="border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to projects
+            </Button>
+          </Link>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -248,7 +397,11 @@ export default function ProjectDetailPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link href="/projects">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 disabled:border-indigo-100 disabled:bg-indigo-50 disabled:text-indigo-300"
+                >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Projects
                 </Button>
@@ -270,19 +423,53 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="flex space-x-3">
-              <Button 
-                onClick={handleRefreshProject} 
-                variant="outline" 
+            <div className="flex items-center gap-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={deleteProjectMutation.isPending}
+                    className="border-red-400/40 text-red-500 hover:bg-red-500/10 hover:text-red-400 disabled:border-red-200 disabled:text-red-300"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {deleteProjectMutation.isPending ? "Deleting..." : "Delete Project"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="border border-slate-700 bg-slate-900 text-slate-100">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this project?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove the project, its generated assets, and history. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-slate-800 text-slate-200 hover:bg-slate-700">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteProjectMutation.mutate()}
+                      className="bg-red-500 hover:bg-red-600 focus:ring-red-500"
+                      disabled={deleteProjectMutation.isPending}
+                    >
+                      {deleteProjectMutation.isPending ? "Deleting..." : "Delete project"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                onClick={handleRefreshProject}
+                variant="outline"
                 disabled={isRefreshing}
                 data-testid="button-refresh-project"
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 disabled:border-indigo-100 disabled:bg-indigo-50 disabled:text-indigo-300"
               >
                 <RefreshCcw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+                {isRefreshing ? "Refreshing..." : "Refresh Data"}
               </Button>
-              <Button 
-                onClick={handleDownloadAll} 
-                size="lg" 
+              <Button
+                onClick={handleDownloadAll}
+                size="lg"
                 disabled={isDownloading}
                 data-testid="button-download-all"
               >
@@ -573,3 +760,9 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
+
+
+
+
+
+

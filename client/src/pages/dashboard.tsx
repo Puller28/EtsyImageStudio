@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { User, Project } from "@shared/schema";
+import type { PrintFormatId } from "@shared/print-formats";
 import { analytics } from "@/lib/analytics";
 
 import Navigation from "@/components/navigation";
@@ -385,13 +386,22 @@ export default function Dashboard() {
     setShowUploadMode(false); // Reset to show options again
   };
 
-  const handleStartProcessing = async (options: { upscaleOption: "2x" | "4x" }) => {
+  const handleStartProcessing = async (options: { upscaleOption: "2x" | "4x" | "none"; selectedPrintFormats: PrintFormatId[] }) => {
     console.log("🟠 handleStartProcessing called with options:", options);
     
     if (!uploadedImage) {
       toast({
         title: "No Image",
         description: "Please upload an image first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!options.selectedPrintFormats || options.selectedPrintFormats.length === 0) {
+      toast({
+        title: "Choose Print Formats",
+        description: "Select at least one print size to generate.",
         variant: "destructive",
       });
       return;
@@ -412,6 +422,7 @@ export default function Dashboard() {
     formData.append("artworkTitle", uploadProjectName.trim());
     formData.append("styleKeywords", "digital art");
     formData.append("upscaleOption", options.upscaleOption);
+    formData.append("printFormats", JSON.stringify(options.selectedPrintFormats));
 
     console.log("🟠 About to call createProjectMutation.mutate with FormData, project name:", uploadProjectName.trim());
     setDownloadCompleted(false); // Reset download state for new processing
@@ -899,3 +910,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

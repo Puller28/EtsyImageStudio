@@ -48,11 +48,8 @@ export default function Migration() {
 
   // Start migration mutation
   const startMigration = useMutation({
-    mutationFn: (batchSize: number = 5) => 
-      apiRequest(`/api/migration/start`, { 
-        method: 'POST', 
-        body: JSON.stringify({ batchSize }) 
-      }),
+    mutationFn: (batchSize: number = 5) =>
+      apiRequest("POST", `/api/migration/start`, { batchSize }),
     onSuccess: () => {
       setIsRunning(true);
       refetchProgress();

@@ -1,11 +1,49 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Home, Search, ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { AlertCircle, Home, Search } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { PublicNavigation } from "@/components/navigation-public";
 import { Footer } from "@/components/footer";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function NotFound() {
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (isAuthenticated) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center bg-slate-900/95 px-6 py-16 text-slate-100">
+        <div className="max-w-lg text-center space-y-6">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/80">
+            <AlertCircle className="h-8 w-8 text-indigo-300" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-white">Page not found</h1>
+            <p className="text-sm text-slate-400">
+              We couldn&apos;t find that workspace page. It may have been moved or renamed.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button
+              className="bg-indigo-500 hover:bg-indigo-600"
+              onClick={() => navigate("/workspace")}
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Back to workspace
+            </Button>
+            <Button
+              variant="secondary"
+              className="bg-slate-800 text-slate-200 hover:bg-slate-700"
+              onClick={() => navigate("/workspace/projects")}
+            >
+              View projects
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNavigation />
@@ -42,7 +80,6 @@ export default function NotFound() {
           </div>
         </div>
 
-        {/* Helpful Links Section */}
         <Card className="mt-12">
           <CardHeader>
             <CardTitle className="text-xl text-center">Popular Pages</CardTitle>
@@ -73,7 +110,6 @@ export default function NotFound() {
           </CardContent>
         </Card>
 
-        {/* SEO Content */}
         <div className="mt-12 text-center text-muted-foreground">
           <p className="text-sm">
             Looking for AI-powered image upscaling, mockup generation, or digital art tools? 

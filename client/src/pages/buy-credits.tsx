@@ -1,13 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Zap, CheckCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 
 interface CreditPackage {
   id: string;
@@ -32,10 +40,108 @@ interface SubscriptionPlan {
   paystackPlanCode?: string;
 }
 
+const defaultCreditPackages: CreditPackage[] = [
+  {
+    id: "credits_50",
+    name: "50 Credits",
+    credits: 50,
+    usdPrice: 6,
+    zarPrice: 11400,
+    description: "Small top-up for quick projects",
+    type: "one-time",
+  },
+  {
+    id: "credits_100",
+    name: "100 Credits",
+    credits: 100,
+    usdPrice: 11,
+    zarPrice: 20900,
+    description: "Perfect for additional credits",
+    type: "one-time",
+  },
+  {
+    id: "credits_200",
+    name: "200 Credits",
+    credits: 200,
+    usdPrice: 20,
+    zarPrice: 38000,
+    description: "Great value for extra credits",
+    type: "one-time",
+  },
+  {
+    id: "credits_400",
+    name: "400 Credits",
+    credits: 400,
+    usdPrice: 36,
+    zarPrice: 68400,
+    description: "Maximum credits for heavy usage",
+    type: "one-time",
+  },
+];
+
+const defaultSubscriptionPlans: SubscriptionPlan[] = [
+  {
+    id: "free",
+    name: "Free Plan",
+    credits: 100,
+    usdPrice: 0,
+    zarPrice: 0,
+    interval: "monthly",
+    description: "Free monthly credits to get started",
+    type: "free",
+    features: [
+      "100 credits per month",
+      "AI art generation",
+      "Image upscaling (2x only)",
+      "Print format resizing",
+      "Basic Etsy listing generation",
+      "Limited mockup generation (5 sets max)",
+      "Basic AI tools",
+    ],
+  },
+  {
+    id: "pro_monthly",
+    name: "Pro Plan",
+    credits: 300,
+    usdPrice: 19.95,
+    zarPrice: 38000,
+    interval: "monthly",
+    description: "Perfect for regular AI art creators",
+    type: "subscription",
+    features: [
+      "300 credits per month",
+      "All Free plan features",
+      "Unlimited mockup generation",
+      "Image upscaling (2x and 4x)",
+      "Complete Etsy listing with tags",
+    ],
+  },
+  {
+    id: "business_monthly",
+    name: "Business Plan",
+    credits: 800,
+    usdPrice: 49,
+    zarPrice: 93100,
+    interval: "monthly",
+    description: "For serious Etsy sellers and agencies",
+    type: "subscription",
+    features: [
+      "800 credits per month",
+      "All Pro plan features",
+      "Unlimited mockup generation",
+      "Commercial usage rights",
+      "Bulk processing capabilities",
+      "Best value per credit",
+    ],
+  },
+];
+
 export default function BuyCredits() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [processingPackage, setProcessingPackage] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [location] = useLocation();
 
   const { data: allPlans, isLoading } = useQuery<{
     creditPackages: CreditPackage[];
@@ -46,13 +152,28 @@ export default function BuyCredits() {
     gcTime: 0,
   });
 
-  const packages = allPlans?.creditPackages || [];
-  const subscriptions = allPlans?.subscriptionPlans || [];
+  const { packages, subscriptions } = useMemo(() => {
+    const creditPackages = allPlans?.creditPackages?.length
+      ? allPlans.creditPackages
+      : defaultCreditPackages;
+    const subscriptionPlans = allPlans?.subscriptionPlans?.length
+      ? allPlans.subscriptionPlans
+      : defaultSubscriptionPlans;
+    return { packages: creditPackages, subscriptions: subscriptionPlans };
+  }, [allPlans]);
   
   // Force refresh on component mount to avoid cache issues
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["/api/all-plans"] });
   }, []);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const packageFromQuery = searchParams.get("package");
+    if (packageFromQuery) {
+      setSelectedPackage(packageFromQuery);
+    }
+  }, [location]);
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ id, type }: { id: string; type: 'one-time' | 'subscription' | 'free' }) => {
@@ -132,6 +253,7 @@ export default function BuyCredits() {
 
     console.log('🛒 Starting subscription for plan:', id, 'ID:', id);
     setProcessingPackage(id);
+    setSelectedPackage(id);
     purchaseMutation.mutate({ id, type });
   };
 
@@ -265,7 +387,15 @@ export default function BuyCredits() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {packages.map((pkg) => (
-            <Card key={pkg.id} className="relative flex flex-col">
+            <Card
+              key={pkg.id}
+              className={cn(
+                "relative flex flex-col transition-all",
+                selectedPackage === pkg.id
+                  ? "border-2 border-primary shadow-lg shadow-primary/20"
+                  : ""
+              )}
+            >
               {getPopularBadge(pkg.credits)}
               {getBestValueBadge(pkg.credits)}
               

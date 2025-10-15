@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { CloudUpload, X, Image, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,17 @@ interface ImageUploadProps {
   onRemoveImage: () => void;
   onGenerateNew?: () => void; // For AI-generated images
   onBackToChoice?: () => void; // To go back to initial choice
+  onOpenProjectPicker?: () => void;
 }
 
-export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImage, onGenerateNew, onBackToChoice }: ImageUploadProps) {
+export default function ImageUpload({
+  onImageUpload,
+  uploadedImage,
+  onRemoveImage,
+  onGenerateNew,
+  onBackToChoice,
+  onOpenProjectPicker,
+}: ImageUploadProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onImageUpload(acceptedFiles[0]);
@@ -71,6 +79,21 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
                 <p className="text-xs text-gray-400">JPG, PNG up to 5MB</p>
               </div>
             </div>
+
+            {onOpenProjectPicker && (
+              <div className="mt-6 text-center">
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">or reuse</div>
+                <Button
+                  variant="outline"
+                  className="mt-2 inline-flex items-center gap-2"
+                  onClick={onOpenProjectPicker}
+                  type="button"
+                >
+                  <Image className="h-4 w-4" />
+                  Use artwork from a project
+                </Button>
+              </div>
+            )}
             
             {/* Error messages for rejected files */}
             {fileRejections.length > 0 && (
@@ -109,7 +132,7 @@ export default function ImageUpload({ onImageUpload, uploadedImage, onRemoveImag
                 <div>
                   <p className="font-medium text-gray-900">{uploadedImage.file.name}</p>
                   <p className="text-sm text-gray-500">
-                    {(uploadedImage.file.size / (1024 * 1024)).toFixed(1)} MB • Ready to process
+                    {(uploadedImage.file.size / (1024 * 1024)).toFixed(1)} MB - Ready to process
                   </p>
                 </div>
                 <div className="flex gap-2">

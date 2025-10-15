@@ -1,25 +1,35 @@
 import { useState } from "react";
-import { Play, Check, Settings } from "lucide-react";
+import { Play, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { analytics } from "@/lib/analytics";
+import { DEFAULT_PRINT_FORMAT_IDS, PRINT_FORMAT_OPTIONS, type PrintFormatId } from "@shared/print-formats";
 
 interface ProcessingControlsProps {
-  onStartProcessing: (options: { upscaleOption: "2x" | "4x" }) => void;
+  onStartProcessing: (options: { upscaleOption: "none" | "2x" | "4x"; selectedPrintFormats: PrintFormatId[] }) => void;
   disabled?: boolean;
 }
 
 export default function ProcessingControls({ onStartProcessing, disabled }: ProcessingControlsProps) {
-  const [upscaleOption, setUpscaleOption] = useState<"2x" | "4x">("2x");
+  const [upscaleOption, setUpscaleOption] = useState<"none" | "2x" | "4x">("2x");
+  const [selectedPrintFormats, setSelectedPrintFormats] = useState<PrintFormatId[]>(() => [...DEFAULT_PRINT_FORMAT_IDS]);
 
-  const printFormats = [
-    "4x5 (8x10)",
-    "3x4 (18x24)",
-    "2x3 (12x18)",
-    "11x14",
-    "A4 (ISO)"
-  ];
+  const handleToggleFormat = (format: PrintFormatId, checked: boolean) => {
+    setSelectedPrintFormats((current) => {
+      if (checked) {
+        return current.includes(format) ? current : [...current, format];
+      }
+      return current.filter((item) => item !== format);
+    });
+  };
+
+  const handleSelectAllFormats = () => {
+    setSelectedPrintFormats([...DEFAULT_PRINT_FORMAT_IDS]);
+  };
+
+  const noFormatsSelected = selectedPrintFormats.length === 0;
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
@@ -32,8 +42,18 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
         {/* Upscaling Options */}
         <div className="mb-6">
           <h4 className="font-medium text-gray-900 mb-3">Image Upscaling</h4>
-          <RadioGroup value={upscaleOption} onValueChange={(value) => setUpscaleOption(value as "2x" | "4x")}>
-            <div className="grid grid-cols-2 gap-3">
+          <RadioGroup value={upscaleOption} onValueChange={(value) => setUpscaleOption(value as "none" | "2x" | "4x")}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <RadioGroupItem value="none" className="text-primary" />
+                <div className="ml-3 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="block font-medium text-gray-900">No Upscale</span>
+                    <span className="text-sm font-medium text-primary">0 credits</span>
+                  </div>
+                  <span className="block text-sm text-gray-500">Use original resolution</span>
+                </div>
+              </Label>
               <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                 <RadioGroupItem value="2x" className="text-primary" />
                 <div className="ml-3 flex-1">
@@ -60,27 +80,67 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
 
         {/* Print Formats */}
         <div className="mb-6">
-          <h4 className="font-medium text-gray-900 mb-3">Print Formats</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {printFormats.map((format) => (
-              <div key={format} className="flex items-center p-2 bg-gray-50 rounded text-sm">
-                <Check className="w-4 h-4 text-green-500 mr-2" />
-                {format}
-              </div>
-            ))}
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h4 className="font-medium text-gray-900">Print Formats</h4>
+              <p className="text-sm text-gray-500">
+                Choose the dimensions we should prepare as high-resolution downloads.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectAllFormats}
+              disabled={selectedPrintFormats.length === DEFAULT_PRINT_FORMAT_IDS.length}
+            >
+              Select all
+            </Button>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {PRINT_FORMAT_OPTIONS.map((format) => {
+              const isChecked = selectedPrintFormats.includes(format.id);
+              return (
+                <label
+                  key={format.id}
+                  className={`flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors ${
+                    isChecked ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/60"
+                  }`}
+                >
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={(value) => handleToggleFormat(format.id, value === true)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">{format.label}</div>
+                    {format.notes && (
+                      <div className="text-xs text-gray-500 mt-1">{format.notes}</div>
+                    )}
+                    <div className="text-[11px] text-gray-400 mt-1 uppercase tracking-wide">
+                      {format.width} x {format.height} px @ 300 DPI
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          {noFormatsSelected && (
+            <p className="mt-2 text-xs text-red-500">
+              Select at least one print format to continue.
+            </p>
+          )}
         </div>
 
         <Button
           onClick={() => {
             // Track image processing start
-            const creditsUsed = upscaleOption === "2x" ? 1 : 2;
+            const creditsUsed = upscaleOption === "4x" ? 2 : upscaleOption === "2x" ? 1 : 0;
             analytics.imageProcess(upscaleOption, creditsUsed);
             analytics.funnelStep('image_processing_start', 2);
             
-            onStartProcessing({ upscaleOption });
+            onStartProcessing({ upscaleOption, selectedPrintFormats });
           }}
-          disabled={disabled}
+          disabled={disabled || noFormatsSelected}
           className="w-full"
           size="lg"
         >

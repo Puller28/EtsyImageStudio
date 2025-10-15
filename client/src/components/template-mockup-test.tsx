@@ -54,6 +54,7 @@ export function TemplateMockupTest() {
   const [progress, setProgress] = useState(0);
 
   const availableTemplates: Template[] = ["living_room", "bedroom", "study", "gallery", "kitchen"];
+  const MAX_VARIATIONS = 10;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -90,11 +91,11 @@ export function TemplateMockupTest() {
       let stylesToProcess: Template[] = [];
       
       if (mode === 'single_template') {
-        // Generate 5 variations of the single template
-        stylesToProcess = Array(5).fill(template) as Template[];
+        // Generate multiple variations of the single template (up to MAX_VARIATIONS)
+        stylesToProcess = Array(MAX_VARIATIONS).fill(template) as Template[];
       } else {
-        // Generate one mockup for each template
-        stylesToProcess = availableTemplates;
+        // Generate one mockup for each available template (up to MAX_VARIATIONS)
+        stylesToProcess = availableTemplates.slice(0, MAX_VARIATIONS);
       }
 
       const totalSteps = stylesToProcess.length;
@@ -130,7 +131,7 @@ export function TemplateMockupTest() {
             if (response.status === 403 && errorData.requiresUpgrade) {
               throw new Error(errorData.message || "Mockup generation requires a paid plan. Upgrade to Pro or Business plan to generate AI mockups.");
             } else if (response.status === 402) {
-              throw new Error(`Insufficient credits. Need ${errorData.creditsNeeded || 5} credits for mockup generation.`);
+              throw new Error(`Insufficient credits. Need ${errorData.creditsNeeded || MAX_VARIATIONS} credits for mockup generation.`);
             } else {
               throw new Error(errorData.error || errorData.message || `Failed to generate ${currentStyle} mockup`);
             }
@@ -139,7 +140,7 @@ export function TemplateMockupTest() {
             if (response.status === 403) {
               throw new Error("Mockup generation requires a paid plan. Upgrade to Pro or Business plan to generate AI mockups.");
             } else if (response.status === 402) {
-              throw new Error("Insufficient credits. Need 5 credits for mockup generation.");
+              throw new Error(`Insufficient credits. Need ${MAX_VARIATIONS} credits for mockup generation.`);
             } else {
               throw new Error(`Failed to generate ${currentStyle} mockup. Please try again.`);
             }
@@ -247,11 +248,11 @@ export function TemplateMockupTest() {
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="single_template" id="single" data-testid="radio-single-template" />
-                <Label htmlFor="single">5 variations of one template</Label>
+                <Label htmlFor="single">{MAX_VARIATIONS} variations of one template</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="all_templates" id="all" data-testid="radio-all-templates" />
-                <Label htmlFor="all">1 mockup from each of the 5 templates</Label>
+                <Label htmlFor="all">1 mockup from each of the {availableTemplates.length} templates</Label>
               </div>
             </RadioGroup>
           </div>
@@ -290,7 +291,7 @@ export function TemplateMockupTest() {
                 Processing...
               </>
             ) : (
-              `Generate ${mode === "single_template" ? "5 Variations" : "5 Templates"}`
+              `Generate ${mode === "single_template" ? `${MAX_VARIATIONS} Variations` : `${availableTemplates.length} Templates`}`
             )}
           </Button>
 
@@ -321,7 +322,7 @@ export function TemplateMockupTest() {
             <CardTitle>Generated Mockups ({results.length})</CardTitle>
             <CardDescription>
               {mode === "single_template" 
-                ? `5 variations of ${template?.replace("_", " ")}`
+                ? `${MAX_VARIATIONS} variations of ${template?.replace("_", " ")}`
                 : "1 mockup from each template"
               }
             </CardDescription>

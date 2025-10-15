@@ -225,11 +225,9 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
 
   const handleCreditPurchase = async (packageId: string) => {
     if (!currentUser) {
-      toast({
-        title: "Login Required", 
-        description: "Please log in to purchase credits.",
-        variant: "destructive",
-      });
+      const nextUrl = `/buy-credits?package=${encodeURIComponent(packageId)}`;
+      analytics.funnelStep('credit_purchase_login_redirect', 3);
+      window.location.href = `/auth?next=${encodeURIComponent(nextUrl)}`;
       return;
     }
 
