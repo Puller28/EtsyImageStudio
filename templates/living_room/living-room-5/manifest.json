@@ -1,0 +1,32 @@
+{
+  "id": "living-room-5",
+  "name": "living-room-5",
+  "background": "background.png",
+  "mask": "mask.png",
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [
+      365,
+      77
+    ],
+    [
+      664,
+      77
+    ],
+    [
+      664,
+      528
+    ],
+    [
+      365,
+      528
+    ]
+  ],
+  "blend": {
+    "mode": "normal",
+    "opacity": 1
+  },
+  "feather_px": 1,
+  "pad_inset_px": 0
+}

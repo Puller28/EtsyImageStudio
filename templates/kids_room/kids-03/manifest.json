@@ -1,0 +1,32 @@
+{
+  "id": "kids-03",
+  "name": "kids-03",
+  "background": "background.png",
+  "mask": "mask.png",
+  "width": 1024,
+  "height": 1024,
+  "corners": [
+    [
+      427,
+      101
+    ],
+    [
+      641,
+      104
+    ],
+    [
+      640,
+      386
+    ],
+    [
+      428,
+      386
+    ]
+  ],
+  "blend": {
+    "mode": "normal",
+    "opacity": 1
+  },
+  "feather_px": 1,
+  "pad_inset_px": 0
+}

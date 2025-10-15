@@ -1,0 +1,32 @@
+{
+  "id": "study-05",
+  "name": "study-05",
+  "background": "background.png",
+  "mask": "mask.png",
+  "width": 1536,
+  "height": 1024,
+  "corners": [
+    [
+      527,
+      232
+    ],
+    [
+      962,
+      232
+    ],
+    [
+      962,
+      446
+    ],
+    [
+      527,
+      446
+    ]
+  ],
+  "blend": {
+    "mode": "normal",
+    "opacity": 1
+  },
+  "feather_px": 1,
+  "pad_inset_px": 0
+}
