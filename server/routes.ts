@@ -21,9 +21,147 @@ import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest
 import { comfyUIService } from "./services/comfyui-service";
 import { SEOService } from "./services/seo-service";
 import { ImageMigrationService } from "./services/image-migration-service";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+
+const projectImageStorage = new ProjectImageStorage();
+
+function extractStoragePath(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith("data:")) {
+    return null;
+  }
+
+  if (trimmed.startsWith("/objects/") || trimmed.startsWith("projects/")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("objects/")) {
+    return `/${trimmed}`;
+  }
+
+  const objectsIndex = trimmed.indexOf("/objects/");
+  if (objectsIndex >= 0) {
+    return trimmed.substring(objectsIndex);
+  }
+
+  return null;
+}
+
+function collectProjectStoragePaths(project: Project): string[] {
+  const paths = new Set<string>();
+  const addValue = (value: unknown) => {
+    if (!value) {
+      return;
+    }
+
+    if (typeof value === "string") {
+      const path = extractStoragePath(value);
+      if (path) {
+        paths.add(path);
+      }
+      return;
+    }
+
+    if (typeof value === "object") {
+      const maybeUrl = (value as Record<string, unknown>).url;
+      const maybeStoragePath = (value as Record<string, unknown>).storagePath;
+      if (typeof maybeStoragePath === "string") {
+        const path =
+          extractStoragePath(maybeStoragePath) ??
+          (maybeStoragePath.startsWith("/") ? maybeStoragePath : `/${maybeStoragePath}`);
+        if (path) {
+          paths.add(path);
+        }
+      }
+      if (typeof maybeUrl === "string") {
+        const path = extractStoragePath(maybeUrl);
+        if (path) {
+          paths.add(path);
+        }
+      }
+    }
+  };
+
+  addValue(project.thumbnailUrl);
+  addValue(project.originalImageUrl);
+  addValue(project.mockupImageUrl);
+  addValue(project.upscaledImageUrl);
+  addValue(project.zipUrl);
+
+  if (Array.isArray(project.resizedImages)) {
+    for (const item of project.resizedImages as Array<string | Record<string, unknown>>) {
+      addValue(item);
+    }
+  }
+
+  if (project.mockupImages && typeof project.mockupImages === "object") {
+    for (const value of Object.values(project.mockupImages as Record<string, unknown>)) {
+      addValue(value);
+    }
+  }
+
+  if (project.metadata && typeof project.metadata === "object") {
+    const metadata = project.metadata as Record<string, unknown>;
+    if (Array.isArray(metadata.assets)) {
+      for (const asset of metadata.assets) {
+        addValue(asset);
+      }
+    }
+  }
+
+  return Array.from(paths);
+}
+
+function resolvePythonExecutable(): { command: string; args: string[] } {
+  const fromEnv = process.env.PYTHON_EXECUTABLE?.trim();
+  if (fromEnv) {
+    if (fs.existsSync(fromEnv)) {
+      return { command: fromEnv, args: [] };
+    }
+    return { command: fromEnv, args: [] };
+  }
+
+  const cwd = process.cwd();
+  const candidatePaths: string[] = [];
+  if (process.platform === "win32") {
+    candidatePaths.push(path.join(cwd, ".venv", "Scripts", "python.exe"));
+    candidatePaths.push(path.join(cwd, "venv", "Scripts", "python.exe"));
+    candidatePaths.push(path.join(cwd, ".venv", "Scripts", "python"));
+    candidatePaths.push(path.join(cwd, "venv", "Scripts", "python"));
+  } else {
+    candidatePaths.push(path.join(cwd, ".venv", "bin", "python3"));
+    candidatePaths.push(path.join(cwd, ".venv", "bin", "python"));
+    candidatePaths.push(path.join(cwd, "venv", "bin", "python3"));
+    candidatePaths.push(path.join(cwd, "venv", "bin", "python"));
+  }
+
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      return { command: candidate, args: [] };
+    }
+  }
+
+  if (process.platform === "win32") {
+    const launcherCheck = spawnSync("py", ["-3", "--version"], { stdio: "ignore" });
+    if (!launcherCheck.error && launcherCheck.status === 0) {
+      return { command: "py", args: ["-3"] };
+    }
+    return { command: "python", args: [] };
+  }
+
+  const python3Check = spawnSync("python3", ["--version"], { stdio: "ignore" });
+  if (!python3Check.error && python3Check.status === 0) {
+    return { command: "python3", args: [] };
+  }
+
+  return { command: "python", args: [] };
+}
 
 // Server-side Google Analytics tracking using GA4 Measurement Protocol
 async function trackServerAnalyticsEvent(eventName: string, parameters: Record<string, any>) {
@@ -1591,6 +1729,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/projects/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.userId;
+      const projectId = req.params.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      const project = await storage.getProject(projectId, true);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      if (project.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const storagePaths = collectProjectStoragePaths(project);
+      if (storagePaths.length > 0) {
+        const results = await Promise.allSettled(
+          storagePaths.map((path) => projectImageStorage.deleteAsset(path))
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === "rejected") {
+            console.warn(
+              `⚠️ Failed to delete storage asset ${storagePaths[index]} for project ${projectId}:`,
+              result.reason
+            );
+          }
+        });
+      }
+
+      const deleted = await storage.deleteProject(projectId);
+      if (!deleted) {
+        return res.status(500).json({ error: "Failed to delete project" });
+      }
+
+      await trackServerAnalyticsEvent("project_deleted", {
+        userId,
+        project_id: projectId,
+      });
+
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("❌ Error deleting project:", error);
+      return res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
   // Create new project with image upload
   app.post("/api/projects", optionalAuth, upload.single("image"), async (req: AuthenticatedRequest, res) => {
     try {
@@ -1878,36 +2071,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
 
-      // Add project files to ZIP
-      if (project.originalImageUrl && project.originalImageUrl.startsWith('data:image/')) {
-        const base64Data = project.originalImageUrl.split(',')[1];
-        zip.file("original-image.jpg", base64Data, { base64: true });
+      console.log(`📦 Generating ZIP for project ${project.id}...`);
+
+      // Add project files to ZIP - fetch from storage if needed
+      if (project.originalImageUrl) {
+        try {
+          const buffer = await projectImageStorage.getImageBuffer(project.originalImageUrl);
+          if (buffer) {
+            zip.file("original-image.jpg", buffer);
+            console.log(`✅ Added original image to ZIP`);
+          }
+        } catch (error) {
+          console.warn('Failed to add original image to ZIP:', error);
+        }
       }
 
       // Add upscaled image
-      if (project.upscaledImageUrl && project.upscaledImageUrl.startsWith('data:image/')) {
-        const base64Data = project.upscaledImageUrl.split(',')[1];
-        zip.file("upscaled-image.jpg", base64Data, { base64: true });
+      if (project.upscaledImageUrl) {
+        try {
+          const buffer = await projectImageStorage.getImageBuffer(project.upscaledImageUrl);
+          if (buffer) {
+            zip.file("upscaled-image.jpg", buffer);
+            console.log(`✅ Added upscaled image to ZIP`);
+          }
+        } catch (error) {
+          console.warn('Failed to add upscaled image to ZIP:', error);
+        }
       }
 
       // Add print format sizes
       const printFormats = ["4x5-8x10.jpg", "3x4-18x24.jpg", "2x3-12x18.jpg", "11x14.jpg", "A4-ISO.jpg"];
-      printFormats.forEach((filename, index) => {
-        if (project.resizedImages?.[index]) {
-          // Handle both old format (URL strings) and new format (objects with {size, url})
+      if (project.resizedImages && Array.isArray(project.resizedImages)) {
+        for (let index = 0; index < project.resizedImages.length; index++) {
           const resizedItem = project.resizedImages[index];
-          const imageData = typeof resizedItem === 'string' 
-            ? resizedItem 
-            : (resizedItem as any).url;
+          const imageUrl = typeof resizedItem === 'string' ? resizedItem : resizedItem.url;
+          const filename = printFormats[index] || `print-format-${index + 1}.jpg`;
           
-          if (imageData && typeof imageData === 'string' && imageData.startsWith('data:image/')) {
-            const base64Data = imageData.split(',')[1];
-            zip.file(`print-formats/${filename}`, base64Data, { base64: true });
+          try {
+            const buffer = await projectImageStorage.getImageBuffer(imageUrl);
+            if (buffer) {
+              zip.file(`print-formats/${filename}`, buffer);
+              console.log(`✅ Added resized image ${index + 1} to ZIP`);
+            }
+          } catch (error) {
+            console.warn(`Failed to add resized image ${index + 1} to ZIP:`, error);
           }
         }
-      });
-
-
+      }
 
       // Add Etsy listing content if available
       if (project.etsyListing) {
@@ -1920,6 +2130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate ZIP file
       const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+      console.log(`✅ ZIP generated successfully for project ${project.id}`);
 
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="${project.title || 'project'}.zip"`);
@@ -2501,6 +2712,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse selected templates from request first
       const selectedTemplates = JSON.parse(req.body.templates || "[]");
       
+      // Check if we should add mockups to an existing project
+      const existingProjectId = req.body.project_id || null;
+      if (existingProjectId) {
+        console.log(`📁 Will add mockups to existing project: ${existingProjectId}`);
+      }
+      
       // Get user and check subscription status
       const user = await storage.getUserById(userId);
       if (!user) {
@@ -2575,7 +2792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Call Python script with your exact logic
             const pythonResult = await new Promise<any>((resolve, reject) => {
-              const python = spawn('python3', ['-c', `
+              const pythonExec = resolvePythonExecutable();
+              const python = spawn(pythonExec.command, [...pythonExec.args, '-c', `
 import sys, json, io, os, math, hashlib, base64
 from pathlib import Path
 import numpy as np
@@ -2733,8 +2951,12 @@ def process_mockup(artwork_path, room, template_id):
 if len(sys.argv) >= 4:
     process_mockup(sys.argv[1], sys.argv[2], sys.argv[3])
 else:
-    process_mockup("${tempArtworkPath}", "${template.room}", "${template.id}")
+    process_mockup(${JSON.stringify(tempArtworkPath)}, ${JSON.stringify(template.room)}, ${JSON.stringify(template.id)})
 `]);
+
+              python.on('error', (spawnError) => {
+                reject(new Error(`Failed to start Python process (${pythonExec.command}): ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`));
+              });
 
               let output = '';
               let error = '';
@@ -2815,45 +3037,84 @@ else:
         return res.status(402).json({ error: "Failed to deduct credits for mockup generation" });
       }
 
-      // CREATE PROJECT TO SAVE THE MOCKUPS - This was missing!
-      console.log(`📁 Creating project for mockup set with ${mockups.length} mockups`);
-      
-      // Generate a descriptive title based on templates used
-      const templateNames = selectedTemplates.map(t => `${t.room}_${t.id}`).join(', ');
-      const projectTitle = `Mockup Set - ${templateNames}`;
-      
-      const projectData = {
-        userId,
-        title: projectTitle,
-        originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
-        upscaledImageUrl: null,
-        mockupImageUrl: null,
-        mockupImages: mockups.reduce((acc, m, index) => {
-          acc[`${m.template.room}_${m.template.id}`] = m.image_data;
-          return acc;
-        }, {} as Record<string, string>), // Store all mockup images as key-value pairs
-        resizedImages: [],
-        etsyListing: null,
-        zipUrl: null,
-        artworkTitle: projectTitle,
-        styleKeywords: 'mockup, template-based, professional',
-        status: 'completed',
-        upscaleOption: '2x',
-        mockupTemplate: selectedTemplates.length === 1 ? `${selectedTemplates[0].room}/${selectedTemplates[0].id}` : 'multiple',
-        thumbnailUrl: mockups[0]?.image_data || `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
-        aiPrompt: null,
-        metadata: {
-          mockupSet: 'true',
-          templatesUsed: JSON.stringify(selectedTemplates),
-          mockupCount: mockups.length.toString(),
-          creditsUsed: actualCreditsUsed.toString(),
-          generationMethod: 'template-based',
-          generatedAt: new Date().toISOString()
-        }
-      };
+      // SAVE MOCKUPS - Either create new project or add to existing one
+      let project;
+      const mockupImagesObject = mockups.reduce((acc, m, index) => {
+        acc[`${m.template.room}_${m.template.id}`] = m.image_data;
+        return acc;
+      }, {} as Record<string, string>);
 
-      const project = await storage.createProject(projectData);
-      console.log(`✅ Created project ${project.id} for mockup set with ${mockups.length} mockups`);
+      if (existingProjectId) {
+        // ADD MOCKUPS TO EXISTING PROJECT
+        console.log(`📁 Adding ${mockups.length} mockups to existing project: ${existingProjectId}`);
+        
+        const existingProject = await storage.getProject(existingProjectId);
+        if (!existingProject) {
+          return res.status(404).json({ error: "Project not found" });
+        }
+        
+        // Verify project belongs to user
+        if (existingProject.userId !== userId) {
+          return res.status(403).json({ error: "Access denied to project from different user" });
+        }
+        
+        // Merge new mockups with existing ones
+        const mergedMockups = {
+          ...(existingProject.mockupImages || {}),
+          ...mockupImagesObject
+        };
+        
+        await storage.updateProject(existingProjectId, {
+          mockupImages: mergedMockups,
+          mockupTemplate: 'multiple', // Multiple templates now
+          metadata: {
+            ...existingProject.metadata,
+            mockupCount: Object.keys(mergedMockups).length.toString(),
+            lastMockupGeneration: new Date().toISOString(),
+            totalCreditsUsed: (parseInt(existingProject.metadata?.creditsUsed || '0') + actualCreditsUsed).toString()
+          }
+        });
+        
+        project = await storage.getProject(existingProjectId, true); // Force refresh
+        console.log(`✅ Added ${mockups.length} mockups to existing project ${existingProjectId}`);
+        
+      } else {
+        // CREATE NEW PROJECT
+        console.log(`📁 Creating new project for mockup set with ${mockups.length} mockups`);
+        
+        const templateNames = selectedTemplates.map(t => `${t.room}_${t.id}`).join(', ');
+        const projectTitle = `Mockup Set - ${templateNames}`;
+        
+        const projectData = {
+          userId,
+          title: projectTitle,
+          originalImageUrl: `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
+          upscaledImageUrl: null,
+          mockupImageUrl: null,
+          mockupImages: mockupImagesObject,
+          resizedImages: [],
+          etsyListing: null,
+          zipUrl: null,
+          artworkTitle: projectTitle,
+          styleKeywords: 'mockup, template-based, professional',
+          status: 'completed',
+          upscaleOption: '2x',
+          mockupTemplate: selectedTemplates.length === 1 ? `${selectedTemplates[0].room}/${selectedTemplates[0].id}` : 'multiple',
+          thumbnailUrl: mockups[0]?.image_data || `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`,
+          aiPrompt: null,
+          metadata: {
+            mockupSet: 'true',
+            templatesUsed: JSON.stringify(selectedTemplates),
+            mockupCount: mockups.length.toString(),
+            creditsUsed: actualCreditsUsed.toString(),
+            generationMethod: 'template-based',
+            generatedAt: new Date().toISOString()
+          }
+        };
+
+        project = await storage.createProject(projectData);
+        console.log(`✅ Created new project ${project.id} for mockup set with ${mockups.length} mockups`);
+      }
 
       res.json({
         mockups,
@@ -3048,13 +3309,37 @@ async function processProjectAsync(project: any) {
     const { resizeImageToFormats } = await import('./services/image-processor');
     const { generateMockupsForCategory, getTemplatesForCategory } = await import('./services/mockup-templates');
     
-    // Convert base64 image to buffer for processing
-    const base64Data = project.originalImageUrl.split(',')[1];
-    const originalBuffer = Buffer.from(base64Data, 'base64');
+    // Get original image buffer - handle both storage paths and base64
+    console.log('🔧 Fetching original image...');
+    let originalBuffer: Buffer;
+    
+    if (!project.originalImageUrl) {
+      throw new Error('No original image URL found');
+    }
+    
+    // Check if it's a storage path or base64
+    if (ProjectImageStorage.isStoragePath(project.originalImageUrl)) {
+      console.log('🔧 Fetching image from storage:', project.originalImageUrl);
+      originalBuffer = await projectImageStorage.getImageBuffer(project.originalImageUrl);
+      if (!originalBuffer) {
+        throw new Error('Failed to fetch image from storage');
+      }
+    } else if (project.originalImageUrl.startsWith('data:image/')) {
+      console.log('🔧 Parsing base64 image');
+      const base64Data = project.originalImageUrl.split(',')[1];
+      if (!base64Data) {
+        throw new Error('Invalid base64 image format');
+      }
+      originalBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      throw new Error('Invalid image URL format: ' + project.originalImageUrl.substring(0, 50));
+    }
+    
+    console.log(`✅ Original image loaded: ${originalBuffer.length} bytes`);
     
     // Step 1: Upscale image using Segmind or fallback
     console.log('Step 1: Upscaling image...');
-    let upscaledImageUrl = project.originalImageUrl;
+    let upscaledBuffer: Buffer;
     
     try {
       if (process.env.SEGMIND_API_KEY) {
@@ -3062,12 +3347,14 @@ async function processProjectAsync(project: any) {
         const upscaleOption = project.upscaleOption || '2x';
         const scale = upscaleOption === '4x' ? 4 : 2;
         
+        // Convert buffer to base64 for Segmind API
+        const originalBase64 = originalBuffer.toString('base64');
         const upscaledBase64 = await segmind.upscaleImage({
           scale,
-          image: base64Data
+          image: originalBase64
         });
         
-        upscaledImageUrl = `data:image/jpeg;base64,${upscaledBase64}`;
+        upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
         console.log('✅ Image upscaled successfully with Segmind');
       } else {
         console.log('⚠️ Segmind API key not found, using fallback upscaler');
@@ -3080,17 +3367,16 @@ async function processProjectAsync(project: any) {
         const upscaleOption = project.upscaleOption || '2x';
         const scale = upscaleOption === '4x' ? 4 : 2;
         
-        const upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
-        upscaledImageUrl = `data:image/jpeg;base64,${upscaledBuffer.toString('base64')}`;
+        upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
         console.log('✅ Image upscaled successfully with fallback');
       } catch (fallbackError) {
         console.error('❌ Fallback upscaling also failed, using original:', fallbackError);
+        upscaledBuffer = originalBuffer; // Use original if all upscaling fails
       }
     }
     
     // Step 2: Create print format sizes
     console.log('Step 2: Creating print formats...');
-    const upscaledBuffer = Buffer.from(upscaledImageUrl.split(',')[1], 'base64');
     const resizedFormats = await resizeImageToFormats(upscaledBuffer);
     
     // Create resized images with proper structure for frontend
@@ -3100,6 +3386,9 @@ async function processProjectAsync(project: any) {
     }));
     
     console.log('✅ Created', resizedImages.length, 'print formats');
+    
+    // Convert upscaled buffer to base64 for storage
+    const upscaledImageUrl = `data:image/jpeg;base64,${upscaledBuffer.toString('base64')}`;
     
     // Update project with processed assets - Direct database update
     console.log('🔧 Updating project with processed results...');

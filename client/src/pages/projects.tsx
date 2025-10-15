@@ -1,203 +1,520 @@
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { History, Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Link, useLocation } from "wouter";
-import { useState, useEffect } from "react";
 import Navigation from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
-import type { User, Project } from "@shared/schema";
+import type { Project, User } from "@shared/schema";
 import { SEOHead } from "@/components/seo-head";
+import { useToast } from "@/hooks/use-toast";
 
-export default function ProjectsPage() {
+interface ProjectsPageProps {
+  showChrome?: boolean;
+  onCreateProject?: () => void;
+  onSelectProject?: (projectId: string) => void;
+}
+
+type ProjectSummary = {
+  hasOriginalImage?: boolean;
+  hasMockupImages?: boolean;
+  hasResizedImages?: boolean;
+  hasEtsyListing?: boolean;
+  hasUpscaledImage?: boolean;
+  mockupCount?: number;
+  resizedCount?: number;
+};
+
+const getProjectSummary = (project: Project): ProjectSummary => {
+  const rawSummary = (project.metadata as Record<string, unknown> | undefined)?.summary;
+  const summaryFromMetadata =
+    rawSummary && typeof rawSummary === "object" ? (rawSummary as ProjectSummary) : {};
+
+  return {
+    hasOriginalImage: project.hasOriginalImage ?? summaryFromMetadata.hasOriginalImage,
+    hasMockupImages: project.hasMockupImages ?? summaryFromMetadata.hasMockupImages,
+    hasResizedImages: project.hasResizedImages ?? summaryFromMetadata.hasResizedImages,
+    hasEtsyListing: project.hasEtsyListing ?? summaryFromMetadata.hasEtsyListing,
+    hasUpscaledImage: project.hasUpscaledImage ?? summaryFromMetadata.hasUpscaledImage,
+    mockupCount: project.mockupCount ?? summaryFromMetadata.mockupCount,
+    resizedCount: project.resizedCount ?? summaryFromMetadata.resizedCount,
+  };
+};
+
+const formatDate = (value: Date | string | null | undefined) => {
+  if (!value) {
+    return "Unknown date";
+  }
+
+  try {
+    const input = typeof value === "string" ? new Date(value) : value;
+    const now = new Date();
+    const diff = now.getTime() - input.getTime();
+    const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) {
+      return "Today";
+    }
+    if (diffDays === 1) {
+      return "1 day ago";
+    }
+    if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    }
+    const diffWeeks = Math.ceil(diffDays / 7);
+    return diffWeeks === 1 ? "1 week ago" : `${diffWeeks} weeks ago`;
+  } catch {
+    return "Unknown date";
+  }
+};
+
+export default function ProjectsPage({
+  showChrome = true,
+  onCreateProject,
+  onSelectProject,
+}: ProjectsPageProps = {}) {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { user: authUser } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const previousProjectsRef = useRef<Project[]>([]);
 
-  // Add noindex meta tag for user-specific content
   useEffect(() => {
     const metaRobots = document.querySelector('meta[name="robots"]');
     if (metaRobots) {
-      metaRobots.setAttribute('content', 'noindex,nofollow');
+      metaRobots.setAttribute("content", "noindex,nofollow");
     } else {
-      const newMetaRobots = document.createElement('meta');
-      newMetaRobots.setAttribute('name', 'robots');
-      newMetaRobots.setAttribute('content', 'noindex,nofollow');
-      document.head.appendChild(newMetaRobots);
+      const newMeta = document.createElement("meta");
+      newMeta.setAttribute("name", "robots");
+      newMeta.setAttribute("content", "noindex,nofollow");
+      document.head.appendChild(newMeta);
     }
-    
     return () => {
-      // Cleanup: remove noindex when leaving page
-      const metaRobots = document.querySelector('meta[name="robots"]');
-      if (metaRobots) {
-        metaRobots.remove();
+      const existing = document.querySelector('meta[name="robots"]');
+      if (existing) {
+        existing.remove();
       }
     };
   }, []);
-  
-  // Debug initial state
-  console.log("🔍 Projects page initial state:", { searchTerm, statusFilter });
-  const { user: authUser } = useAuth();
-  const queryClient = useQueryClient();
-  
-  // Mutation to generate thumbnails
+
+  const { data: user } = useQuery<User>({ queryKey: ["/api/user"] });
+
+  const { data: projects = [], isLoading, error, dataUpdatedAt } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/projects");
+      return res.json() as Promise<Project[]>;
+    },
+    staleTime: 30_000,
+    refetchInterval: (query) => {
+      const data = query.state.data as Project[] | undefined;
+      const hasProcessing = data?.some(
+        (project) => 
+          project.status === "processing" || 
+          project.status === "ai-generated" ||
+          project.status === "uploading"
+      );
+      // Poll every 3 seconds if there are active projects, otherwise don't poll
+      return hasProcessing ? 3000 : false;
+    },
+    refetchIntervalInBackground: true, // Continue polling even when tab is not focused
+  });
+
   const generateThumbnailMutation = useMutation({
     mutationFn: async (projectId: string) => {
-      return apiRequest('POST', `/api/projects/${projectId}/generate-thumbnail`, {});
+      return apiRequest("POST", `/api/projects/${projectId}/generate-thumbnail`, {});
     },
     onSuccess: () => {
-      // Invalidate projects query to refetch with new thumbnails
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     },
   });
 
-  const { data: user } = useQuery<User>({
-    queryKey: ["/api/user"],
-  });
-
-  const { data: projects = [], isLoading, error } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
-    staleTime: 30000, // Cache for 30 seconds
-    refetchInterval: (query) => {
-      // Poll every 5 seconds if any project is still processing
-      const data = query.state.data;
-      const hasProcessingProjects = data?.some((p: Project) => p.status === 'processing' || p.status === 'ai-generated');
-      return hasProcessingProjects ? 5000 : false;
-    },
-  });
-
-  // Debug query state
-  console.log("🔍 Query state:", { isLoading, hasError: !!error, dataLength: projects?.length });
-
-  // Debug logging to understand data structure
-  console.log("📋 Projects data:", projects?.length || 0, projects);
-  
-  // Check if projects array has valid data
-  if (projects && projects.length > 0) {
-    console.log("🔍 First project structure:", projects[0]);
-    console.log("🔍 Required fields check:", {
-      hasId: !!projects[0]?.id,
-      hasTitle: !!projects[0]?.title,
-      hasCreatedAt: !!projects[0]?.createdAt,
-      hasStatus: !!projects[0]?.status,
-      hasOriginalImageUrl: !!projects[0]?.originalImageUrl
-    });
-  }
-  
-  // Automatically generate thumbnails for projects that don't have them
   useEffect(() => {
-    if (projects && projects.length > 0) {
-      const projectsWithoutThumbnails = projects.filter(project => 
-        project.status === 'completed' && 
-        project.originalImageUrl && 
-        project.originalImageUrl.startsWith('data:image/') &&
-        !project.thumbnailUrl &&
-        !generateThumbnailMutation.isPending
-      );
-      
-      // Generate thumbnail for the first project without one (to avoid overloading)
-      if (projectsWithoutThumbnails.length > 0 && !generateThumbnailMutation.isPending) {
-        const project = projectsWithoutThumbnails[0];
-        console.log(`🖼️ Auto-generating thumbnail for project: ${project.id}`);
-        generateThumbnailMutation.mutate(project.id);
-      }
+    if (!projects.length || generateThumbnailMutation.isPending) {
+      return;
+    }
+    const needsThumbnail = projects.find(
+      (project) =>
+        project.status === "completed" &&
+        project.originalImageUrl?.startsWith("data:image/") &&
+        !project.thumbnailUrl
+    );
+    if (needsThumbnail) {
+      generateThumbnailMutation.mutate(needsThumbnail.id);
     }
   }, [projects, generateThumbnailMutation.isPending]);
 
-  // Use auth user data as fallback if API user data is not available
-  const currentUser = user || (authUser ? { 
-    ...authUser, 
-    avatar: authUser.avatar || undefined 
-  } : undefined);
-
-  const formatDate = (date: Date | string) => {
-    try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - dateObj.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) return "1 day ago";
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 14) return "1 week ago";
-      return `${Math.ceil(diffDays / 7)} weeks ago`;
-    } catch (error) {
-      console.warn("Date formatting error:", error, date);
-      return "Unknown date";
+  // Detect when projects complete processing and show notification
+  useEffect(() => {
+    if (previousProjectsRef.current.length === 0) {
+      previousProjectsRef.current = projects;
+      return;
     }
-  };
+
+    // Check if any project just completed
+    projects.forEach((currentProject) => {
+      const previousProject = previousProjectsRef.current.find(p => p.id === currentProject.id);
+      
+      if (previousProject && 
+          (previousProject.status === "processing" || previousProject.status === "uploading") &&
+          currentProject.status === "completed") {
+        toast({
+          title: "✅ Project Ready!",
+          description: `"${currentProject.title}" has finished processing and is ready to download.`,
+          duration: 5000,
+        });
+      }
+    });
+
+    previousProjectsRef.current = projects;
+  }, [projects, toast]);
+
+  const currentUser = user || authUser
+    ? {
+        ...(user || authUser)!,
+        avatar: (user || authUser)?.avatar || undefined,
+      }
+    : undefined;
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      const title = project.title?.toLowerCase() || "";
+      const status = project.status?.toLowerCase() || "";
+      const term = searchTerm.trim().toLowerCase();
+
+      const matchesSearch = term === "" || title.includes(term);
+      const matchesStatus = statusFilter === "all" || status === statusFilter.toLowerCase();
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchTerm, statusFilter]);
+
+  const totalMockups = useMemo(() => {
+    return projects.reduce((count, project) => {
+      const summary = getProjectSummary(project);
+      const fromSummary = project.mockupCount ?? summary.mockupCount;
+      if (typeof fromSummary === "number") {
+        return count + fromSummary;
+      }
+      if (Array.isArray(project.mockupImages)) {
+        return count + project.mockupImages.length;
+      }
+      return count + Object.keys(project.mockupImages || {}).length;
+    }, 0);
+  }, [projects]);
+
+  const totalPrintFormats = useMemo(() => {
+    return projects.reduce((count, project) => {
+      const summary = getProjectSummary(project);
+      const fromSummary = project.resizedCount ?? summary.resizedCount;
+      if (typeof fromSummary === "number") {
+        return count + fromSummary;
+      }
+      return count + (project.resizedImages?.length || 0);
+    }, 0);
+  }, [projects]);
 
   const handleViewProject = (projectId: string) => {
+    if (onSelectProject) {
+      onSelectProject(projectId);
+      return;
+    }
     setLocation(`/projects/${projectId}`);
   };
 
-  // Filter projects based on search term and status
-  const filteredProjects = projects.filter(project => {
-    // Add safety checks for undefined/null values
-    const title = project.title || '';
-    const status = project.status || '';
-    
-    // Search logic: empty search should match everything
-    const matchesSearch = searchTerm.trim() === '' || title.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Status logic: 'all' should match everything, otherwise exact match (case-insensitive)
-    const matchesStatus = statusFilter === "all" || status.toLowerCase() === statusFilter.toLowerCase();
-    
-    return matchesSearch && matchesStatus;
-  });
-  
-  // Debug filtered results
-  console.log("🔍 Filtered projects:", filteredProjects.length, "from", projects.length, "total");
-  console.log("🔍 Search/Filter state:", { searchTerm, statusFilter });
-  console.log("🔍 Auth state:", { hasToken: !!authUser, hasAuthUser: !!authUser, hasUser: !!user, projectsLoading: isLoading, projectsError: error, isAuthenticated: !!authUser || !!user });
-  
-  // Debug thumbnail URLs for all projects
-  if (projects.length > 0) {
-    projects.forEach((project, index) => {
-      console.log(`🖼️ Project ${index + 1} thumbnail:`, {
-        id: project.id?.substring(0, 8),
-        title: project.title,
-        status: project.status,
-        hasThumbnail: !!project.thumbnailUrl,
-        thumbnailLength: project.thumbnailUrl?.length,
-        thumbnailValid: project.thumbnailUrl?.startsWith('data:image/')
-      });
-    });
-  }
-  
-  // Debug each project's filtering
-  if (projects.length > 0) {
-    projects.forEach((project, index) => {
-      const title = project.title || '';
-      const status = project.status || '';
-      const matchesSearch = searchTerm.trim() === '' || title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || status.toLowerCase() === statusFilter.toLowerCase();
-      
-      console.log(`🔍 Project ${index + 1}:`, {
-        id: project.id?.substring(0, 8),
-        title: title,
-        status: status,
-        matchesSearch,
-        matchesStatus,
-        passes: matchesSearch && matchesStatus
-      });
-    });
-  }
+  const handleCreateProject = () => {
+    onCreateProject ? onCreateProject() : setLocation("/tools/upscale");
+  };
+
+  const renderProjectCard = (project: Project) => {
+    const summary = getProjectSummary(project);
+    const mockupCountCandidate = summary.mockupCount ?? project.mockupCount;
+    const mockupCount =
+      typeof mockupCountCandidate === "number"
+        ? mockupCountCandidate
+        : Array.isArray(project.mockupImages)
+          ? project.mockupImages.length
+          : Object.keys(project.mockupImages || {}).length;
+    const resizedCountCandidate = summary.resizedCount ?? project.resizedCount;
+    const resizedCount =
+      typeof resizedCountCandidate === "number"
+        ? resizedCountCandidate
+        : project.resizedImages?.length || 0;
+
+    const isMockupProject = project.title?.toLowerCase().includes("mockup");
+    const assets = {
+      original:
+        summary.hasOriginalImage ??
+        Boolean(project.thumbnailUrl || project.originalImageUrl),
+      upscaled: summary.hasUpscaledImage ?? Boolean(project.upscaledImageUrl),
+      mockup: summary.hasMockupImages ?? Boolean(mockupCount),
+      resized: summary.hasResizedImages ?? Boolean(resizedCount),
+      etsy:
+        !isMockupProject &&
+        (summary.hasEtsyListing ?? Boolean(project.etsyListing)),
+    };
+    const assetCount = Object.values(assets).filter(Boolean).length;
+    const isCompleteProject = assetCount >= 3;
+
+    return (
+      <div
+        key={project.id}
+        className="group cursor-pointer overflow-hidden rounded-lg border border-gray-200 transition duration-200 hover:shadow-md"
+        onClick={() => handleViewProject(project.id)}
+      >
+        <div className="aspect-w-16 aspect-h-10 bg-gray-100">
+          {project.thumbnailUrl ? (
+            <img
+              src={project.thumbnailUrl}
+              alt={project.title}
+              className="h-40 w-full object-cover transition duration-200 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-40 w-full flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+              <div className="mb-2 text-indigo-500">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <span className="text-xs font-medium text-indigo-600">Artwork Project</span>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="truncate text-sm font-medium text-gray-900">{project.title}</h4>
+            <span
+              className={`text-xs px-2 py-1 rounded-full ${
+                project.status === "completed"
+                  ? "bg-green-100 text-green-800"
+                  : project.status === "ai-generated"
+                  ? "bg-purple-100 text-purple-800"
+                  : project.status === "processing"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : project.status === "failed"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {project.status || "pending"}
+            </span>
+          </div>
+
+          <p className="line-clamp-2 text-xs text-gray-500">
+            {project.metadata?.styleKeywords || "No description provided."}
+          </p>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Mockups</p>
+              <p className="text-base font-semibold text-slate-900">{mockupCount}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Print formats</p>
+              <p className="text-base font-semibold text-slate-900">{resizedCount}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {isCompleteProject && (
+              <div className="flex justify-center">
+                <span className="inline-flex items-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                  Complete ({assetCount} assets)
+                </span>
+              </div>
+            )}
+
+            <div className={`flex flex-wrap gap-1 ${isCompleteProject ? "justify-center" : ""}`}>
+              {assets.original && (
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700">
+                  Original
+                </span>
+              )}
+              {assets.upscaled && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
+                  Upscaled
+                </span>
+              )}
+              {assets.mockup && (
+                <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700">
+                  Mockups
+                </span>
+              )}
+              {assets.resized && (
+                <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700">
+                  Print sizes
+                </span>
+              )}
+              {assets.etsy && (
+                <span className="inline-flex items-center rounded-full bg-pink-100 px-2 py-1 text-xs text-pink-700">
+                  Etsy SEO
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+            <span>{formatDate(project.createdAt)}</span>
+            {project.status === "ai-generated" && (
+              <span className="rounded-full bg-purple-100 px-2 py-1 font-medium text-purple-700">
+                AI Generated
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const content = (
+    <>
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="flex items-center text-2xl font-bold text-gray-900">
+              <History className="mr-2 h-6 w-6 text-indigo-500" />
+              All Projects
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Manage and view all your artwork projects.
+            </p>
+          </div>
+          <Button className="bg-indigo-500 hover:bg-indigo-600" onClick={handleCreateProject}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Active Projects</p>
+            {projects.some((p) => p.status === "processing" || p.status === "ai-generated" || p.status === "uploading") && (
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+                <span className="text-xs text-green-600">Auto-refreshing</span>
+              </div>
+            )}
+          </div>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{projects.length}</p>
+          <p className="mt-2 text-xs text-slate-500">
+            {projects.filter((p) => p.status === "processing" || p.status === "uploading").length} currently processing
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-5">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Mockups Generated</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{totalMockups}</p>
+          <p className="mt-2 text-xs text-slate-500">Across all projects</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-5">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Print Formats Ready</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{totalPrintFormats}</p>
+          <p className="mt-2 text-xs text-slate-500">Downloadable formats prepared</p>
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-3xl border border-slate-200 bg-white">
+        <div className="flex flex-col gap-4 border-b border-slate-100 p-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Projects</h2>
+            <p className="text-sm text-slate-500">
+              Quick access to your recent creative work.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search projects"
+                className="border-slate-200 bg-slate-50 pl-9 text-slate-900"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full border-slate-200 bg-slate-50 text-slate-900 sm:w-40">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center">
+                    <Filter className="mr-2 h-3.5 w-3.5" />
+                    All statuses
+                  </div>
+                </SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="uploading">Uploading</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <p className="mb-4 text-sm text-slate-500">
+            Showing {filteredProjects.length} of {projects.length} projects
+          </p>
+
+          {filteredProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-16 text-center">
+              <Search className="h-10 w-10 text-slate-400" />
+              <p className="mt-3 text-sm font-medium text-slate-700">No projects found</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Try adjusting your search or clear filters to see all projects.
+              </p>
+              <Button className="mt-4 bg-indigo-500 hover:bg-indigo-600" onClick={handleCreateProject}>
+                Create your first project
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredProjects.map(renderProjectCard)}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation user={currentUser ? { 
-          ...currentUser, 
-          avatar: currentUser.avatar || undefined 
-        } : undefined} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading your projects...</p>
+        <Navigation user={currentUser} />
+        <div className="flex min-h-[50vh] items-center justify-center px-6">
+          <div className="text-center text-sm text-slate-500">Loading your projects…</div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation user={currentUser} />
+        <div className="flex min-h-[50vh] items-center justify-center px-6">
+          <div className="text-center text-sm text-rose-500">
+            Failed to load projects. Please refresh the page.
           </div>
         </div>
         <Footer />
@@ -205,269 +522,32 @@ export default function ProjectsPage() {
     );
   }
 
+  if (!showChrome) {
+    return <div className="space-y-8 px-4 py-8 sm:px-6 lg:px-10 bg-slate-900/60 text-slate-100">{content}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <SEOHead 
+      <SEOHead
         title="My Projects - Image Upscaler Pro"
         description="Manage your AI-generated artwork projects"
         path="/projects"
       />
-      <Navigation user={currentUser ? { 
-        ...currentUser, 
-        avatar: currentUser.avatar || undefined 
-      } : undefined} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                <History className="inline w-8 h-8 text-indigo-600 mr-3" />
-                All Projects
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Manage and view all your artwork projects
-              </p>
-            </div>
-            <Link href="/">
-              <Button className="bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search projects..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="sm:w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="ai-generated">AI Generated</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="ready">Ready</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Projects Grid */}
-        {(() => {
-          console.log("🎯 Rendering decision:", { 
-            filteredProjectsLength: filteredProjects.length, 
-            totalProjects: projects.length,
-            isLoading,
-            showingEmptyState: filteredProjects.length === 0 
-          });
-          return null;
-        })()}
-        {filteredProjects.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="p-12 text-center">
-              <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchTerm || statusFilter !== "all" ? "No projects found" : "No projects yet"}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {searchTerm || statusFilter !== "all" 
-                  ? "Try adjusting your search or filter criteria"
-                  : "Upload your first artwork to get started!"
-                }
-              </p>
-              {!searchTerm && statusFilter === "all" && (
-                <Link href="/mockups">
-                  <Button className="bg-indigo-600 hover:bg-indigo-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Project
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="p-6">
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">
-                  Showing {filteredProjects.length} of {projects.length} projects
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProjects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="group cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200"
-                    onClick={() => handleViewProject(project.id)}
-                  >
-                    <div className="aspect-w-16 aspect-h-10 bg-gray-100">
-                      {project.thumbnailUrl ? (
-                        <img
-                          src={project.thumbnailUrl}
-                          alt={project.title}
-                          className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200"
-                          onError={(e) => {
-                            console.error('Thumbnail load error for project:', project.id, 'URL length:', project.thumbnailUrl?.length);
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"><span class="text-gray-400 text-sm">Preview unavailable</span></div>';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-40 bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col items-center justify-center">
-                          <div className="text-indigo-500 mb-2">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <span className="text-indigo-600 text-xs font-medium">Artwork Project</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-4">
-                      <h4 className="font-medium text-gray-900 text-sm truncate mb-2">
-                        {project.title}
-                      </h4>
-                      
-
-                      
-                      {/* Content indicators showing what the project contains */}
-                      {(() => {
-                        // Debug logging for asset counting
-                        // Determine project type and available assets
-                        const isMockupProject = project.title?.toLowerCase().includes('mockup');
-                        
-                        const assets = {
-                          original: !!project.originalImageUrl,
-                          upscaled: !!project.upscaledImageUrl,
-                          mockup: !!(project.mockupImageUrl || (project.mockupImages && Object.keys(project.mockupImages).length > 0)),
-                          resized: !!(project.resizedImages && project.resizedImages.length > 0),
-                          // Only count Etsy listings for non-mockup projects
-                          etsy: !isMockupProject && !!(project.etsyListing && (
-                            typeof project.etsyListing === 'string' ? 
-                              project.etsyListing.length > 0 : 
-                              typeof project.etsyListing === 'object' && project.etsyListing !== null ?
-                                Object.keys(project.etsyListing).length > 0 : false
-                          ))
-                        };
-                        
-                        const assetCount = Object.values(assets).filter(Boolean).length;
-                        const isCompleteProject = assetCount >= 3;
-                        
-                        // Debug log for the first project
-                        if (project.title?.includes('Mockup') || project.title?.includes('bedroom')) {
-                          console.log(`🔍 Project asset analysis:`, {
-                            title: project.title,
-                            assets,
-                            assetCount,
-                            isCompleteProject,
-                            mockupImageUrl: project.mockupImageUrl?.substring(0, 50),
-                            etsyListing: typeof project.etsyListing
-                          });
-                        }
-                        
-                        return (
-                          <div className={`mb-3 ${isCompleteProject ? 'space-y-2' : ''}`}>
-                            {/* Complete Project Badge */}
-                            {isCompleteProject && (
-                              <div className="flex items-center justify-center">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm">
-                                  ⭐ Complete Project ({assetCount} assets)
-                                </span>
-                              </div>
-                            )}
-                            
-                            {/* Asset indicators */}
-                            <div className={`flex flex-wrap gap-1 ${isCompleteProject ? 'justify-center' : ''}`}>
-                              {project.status === 'completed' && (
-                                <>
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-blue-100 text-blue-700`}>
-                                    📸 Original
-                                  </span>
-                                  {project.upscaledImageUrl && (
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-green-100 text-green-700`}>
-                                      🔍 Upscaled
-                                    </span>
-                                  )}
-                                  {project.mockupImageUrl && (
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-purple-100 text-purple-700`}>
-                                      🖼️ Mockups
-                                    </span>
-                                  )}
-                                  {project.resizedImages && project.resizedImages.length > 0 && (
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-orange-100 text-orange-700`}>
-                                      📏 Print Sizes
-                                    </span>
-                                  )}
-                                  {!isMockupProject && project.etsyListing && Object.keys(project.etsyListing).length > 0 && (
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full ${isCompleteProject ? 'text-xs font-medium' : 'text-xs'} bg-pink-100 text-pink-700`}>
-                                      📝 Etsy SEO
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      
-                      {/* AI Generated indicator for ai-generated projects */}
-                      {project.status === 'ai-generated' && (
-                        <div className="mb-3">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
-                            🤖 AI Generated
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500">
-                          {formatDate(project.createdAt ? new Date(project.createdAt) : new Date())}
-                        </p>
-                        
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          project.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          project.status === 'ai-generated' ? 'bg-purple-100 text-purple-800' :
-                          project.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                          project.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {project.status === 'ai-generated' ? 'AI Generated' :
-                           project.status === 'completed' ? 'Ready' :
-                           project.status === 'processing' ? 'Processing' :
-                           project.status === 'failed' ? 'Failed' :
-                           project.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      <Navigation
+        user={
+          currentUser
+            ? {
+                ...currentUser,
+                credits: currentUser.credits ?? 0,
+              }
+            : undefined
+        }
+      />
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+        {content}
       </div>
       <Footer />
     </div>
   );
 }
+

@@ -1,19 +1,305 @@
 import { User, Project, CreditTransaction, NewsletterSubscriber, InsertNewsletterSubscriber } from "../shared/schema";
 import crypto from "crypto";
 import postgres from 'postgres';
+import { ProjectImageStorage } from './objectStorage';
+
+type SqlClient = ReturnType<typeof postgres>;
+type ProjectSummary = Pick<Project,
+  'hasOriginalImage' |
+  'hasUpscaledImage' |
+  'hasMockupImage' |
+  'hasMockupImages' |
+  'mockupCount' |
+  'hasResizedImages' |
+  'resizedCount' |
+  'hasEtsyListing'
+>;
+
+type ProjectBase = Omit<Project, 'id' | 'createdAt' | keyof ProjectSummary>;
+type CreateProjectInput = ProjectBase & Partial<ProjectSummary>;
+
+function deriveProjectSummary(data: Partial<Project>): ProjectSummary {
+  const hasOriginalImage = typeof data.originalImageUrl === 'string' && data.originalImageUrl.trim().length > 0;
+  const hasUpscaledImage = typeof data.upscaledImageUrl === 'string' && data.upscaledImageUrl.trim().length > 0;
+  const hasMockupImage = typeof data.mockupImageUrl === 'string' && data.mockupImageUrl.trim().length > 0;
+
+  let mockupCount = 0;
+  const mockupImages = data.mockupImages ?? null;
+  if (Array.isArray(mockupImages)) {
+    mockupCount = mockupImages.length;
+  } else if (mockupImages && typeof mockupImages === 'object') {
+    mockupCount = Object.keys(mockupImages).length;
+  }
+  const hasMockupImages = mockupCount > 0;
+
+  let resizedCount = 0;
+  const resizedImages = data.resizedImages ?? [];
+  if (Array.isArray(resizedImages)) {
+    resizedCount = resizedImages.length;
+  } else if (resizedImages && typeof resizedImages === 'object') {
+    resizedCount = Object.keys(resizedImages).length;
+  }
+  const hasResizedImages = resizedCount > 0;
+
+  const hasEtsyListing =
+    !!data.etsyListing &&
+    typeof data.etsyListing === 'object' &&
+    Object.keys(data.etsyListing).length > 0;
+
+  return {
+    hasOriginalImage,
+    hasUpscaledImage,
+    hasMockupImage,
+    hasMockupImages,
+    mockupCount,
+    hasResizedImages,
+    resizedCount,
+    hasEtsyListing,
+  };
+}
+
+function applySummaryToMetadata(metadata: Project['metadata'] | null | undefined, summary: ProjectSummary): Project['metadata'] {
+  const base = metadata && typeof metadata === 'object' ? metadata : {};
+  return {
+    ...base,
+    summary: {
+      hasOriginalImage: summary.hasOriginalImage,
+      hasUpscaledImage: summary.hasUpscaledImage,
+      hasMockupImage: summary.hasMockupImage,
+      hasMockupImages: summary.hasMockupImages,
+      mockupCount: summary.mockupCount,
+      hasResizedImages: summary.hasResizedImages,
+      resizedCount: summary.resizedCount,
+      hasEtsyListing: summary.hasEtsyListing,
+    },
+  };
+}
+
+// Helper to check if a value is a base64 data URL
+function isBase64DataUrl(value: unknown): boolean {
+  return typeof value === 'string' && value.startsWith('data:image/');
+}
+
+// Helper to upload base64 image to storage and return storage path
+async function uploadBase64ToStorage(base64Data: string, projectId: string, imageType: string): Promise<string | null> {
+  if (!isBase64DataUrl(base64Data)) {
+    return base64Data; // Already a path or null
+  }
+  
+  try {
+    const imageStorage = new ProjectImageStorage();
+    const storagePath = await imageStorage.uploadImage(base64Data, projectId, imageType);
+    console.log(`✅ Uploaded ${imageType} to storage: ${storagePath}`);
+    return storagePath;
+  } catch (error) {
+    console.error(`❌ Failed to upload ${imageType} to storage:`, error);
+    return base64Data; // Fallback to original if upload fails
+  }
+}
+
+// Helper to upload multiple images (mockups/resizes) to storage IN PARALLEL
+async function uploadImagesToStorage(
+  images: Record<string, string> | Array<{size: string; url: string}>,
+  projectId: string,
+  imageType: 'mockup' | 'resize'
+): Promise<Record<string, string> | Array<{size: string; url: string}>> {
+  try {
+    const imageStorage = new ProjectImageStorage();
+    
+    if (Array.isArray(images)) {
+      // Handle resized images array - upload in parallel
+      const uploaded = await Promise.all(
+        images.map(async (item) => {
+          if (isBase64DataUrl(item.url)) {
+            const storagePath = await imageStorage.uploadImage(item.url, projectId, imageType);
+            return { size: item.size, url: storagePath };
+          }
+          return item;
+        })
+      );
+      return uploaded;
+    } else {
+      // Handle mockup images object - upload in parallel
+      const entries = Object.entries(images);
+      const uploadPromises = entries.map(async ([key, value]) => {
+        if (isBase64DataUrl(value)) {
+          const storagePath = await imageStorage.uploadImage(value, projectId, imageType);
+          return [key, storagePath] as [string, string];
+        }
+        return [key, value] as [string, string];
+      });
+      
+      const uploadedEntries = await Promise.all(uploadPromises);
+      return Object.fromEntries(uploadedEntries);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to upload ${imageType} images to storage:`, error);
+    return images; // Fallback to original if upload fails
+  }
+}
+
+function parseJsonObject<T>(value: unknown, fallback: T): T {
+  if (value == null) {
+    return fallback;
+  }
+
+  if (typeof value === 'object') {
+    return value as T;
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+}
+
+function parseResizedImages(value: unknown): Project['resizedImages'] {
+  const fallback: Project['resizedImages'] = [];
+  const parsed = parseJsonObject(value, fallback);
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  return fallback;
+}
+
+function parseMockupImages(value: unknown): Project['mockupImages'] {
+  if (value == null) {
+    return null;
+  }
+  const parsed = parseJsonObject(value, {} as Record<string, string>);
+  if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+    return parsed;
+  }
+  return null;
+}
+
+function parseEtsyListing(value: unknown): Project['etsyListing'] {
+  if (value == null) {
+    return null;
+  }
+
+  const parsed = parseJsonObject(value, null as Project['etsyListing']);
+
+  if (
+    parsed &&
+    typeof parsed === 'object' &&
+    'title' in parsed &&
+    'tags' in parsed &&
+    Array.isArray((parsed as any).tags) &&
+    'description' in parsed
+  ) {
+    return parsed as Project['etsyListing'];
+  }
+
+  return null;
+}
+
+function transformDbProjectRow(row: any): Project {
+  const mockupImages = parseMockupImages(row.mockup_images);
+  const resizedImages = parseResizedImages(row.resized_images);
+  const etsyListing = parseEtsyListing(row.etsy_listing);
+
+  const base: Partial<Project> = {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title || 'Untitled Project',
+    originalImageUrl: row.original_image_url,
+    upscaledImageUrl: row.upscaled_image_url,
+    mockupImageUrl: row.mockup_image_url,
+    mockupImages,
+    resizedImages,
+    etsyListing,
+    mockupTemplate: row.mockup_template,
+    upscaleOption: row.upscale_option || '2x',
+    status: row.status || 'pending',
+    zipUrl: row.zip_url,
+    thumbnailUrl: row.thumbnail_url,
+    aiPrompt: row.ai_prompt,
+    metadata: parseJsonObject(row.metadata, {}),
+    createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+  };
+
+  const summaryFromDb: ProjectSummary | null =
+    typeof row.has_original_image === 'boolean'
+      ? {
+          hasOriginalImage: row.has_original_image,
+          hasUpscaledImage: !!row.has_upscaled_image,
+          hasMockupImage: !!row.has_mockup_image,
+          hasMockupImages: !!row.has_mockup_images,
+          mockupCount: Number(row.mockup_count) || 0,
+          hasResizedImages: !!row.has_resized_images,
+          resizedCount: Number(row.resized_count) || 0,
+          hasEtsyListing: !!row.has_etsy_listing,
+        }
+      : null;
+
+  const summary = summaryFromDb ?? deriveProjectSummary(base);
+  const metadataWithSummary = applySummaryToMetadata(base.metadata ?? {}, summary);
+
+  return {
+    ...base,
+    ...summary,
+    metadata: metadataWithSummary,
+  } as Project;
+}
+
+const POSTGRES_OPTIONS = {
+  ssl: 'require' as const,
+  max: 5,
+  idle_timeout: 20,
+  connect_timeout: 30,
+  prepare: false,
+  transform: { undefined: null },
+  onnotice: () => {},
+  fetch_types: false
+};
+
+let sharedSqlClient: SqlClient | null = null;
+let sharedSqlOriginalEnd: (() => Promise<void>) | null = null;
+let shutdownHandlersRegistered = false;
+
+function registerShutdownHandlers() {
+  if (shutdownHandlersRegistered) {
+    return;
+  }
+
+  const teardown = async () => {
+    if (!sharedSqlClient || !sharedSqlOriginalEnd) {
+      return;
+    }
+    try {
+      await sharedSqlOriginalEnd();
+    } catch (error) {
+      console.warn('Failed to gracefully shut down shared Postgres connection:', error);
+    } finally {
+      sharedSqlClient = null;
+      sharedSqlOriginalEnd = null;
+    }
+  };
+
+  process.once('exit', () => {
+    void teardown();
+  });
+
+  shutdownHandlersRegistered = true;
+}
 
 // Robust database connection for production stability
-function createDbConnection() {
-  return postgres(process.env.DATABASE_URL!, {
-    ssl: 'require',
-    max: 5, // Allow more connections for stability
-    idle_timeout: 20, // 20 second idle timeout
-    connect_timeout: 30, // 30 second connection timeout
-    prepare: false,
-    transform: { undefined: null },
-    onnotice: () => {}, // Suppress notices
-    fetch_types: false // Disable type fetching for speed
-  });
+function createDbConnection(): SqlClient {
+  if (!sharedSqlClient) {
+    const instance = postgres(process.env.DATABASE_URL!, POSTGRES_OPTIONS);
+    sharedSqlOriginalEnd = instance.end.bind(instance);
+    // Prevent downstream calls from closing the shared pool.
+    instance.end = async () => Promise.resolve();
+    sharedSqlClient = instance;
+    registerShutdownHandlers();
+  }
+  return sharedSqlClient;
 }
 
 export interface IStorage {
@@ -24,9 +310,10 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
 
   // Project management
-  createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
+  createProject(project: CreateProjectInput): Promise<Project>;
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByUserId(userId: string): Promise<Project[]>;
+  deleteProject(id: string): Promise<boolean>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
 
   // Credit management
@@ -61,10 +348,21 @@ export interface IStorage {
 class MemStorage implements IStorage {
   private users = new Map<string, User>();
   private projects = new Map<string, Project>();
+  private projectListFetchedAt = new Map<string, number>();
   private creditTransactions = new Map<string, CreditTransaction>();
   private processedPayments = new Set<string>();
   private contactMessages = new Map<string, any>();
   private newsletterSubscribers = new Map<string, NewsletterSubscriber>();
+
+  private getCachedProjectsForUser(userId: string): Project[] {
+    return Array.from(this.projects.values())
+      .filter(project => project.userId === userId)
+      .sort((a, b) => {
+        const aTime = a.createdAt ? a.createdAt.getTime() : 0;
+        const bTime = b.createdAt ? b.createdAt.getTime() : 0;
+        return bTime - aTime;
+      });
+  }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const user = Array.from(this.users.values()).find(u => u.email === email);
@@ -226,251 +524,268 @@ class MemStorage implements IStorage {
     return updatedUser;
   }
 
-  async createProject(projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
+  async createProject(projectData: CreateProjectInput): Promise<Project> {
     const id = crypto.randomUUID();
     const createdAt = new Date();
-    
-    const project: Project = {
-      id,
+
+    console.log(`📦 Creating project ${id} - uploading images to storage...`);
+    const uploadStartTime = Date.now();
+
+    // Upload all base64 images to object storage IN PARALLEL for speed
+    const [originalImageUrl, upscaledImageUrl, mockupImageUrl, thumbnailUrl, mockupImages, resizedImages] = await Promise.all([
+      projectData.originalImageUrl 
+        ? uploadBase64ToStorage(projectData.originalImageUrl, id, 'original')
+        : Promise.resolve(null),
+      
+      projectData.upscaledImageUrl
+        ? uploadBase64ToStorage(projectData.upscaledImageUrl, id, 'upscaled')
+        : Promise.resolve(null),
+      
+      projectData.mockupImageUrl
+        ? uploadBase64ToStorage(projectData.mockupImageUrl, id, 'mockup')
+        : Promise.resolve(null),
+      
+      projectData.thumbnailUrl
+        ? uploadBase64ToStorage(projectData.thumbnailUrl, id, 'thumbnail')
+        : Promise.resolve(null),
+
+      // Upload mockup images if present
+      projectData.mockupImages && Object.keys(projectData.mockupImages).length > 0
+        ? uploadImagesToStorage(projectData.mockupImages, id, 'mockup')
+        : Promise.resolve(null),
+
+      // Upload resized images if present
+      Array.isArray(projectData.resizedImages) && projectData.resizedImages.length > 0
+        ? uploadImagesToStorage(projectData.resizedImages, id, 'resize')
+        : Promise.resolve([])
+    ]);
+
+    const uploadDuration = Date.now() - uploadStartTime;
+    const mockupCount = mockupImages && typeof mockupImages === 'object' ? Object.keys(mockupImages).length : 0;
+    const resizedCount = Array.isArray(resizedImages) ? resizedImages.length : 0;
+    const imageCount = [originalImageUrl, upscaledImageUrl, mockupImageUrl, thumbnailUrl].filter(Boolean).length + mockupCount + resizedCount;
+    console.log(`⚡ Uploaded ${imageCount} images in ${uploadDuration}ms (parallel)`);
+
+    const normalizedData: ProjectBase = {
       ...projectData,
-      createdAt
+      title: projectData.title ?? 'Untitled Project',
+      originalImageUrl: originalImageUrl ?? null,
+      upscaledImageUrl: upscaledImageUrl ?? null,
+      mockupImageUrl: mockupImageUrl ?? null,
+      mockupImages: mockupImages as Record<string, string> | null,
+      resizedImages: resizedImages as Array<{size: string; url: string}>,
+      etsyListing: projectData.etsyListing ?? null,
+      mockupTemplate: projectData.mockupTemplate ?? null,
+      upscaleOption: projectData.upscaleOption ?? '2x',
+      status: projectData.status ?? 'pending',
+      zipUrl: projectData.zipUrl ?? null,
+      thumbnailUrl: thumbnailUrl ?? null,
+      aiPrompt: projectData.aiPrompt ?? null,
+      metadata: projectData.metadata ?? {},
     };
 
-    // First persist to database - this MUST succeed
+    const summary = deriveProjectSummary(normalizedData);
+    const metadataWithSummary = applySummaryToMetadata(normalizedData.metadata, summary);
+
+    const project: Project = {
+      id,
+      ...normalizedData,
+      ...summary,
+      metadata: metadataWithSummary,
+      createdAt,
+    };
+
     try {
-      console.log(`💾 Database: Attempting to save project ${id} to database`);
+      console.log(`Database: Attempting to save project ${id} to database`);
       const sql = createDbConnection();
 
       await sql`
         INSERT INTO projects (
-          id, user_id, title, original_image_url, upscaled_image_url, 
+          id, user_id, title, original_image_url, upscaled_image_url,
           mockup_image_url, mockup_images, resized_images, etsy_listing,
           mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at
+          ai_prompt, metadata, has_original_image, has_upscaled_image, has_mockup_image,
+          has_mockup_images, mockup_count, has_resized_images, resized_count, has_etsy_listing,
+          created_at
         ) VALUES (
           ${project.id}, ${project.userId}, ${project.title || ''}, ${project.originalImageUrl || null},
           ${project.upscaledImageUrl || null}, ${project.mockupImageUrl || null}, ${JSON.stringify(project.mockupImages || [])},
-          ${JSON.stringify(project.resizedImages || [])}, ${JSON.stringify(project.etsyListing || {})},
+          ${JSON.stringify(project.resizedImages || [])}, ${project.etsyListing ? JSON.stringify(project.etsyListing) : null},
           ${project.mockupTemplate || null}, ${project.upscaleOption || '2x'}, ${project.status || 'pending'}, ${project.zipUrl || null},
-          ${project.thumbnailUrl || null}, ${project.aiPrompt || null}, ${JSON.stringify(project.metadata || {})}, ${project.createdAt}
+          ${project.thumbnailUrl || null}, ${project.aiPrompt || null}, ${JSON.stringify(project.metadata || {})},
+          ${project.hasOriginalImage}, ${project.hasUpscaledImage}, ${project.hasMockupImage},
+          ${project.hasMockupImages}, ${project.mockupCount}, ${project.hasResizedImages},
+          ${project.resizedCount}, ${project.hasEtsyListing}, ${project.createdAt}
         )
       `;
-      
+
       await sql.end();
-      console.log(`💾 Database: Project ${id} successfully saved to database`);
-      
-      // Only add to memory after successful database save
-      console.log(`💾 MemStorage: Adding project "${project.title}" to memory cache`);
+      console.log(`Database: Project ${id} successfully saved to database`);
+
       this.projects.set(id, project);
-      console.log(`💾 MemStorage: Project stored in memory, total projects: ${this.projects.size}`);
-      
-    } catch (dbError) {
-      console.error(`🚨 CRITICAL: Failed to persist project ${id} to database:`, dbError);
-      throw new Error(`Project creation failed: Unable to save project data to database`);
+      this.projectListFetchedAt.set(project.userId, Date.now());
+      console.log(`MemStorage: Added project ${id} to cache`);
+    } catch (error) {
+      console.error(`CRITICAL: Failed to persist project ${id} to database:`, error);
+      throw new Error('Project creation failed: Unable to save project data to database');
     }
-    
+
     return project;
   }
 
   async getProject(id: string, forceRefresh: boolean = false): Promise<Project | undefined> {
-    console.log(`🔍 MemStorage: Looking for project ${id} (forceRefresh: ${forceRefresh})`);
-    console.log(`🔍 MemStorage: Have ${this.projects.size} projects in memory`);
-    console.log(`🔍 MemStorage: Memory project IDs:`, Array.from(this.projects.keys()));
-    
-    // Check memory cache first (unless forcing refresh)
+    console.log('MemStorage: Looking for project ' + id + ' (forceRefresh: ' + String(forceRefresh) + ')');
+    console.log('MemStorage: Have ' + this.projects.size + ' projects in memory');
+    console.log('MemStorage: Memory project IDs:', Array.from(this.projects.keys()));
+
     if (!forceRefresh) {
       const cachedProject = this.projects.get(id);
       if (cachedProject) {
-        console.log(`✅ MemStorage: Found project ${id} in memory cache - resizedImages: ${cachedProject.resizedImages?.length || 0}, etsyListing: ${Object.keys(cachedProject.etsyListing || {}).length} keys`);
-        return cachedProject;
+        // Check if cached project has full data (not lightweight list data)
+        // Lightweight data has ALL image fields set to undefined
+        // We need to check if ANY image field is NOT undefined (meaning it has actual data or null)
+        const hasImageData = 
+          cachedProject.originalImageUrl !== undefined || 
+          cachedProject.upscaledImageUrl !== undefined ||
+          cachedProject.mockupImages !== undefined ||
+          cachedProject.resizedImages !== undefined;
+        
+        if (hasImageData) {
+          console.log('MemStorage: Served project ' + id + ' from cache (full data)');
+          return cachedProject;
+        } else {
+          console.log('MemStorage: Cached project ' + id + ' has lightweight data, fetching full data from DB');
+          this.projects.delete(id); // Remove lightweight cache
+        }
       }
     } else {
-      // Clear from cache if forcing refresh
       this.projects.delete(id);
-      console.log(`🔄 MemStorage: Cleared project ${id} from cache for fresh reload`);
+      console.log('MemStorage: Cleared project ' + id + ' from cache for fresh reload');
     }
-    
-    console.log(`❌ MemStorage: Project ${id} NOT found in memory, checking database...`);
 
-    // Try to load from database if not in memory - FULL DATA for individual projects
+    console.log('MemStorage: Project ' + id + ' not found in cache, querying database...');
+
     try {
       const sql = createDbConnection();
 
-      const projects = await sql`
+      const rows = await sql`
         SELECT 
           id, user_id, title, original_image_url, upscaled_image_url,
           mockup_image_url, mockup_images, resized_images, etsy_listing,
           mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, created_at
+          ai_prompt, metadata, created_at,
+          has_original_image, has_upscaled_image, has_mockup_image,
+          has_mockup_images, mockup_count, has_resized_images, resized_count, has_etsy_listing
         FROM projects 
         WHERE id = ${id}
         LIMIT 1
       `;
-      
+
       await sql.end();
-      
-      if (projects.length > 0) {
-        const project = projects[0];
-        const convertedProject: Project = {
-          id: project.id,
-          userId: project.user_id,
-          title: project.title,
-          originalImageUrl: project.original_image_url,
-          upscaledImageUrl: project.upscaled_image_url,
-          mockupImageUrl: project.mockup_image_url,
-          mockupImages: (() => {
-            try {
-              const mockupData = project.mockup_images;
-              if (typeof mockupData === 'string') {
-                const parsed = JSON.parse(mockupData);
-                return Array.isArray(parsed) ? {} : (parsed || {});
-              }
-              return Array.isArray(mockupData) ? {} : (mockupData || {});
-            } catch (e) {
-              console.warn('Failed to parse mockupImages in getProject:', project.mockup_images);
-              return {};
-            }
-          })(),
-          resizedImages: (() => {
-            try {
-              const resizedData = project.resized_images;
-              if (typeof resizedData === 'string') {
-                const parsed = JSON.parse(resizedData);
-                return Array.isArray(parsed) ? parsed : [];
-              }
-              return Array.isArray(resizedData) ? resizedData : [];
-            } catch (e) {
-              console.warn('Failed to parse resizedImages in getProject:', project.resized_images);
-              return [];
-            }
-          })(),
-          etsyListing: (() => {
-            try {
-              const etsyData = project.etsy_listing;
-              if (typeof etsyData === 'string') {
-                const parsed = JSON.parse(etsyData);
-                return parsed || {};
-              }
-              return etsyData || {};
-            } catch (error) {
-              console.warn('Failed to parse etsyListing in getProject:', project.etsy_listing);
-              return {};
-            }
-          })(),
-          mockupTemplate: project.mockup_template,
-          upscaleOption: project.upscale_option,
-          status: project.status,
-          zipUrl: project.zip_url,
-          thumbnailUrl: project.thumbnail_url,
-          aiPrompt: project.ai_prompt,
-          metadata: project.metadata || {},
-          createdAt: new Date(project.created_at)
-        };
-        
-        // Cache for future requests with logging
-        this.projects.set(convertedProject.id, convertedProject);
-        console.log(`✅ Cached project ${id} with complete data - resizedImages: ${convertedProject.resizedImages?.length || 0}, etsyListing keys: ${Object.keys(convertedProject.etsyListing || {}).join(',')}`);
-        return convertedProject;
+
+      if (rows.length > 0) {
+        const project = transformDbProjectRow(rows[0]);
+        this.projects.set(project.id, project);
+        console.log('MemStorage: Cached project ' + id + ' after DB fetch');
+        return project;
       }
     } catch (error) {
-      console.warn(`⚠️ Failed to load project ${id} from database:`, error);
+      console.warn('MemStorage: Failed to load project ' + id + ' from database:', error);
     }
 
     return undefined;
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
-    // Load projects with optimized data (excluding large images for performance)
-    console.log(`🔄 Loading projects list for user ${userId} (optimized query)`);
-    
+    console.log(`dY", Loading projects list for user ${userId} (optimized query)`);
+
+    const cachedProjects = this.getCachedProjectsForUser(userId);
+    const lastFetched = this.projectListFetchedAt.get(userId);
+    const cacheIsFresh = typeof lastFetched === "number" && Date.now() - lastFetched < 30000;
+
+    if (cacheIsFresh) {
+      console.log(`? Returning cached projects for ${userId} (age: ${Date.now() - (lastFetched || 0)}ms)`);
+      return cachedProjects;
+    }
+
     try {
       const projects = await this.loadProjectsListFromDatabase(userId);
-      
-      // DON'T cache optimized results - they're incomplete and would break individual project views
-      // Individual projects need full data via getProject() method
-      
+      this.projectListFetchedAt.set(userId, Date.now());
+      projects.forEach((project) => this.projects.set(project.id, project));
       return projects;
-      
     } catch (error) {
-      console.log(`⚠️ Database query failed for user ${userId}, returning empty array:`, (error as Error).message);
+      console.log(`�s��,? Database query failed for user ${userId}, returning cached data:`, (error as Error).message);
+      this.projectListFetchedAt.set(userId, Date.now());
+      if (cachedProjects.length > 0) {
+        return cachedProjects;
+      }
       return [];
     }
   }
-  
-  // Optimized loading for project lists (excludes large image data)
+
   private async loadProjectsListFromDatabase(userId: string): Promise<Project[]> {
+    // For list view, only fetch lightweight metadata - NOT the huge image blobs!
     const sql = createDbConnection();
 
     try {
-      // Optimized query for project lists - show essential info with data indicators
-      const projects = await sql`
+      const startTime = Date.now();
+      const rows = await sql`
         SELECT 
-          id, user_id, title, status, thumbnail_url, zip_url, created_at, 
-          upscale_option, mockup_template, ai_prompt, metadata,
-          -- Use thumbnail or small portion of original for display
-          COALESCE(thumbnail_url, 
-            CASE 
-              WHEN LENGTH(original_image_url) > 100000 THEN LEFT(original_image_url, 50000)
-              ELSE original_image_url 
-            END
-          ) as original_image_url,
-          -- Indicate presence of data without loading it
-          CASE WHEN upscaled_image_url IS NOT NULL THEN 'available' ELSE NULL END as upscaled_image_url,
-          CASE WHEN mockup_image_url IS NOT NULL THEN 'available' ELSE NULL END as mockup_image_url,
-          -- Keep indicators for UI
-          CASE WHEN mockup_images IS NOT NULL AND mockup_images != '{}' THEN '{"hasData":true}' ELSE '{}' END as mockup_images,
-          CASE WHEN resized_images IS NOT NULL AND resized_images != '[]' THEN '[{"hasData":true}]' ELSE '[]' END as resized_images,
-          CASE WHEN etsy_listing IS NOT NULL AND etsy_listing != '{}' THEN '{"hasData":true}' ELSE '{}' END as etsy_listing
+          id, user_id, title, status, thumbnail_url,
+          created_at, upscale_option, mockup_template,
+          ai_prompt, metadata,
+          has_original_image, has_upscaled_image, has_mockup_image,
+          has_mockup_images, mockup_count, has_resized_images, resized_count, has_etsy_listing
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
         LIMIT 20
       `;
-      
-      const convertedProjects: Project[] = projects.map((project: any) => ({
-        id: project.id,
-        userId: project.user_id,
-        title: project.title || 'Untitled Project',
-        originalImageUrl: project.original_image_url, // Safe thumbnail or truncated
-        upscaledImageUrl: project.upscaled_image_url === 'available' ? null : project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url === 'available' ? null : project.mockup_image_url,
-        mockupImages: (() => {
-          try {
-            const parsed = JSON.parse(project.mockup_images);
-            return parsed.hasData ? {} : parsed;
-          } catch {
-            return {};
-          }
-        })(),
-        resizedImages: (() => {
-          try {
-            const parsed = JSON.parse(project.resized_images);
-            return Array.isArray(parsed) && parsed[0]?.hasData ? [] : parsed;
-          } catch {
-            return [];
-          }
-        })(),
-        etsyListing: (() => {
-          try {
-            const parsed = JSON.parse(project.etsy_listing);
-            return parsed.hasData ? { title: '', tags: [], description: '' } : parsed;
-          } catch {
-            return { title: '', tags: [], description: '' };
-          }
-        })(),
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option || '2x',
-        status: project.status || 'pending',
-        zipUrl: project.zip_url,
-        thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: project.metadata || {},
-        createdAt: new Date(project.created_at)
-      }));
-      
-      console.log(`✅ Retrieved ${convertedProjects.length} projects (optimized) for user ${userId}`);
+      const queryTime = Date.now() - startTime;
+
+      // Transform rows with minimal data (no heavy image columns)
+      const convertedProjects = rows.map((row: any) => {
+        const base: Partial<Project> = {
+          id: row.id,
+          userId: row.user_id,
+          title: row.title || 'Untitled Project',
+          status: row.status || 'pending',
+          thumbnailUrl: row.thumbnail_url || undefined,
+          // Set image URLs to undefined for list view - they'll be loaded on-demand
+          originalImageUrl: undefined,
+          upscaledImageUrl: undefined,
+          mockupImageUrl: undefined,
+          mockupImages: undefined,
+          resizedImages: undefined,
+          etsyListing: undefined,
+          zipUrl: undefined,
+          mockupTemplate: row.mockup_template || undefined,
+          upscaleOption: row.upscale_option || '2x',
+          aiPrompt: row.ai_prompt || undefined,
+          metadata: parseJsonObject(row.metadata, {}),
+          createdAt: new Date(row.created_at),
+        };
+
+        const summary = {
+          hasOriginalImage: row.has_original_image ?? false,
+          hasUpscaledImage: row.has_upscaled_image ?? false,
+          hasMockupImage: row.has_mockup_image ?? false,
+          hasMockupImages: row.has_mockup_images ?? false,
+          mockupCount: row.mockup_count ?? 0,
+          hasResizedImages: row.has_resized_images ?? false,
+          resizedCount: row.resized_count ?? 0,
+          hasEtsyListing: row.has_etsy_listing ?? false,
+        };
+
+        return { ...base, ...summary } as Project;
+      });
+
+      convertedProjects.forEach((project) => {
+        this.projects.set(project.id, project);
+      });
+
+      console.log(`⚡ Retrieved ${convertedProjects.length} projects (lightweight) in ${queryTime}ms for user ${userId}`);
       return convertedProjects;
-      
     } finally {
       await sql.end();
     }
@@ -481,106 +796,167 @@ class MemStorage implements IStorage {
     const sql = createDbConnection();
 
     try {
-      // Load complete project data with optimized JSON handling
-      const projects = await sql`
+      const rows = await sql`
         SELECT 
-          id, user_id, title, status, thumbnail_url, original_image_url, 
-          upscaled_image_url, mockup_image_url, 
-          COALESCE(mockup_images, '{}') as mockup_images,
-          COALESCE(resized_images, '[]') as resized_images,
-          COALESCE(etsy_listing, '{}') as etsy_listing,
-          zip_url, created_at, upscale_option, mockup_template, 
-          ai_prompt, COALESCE(metadata, '{}') as metadata
+          id, user_id, title, status, thumbnail_url, original_image_url,
+          upscaled_image_url, mockup_image_url, mockup_images, resized_images,
+          etsy_listing, zip_url, created_at, upscale_option, mockup_template,
+          ai_prompt, metadata,
+          has_original_image, has_upscaled_image, has_mockup_image,
+          has_mockup_images, mockup_count, has_resized_images, resized_count, has_etsy_listing
         FROM projects 
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
         LIMIT 20
       `;
-      
-      const convertedProjects = projects.map((project: any) => ({
-        id: project.id,
-        userId: project.user_id,
-        title: project.title || 'Untitled Project',
-        originalImageUrl: project.original_image_url,
-        upscaledImageUrl: project.upscaled_image_url,
-        mockupImageUrl: project.mockup_image_url,
-        mockupImages: project.mockup_images || {},
-        resizedImages: project.resized_images || [],
-        etsyListing: project.etsy_listing || {},
-        mockupTemplate: project.mockup_template,
-        upscaleOption: project.upscale_option || '2x',
-        status: project.status || 'pending',
-        zipUrl: project.zip_url,
-        thumbnailUrl: project.thumbnail_url,
-        aiPrompt: project.ai_prompt,
-        metadata: project.metadata || {},
-        createdAt: new Date(project.created_at)
-      }));
-      
-      // Debug the converted projects before caching
-      console.log(`🔍 PRODUCTION Raw DB projects:`, projects.length);
-      console.log(`🔍 PRODUCTION Converted projects:`, convertedProjects.length);
-      if (convertedProjects.length > 0) {
-        console.log(`🔍 PRODUCTION First converted project:`, {
-          id: convertedProjects[0].id,
-          title: convertedProjects[0].title,
-          status: convertedProjects[0].status,
-          createdAt: convertedProjects[0].createdAt
-        });
-      }
-      
-      // Cache in memory for future requests
-      convertedProjects.forEach(project => {
+
+      const convertedProjects = rows.map((row: any) => transformDbProjectRow(row));
+
+      convertedProjects.forEach((project) => {
         this.projects.set(project.id, project);
       });
-      
-      console.log(`✅ Retrieved ${convertedProjects.length} projects from database for user ${userId}`);
+
+      console.log('MemStorage: Retrieved ' + convertedProjects.length + ' projects (full) from database for user ' + userId);
       return convertedProjects;
-      
+    } finally {
+      await sql.end();
+    }
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    const project = this.projects.get(id);
+    const sql = createDbConnection();
+
+    try {
+      const result = await sql`
+        DELETE FROM projects
+        WHERE id = ${id}
+        RETURNING user_id
+      `;
+
+      const deleted = result.length > 0;
+      if (deleted) {
+        const userId = String(result[0].user_id);
+        this.projects.delete(id);
+        this.projectListFetchedAt.delete(userId);
+      } else if (project) {
+        this.projects.delete(id);
+        this.projectListFetchedAt.delete(project.userId);
+      }
+
+      return deleted || !!project;
     } finally {
       await sql.end();
     }
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
-    const project = this.projects.get(id);
-    if (!project) {
+    const existing = this.projects.get(id);
+    if (!existing) {
       return undefined;
     }
+
+    console.log(`📝 Updating project ${id} - uploading new images to storage if needed...`);
+
+    // Upload any new base64 images to storage before updating database
+    const originalImageUrl = updates.originalImageUrl !== undefined
+      ? await uploadBase64ToStorage(updates.originalImageUrl || '', id, 'original')
+      : existing.originalImageUrl;
     
-    const updatedProject = { ...project, ...updates };
+    const upscaledImageUrl = updates.upscaledImageUrl !== undefined
+      ? await uploadBase64ToStorage(updates.upscaledImageUrl || '', id, 'upscaled')
+      : existing.upscaledImageUrl;
+    
+    const mockupImageUrl = updates.mockupImageUrl !== undefined
+      ? await uploadBase64ToStorage(updates.mockupImageUrl || '', id, 'mockup')
+      : existing.mockupImageUrl;
+    
+    const thumbnailUrl = updates.thumbnailUrl !== undefined
+      ? await uploadBase64ToStorage(updates.thumbnailUrl || '', id, 'thumbnail')
+      : existing.thumbnailUrl;
+
+    // Upload mockup images if updated
+    const mockupImages = updates.mockupImages !== undefined
+      ? (updates.mockupImages && Object.keys(updates.mockupImages).length > 0
+          ? await uploadImagesToStorage(updates.mockupImages, id, 'mockup')
+          : null)
+      : existing.mockupImages;
+
+    // Upload resized images if updated
+    const resizedImages = updates.resizedImages !== undefined
+      ? (Array.isArray(updates.resizedImages) && updates.resizedImages.length > 0
+          ? await uploadImagesToStorage(updates.resizedImages, id, 'resize')
+          : [])
+      : existing.resizedImages;
+
+    const merged: ProjectBase = {
+      ...existing,
+      ...updates,
+      originalImageUrl: originalImageUrl ?? null,
+      upscaledImageUrl: upscaledImageUrl ?? null,
+      mockupImageUrl: mockupImageUrl ?? null,
+      mockupImages: mockupImages as Record<string, string> | null,
+      resizedImages: resizedImages as Array<{size: string; url: string}>,
+      etsyListing: updates.etsyListing ?? existing.etsyListing ?? null,
+      mockupTemplate: updates.mockupTemplate ?? existing.mockupTemplate ?? null,
+      upscaleOption: updates.upscaleOption ?? existing.upscaleOption ?? '2x',
+      status: updates.status ?? existing.status ?? 'pending',
+      zipUrl: updates.zipUrl ?? existing.zipUrl ?? null,
+      thumbnailUrl: thumbnailUrl ?? null,
+      aiPrompt: updates.aiPrompt ?? existing.aiPrompt ?? null,
+      metadata: updates.metadata ?? existing.metadata ?? {},
+    };
+
+    const summary = deriveProjectSummary(merged);
+    const metadataWithSummary = applySummaryToMetadata(merged.metadata, summary);
+
+    const updatedProject: Project = {
+      ...existing,
+      ...merged,
+      ...summary,
+      metadata: metadataWithSummary,
+      createdAt: existing.createdAt,
+    };
+
     this.projects.set(id, updatedProject);
-    
-    // Persist to database
+
     try {
       const sql = createDbConnection();
-      
+
       await sql`
         UPDATE projects 
         SET 
           title = ${updatedProject.title || ''},
+          original_image_url = ${updatedProject.originalImageUrl || null},
           upscaled_image_url = ${updatedProject.upscaledImageUrl || null},
           mockup_image_url = ${updatedProject.mockupImageUrl || null},
           mockup_images = ${JSON.stringify(updatedProject.mockupImages || {})},
           resized_images = ${JSON.stringify(updatedProject.resizedImages || [])},
-          etsy_listing = ${JSON.stringify(updatedProject.etsyListing || {})},
+          etsy_listing = ${updatedProject.etsyListing ? JSON.stringify(updatedProject.etsyListing) : null},
           mockup_template = ${updatedProject.mockupTemplate || null},
           upscale_option = ${updatedProject.upscaleOption || '2x'},
           status = ${updatedProject.status || 'pending'},
           zip_url = ${updatedProject.zipUrl || null},
           thumbnail_url = ${updatedProject.thumbnailUrl || null},
           ai_prompt = ${updatedProject.aiPrompt || null},
-          metadata = ${JSON.stringify(updatedProject.metadata || {})}
+          metadata = ${JSON.stringify(updatedProject.metadata || {})},
+          has_original_image = ${updatedProject.hasOriginalImage},
+          has_upscaled_image = ${updatedProject.hasUpscaledImage},
+          has_mockup_image = ${updatedProject.hasMockupImage},
+          has_mockup_images = ${updatedProject.hasMockupImages},
+          mockup_count = ${updatedProject.mockupCount},
+          has_resized_images = ${updatedProject.hasResizedImages},
+          resized_count = ${updatedProject.resizedCount},
+          has_etsy_listing = ${updatedProject.hasEtsyListing}
         WHERE id = ${id}
       `;
-      
+
       await sql.end();
-      console.log(`✅ Successfully updated project ${id} in database`);
-      
-    } catch (dbError) {
-      console.error(`⚠️ Failed to update project ${id} in database:`, dbError);
+      console.log('MemStorage: Updated project ' + id + ' in database');
+    } catch (error) {
+      console.error('MemStorage: Failed to update project ' + id + ' in database:', error);
     }
-    
+
     return updatedProject;
   }
 
@@ -769,13 +1145,15 @@ class MemStorage implements IStorage {
           id: dbUser.id,
           email: dbUser.email,
           name: dbUser.name,
-          credits: dbUser.credits,
+          password: dbUser.password ?? '',
+          avatar: dbUser.avatar ?? null,
+          credits: dbUser.credits ?? 0,
           subscriptionStatus: dbUser.subscription_status || 'free',
           subscriptionPlan: dbUser.subscription_plan,
           subscriptionId: dbUser.subscription_id,
-          subscriptionStartDate: dbUser.subscription_start_date,
-          subscriptionEndDate: dbUser.subscription_end_date,
-          createdAt: dbUser.created_at
+          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : null,
+          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : null,
+          createdAt: dbUser.created_at ? new Date(dbUser.created_at) : new Date()
         };
         this.users.set(userId, memoryUser);
       }
@@ -836,13 +1214,15 @@ class MemStorage implements IStorage {
           id: dbUser.id,
           email: dbUser.email,
           name: dbUser.name,
-          credits: dbUser.credits,
+          password: dbUser.password ?? '',
+          avatar: dbUser.avatar ?? null,
+          credits: dbUser.credits ?? 0,
           subscriptionStatus: dbUser.subscription_status || 'free',
           subscriptionPlan: dbUser.subscription_plan,
           subscriptionId: dbUser.subscription_id,
-          subscriptionStartDate: dbUser.subscription_start_date,
-          subscriptionEndDate: dbUser.subscription_end_date,
-          createdAt: dbUser.created_at
+          subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : null,
+          subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : null,
+          createdAt: dbUser.created_at ? new Date(dbUser.created_at) : new Date()
         };
         this.users.set(userId, memoryUser);
       }
@@ -966,7 +1346,9 @@ class MemStorage implements IStorage {
     
     const subscriber: NewsletterSubscriber = {
       id,
-      ...subscriberData,
+      email: subscriberData.email,
+      status: subscriberData.status ?? 'active',
+      source: subscriberData.source ?? 'blog',
       createdAt,
       unsubscribedAt: null
     };
@@ -993,9 +1375,11 @@ class MemStorage implements IStorage {
   }
 
   async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+    const toTimestamp = (value: Date | null): number => (value instanceof Date ? value.getTime() : 0);
+
     return Array.from(this.newsletterSubscribers.values())
       .filter(sub => sub.status === 'active')
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
   }
 
   async unsubscribeNewsletter(email: string): Promise<boolean> {

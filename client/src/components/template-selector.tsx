@@ -39,9 +39,12 @@ interface GeneratedMockup {
 interface TemplateSelectorProps {
   uploadedFile: File | null;
   onMockupsGenerated: (mockups: GeneratedMockup[]) => void;
+  sourceProjectId?: string | null; // Optional: if provided, mockups will be added to this existing project
 }
 
-export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateSelectorProps) {
+const MAX_TEMPLATES = 10;
+
+export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProjectId }: TemplateSelectorProps) {
   const [selectedTemplates, setSelectedTemplates] = useState<Template[]>([]);
   const [stuckStateTimer, setStuckStateTimer] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
@@ -72,6 +75,11 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         id: t.id,
         name: t.name || `${t.room}_${t.id}`
       }))));
+      
+      // If we have a source project ID, send it so mockups are added to existing project
+      if (sourceProjectId) {
+        formData.append("project_id", sourceProjectId);
+      }
 
       // Get token from auth store
       const getToken = () => {
@@ -211,10 +219,10 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
 
   const handleTemplateToggle = (template: Template, checked: boolean) => {
     if (checked) {
-      if (selectedTemplates.length >= 5) {
+      if (selectedTemplates.length >= MAX_TEMPLATES) {
         toast({
           title: "Maximum Templates Reached",
-          description: "You can select up to 5 templates at once",
+          description: `You can select up to ${MAX_TEMPLATES} templates at once`,
           variant: "destructive",
         });
         return;
@@ -317,6 +325,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
   }
 
   const templatesByRoom: TemplatesByRoom = (templatesData as any)?.rooms || {};
+  const selectedCount = selectedTemplates.length;
 
   return (
     <div className="space-y-6">
@@ -324,47 +333,60 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
         <CardHeader>
           <CardTitle>Choose Your Mockup Templates</CardTitle>
           <CardDescription>
-            Select up to 5 templates where you'd like to showcase your artwork. 
-            Each template will create a professional mockup with your art perfectly placed.
+            Select up to {MAX_TEMPLATES} templates where you'd like to showcase your artwork.
+            Explore every room style first, then upload and generate when you're ready.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex items-center justify-between">
-            <Badge variant="outline">
-              {selectedTemplates.length}/5 templates selected
-            </Badge>
-            {uploadedFile && (
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleGenerate}
-                  disabled={selectedTemplates.length === 0 || generateMockups.isPending}
-                  data-testid="button-generate-mockups"
-                >
-                  {generateMockups.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Generate Mockups ({selectedTemplates.length} credit{selectedTemplates.length !== 1 ? 's' : ''})
-                    </>
-                  )}
-                </Button>
-                {generateMockups.isPending && (
-                  <Button 
-                    variant="outline"
-                    onClick={handleForceReset}
-                    data-testid="button-reset-generation"
-                    size="sm"
-                  >
-                    Reset
-                  </Button>
+          <div className="mb-4 flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:justify-between md:text-left">
+            <div className="flex flex-col items-center gap-2 md:flex-row md:items-center">
+              <Badge variant="outline">
+                {selectedCount}/{MAX_TEMPLATES} templates selected
+              </Badge>
+              {!uploadedFile && (
+                <Badge variant="secondary" className="text-xs">
+                  Upload artwork to enable generation
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleGenerate}
+                disabled={!uploadedFile || selectedCount === 0 || generateMockups.isPending}
+                data-testid="button-generate-mockups"
+              >
+                {generateMockups.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    {selectedCount === 0
+                      ? "Select templates to generate"
+                      : `Generate Mockups (${selectedCount} credit${selectedCount !== 1 ? 's' : ''})`}
+                  </>
                 )}
-              </div>
-            )}
+              </Button>
+              {generateMockups.isPending && (
+                <Button 
+                  variant="outline"
+                  onClick={handleForceReset}
+                  data-testid="button-reset-generation"
+                  size="sm"
+                >
+                  Reset
+                </Button>
+              )}
+            </div>
           </div>
+
+          {!uploadedFile && (
+            <p className="text-xs text-muted-foreground mb-4">
+              You can browse and select templates without uploading. When you add your artwork, the Generate button above will activate.
+            </p>
+          )}
 
           {Object.keys(templatesByRoom).length === 0 ? (
             <Alert>
@@ -432,7 +454,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated }: TemplateS
                                       </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                      {roomName.replace('_', ' ')} • Ready to use
+                                      {roomName.replace('_', ' ')} - Ready to use
                                     </p>
                                   </div>
                                 </div>
