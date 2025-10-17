@@ -18,8 +18,8 @@ const postgresOptions: PostgresOptions & { statement_timeout?: number } = {
   onnotice: () => {},
   connection: { timezone: 'UTC' },
   fetch_types: false,
-  // Emergency timeout settings
-  statement_timeout: 8000,
+  // Increased timeout to handle large image data (upscaled images can be very large)
+  statement_timeout: 30000, // 30 seconds (increased from 8s)
 };
 
 // Emergency production settings - optimized for Replit deployment conditions

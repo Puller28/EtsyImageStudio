@@ -72,7 +72,34 @@ export default function PrivacyPolicyPage() {
 
             {/* Section 5 */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">5. Your Choices</h3>
+              <h3 className="text-lg font-semibold mb-2">5. Etsy Integration</h3>
+              <p className="text-base leading-relaxed mb-3">
+                When you connect your Etsy shop to our service, we collect and store the following information:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-base">
+                <li>Your Etsy shop ID and shop name</li>
+                <li>OAuth access tokens and refresh tokens to access your Etsy account</li>
+                <li>Listing information that you choose to publish through our service</li>
+              </ul>
+              <p className="text-base leading-relaxed mt-3">
+                <strong>How we use Etsy data:</strong> We use your Etsy connection to publish listings, upload images, 
+                and manage your shop content on your behalf. We do not access or store any financial information, customer 
+                data, or order information from your Etsy shop.
+              </p>
+              <p className="text-base leading-relaxed mt-3">
+                <strong>Token security:</strong> Your Etsy OAuth tokens are encrypted and stored securely in our database. 
+                We automatically refresh tokens as needed to maintain your connection. You can disconnect your Etsy shop 
+                at any time from your account settings, which will immediately revoke our access and delete all stored tokens.
+              </p>
+              <p className="text-base leading-relaxed mt-3">
+                <strong>Data retention:</strong> When you disconnect your Etsy shop or delete your account, we immediately 
+                delete all Etsy tokens and connection data. Published listings remain on your Etsy shop as they are your property.
+              </p>
+            </div>
+
+            {/* Section 6 */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">6. Your Choices</h3>
               <p className="text-base leading-relaxed">
                 You may update, correct or delete information about you at any time by logging into your online account. 
                 If you wish to delete your account, please <Link href="/contact" className="text-primary hover:underline">email us</Link> at info@imageupscaler.app, but note that we may retain 

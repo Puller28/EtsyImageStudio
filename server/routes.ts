@@ -1614,6 +1614,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const projectId = req.params.id;
       const userId = req.userId;
       
+      console.log(`🖼️ Thumbnail generation requested for project ${projectId}`);
+      
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -1621,22 +1623,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the project
       const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
+        console.log(`❌ Project ${projectId} not found or access denied`);
         return res.status(404).json({ error: "Project not found" });
       }
       
+      console.log(`📋 Project status: ${project.status}, has thumbnail: ${!!project.thumbnailUrl}, originalImageUrl type: ${project.originalImageUrl?.substring(0, 20)}...`);
+      
       // Check if project already has thumbnail
       if (project.thumbnailUrl) {
+        console.log(`✅ Project ${projectId} already has thumbnail`);
         return res.json({ message: "Project already has thumbnail", thumbnailUrl: project.thumbnailUrl });
       }
       
       // Check if project has original image
-      if (!project.originalImageUrl || !project.originalImageUrl.startsWith('data:image/')) {
+      if (!project.originalImageUrl) {
+        console.log(`❌ Project ${projectId} has no original image`);
         return res.status(400).json({ error: "Project has no original image to generate thumbnail from" });
       }
       
-      // Generate thumbnail from original image
-      const base64Data = project.originalImageUrl.replace(/^data:image\/[a-z]+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
+      let buffer: Buffer;
+      
+      // Handle both base64 and object storage URLs
+      if (project.originalImageUrl.startsWith('data:image/')) {
+        // Base64 image
+        const base64Data = project.originalImageUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+        buffer = Buffer.from(base64Data, 'base64');
+      } else if (project.originalImageUrl.startsWith('/objects/') || project.originalImageUrl.startsWith('projects/')) {
+        // Object storage URL - fetch the image
+        const imageStorage = new ProjectImageStorage();
+        const imageBuffer = await imageStorage.getImageBuffer(project.originalImageUrl);
+        if (!imageBuffer) {
+          return res.status(400).json({ error: "Failed to fetch image from storage" });
+        }
+        buffer = imageBuffer;
+      } else {
+        return res.status(400).json({ error: "Unsupported image URL format" });
+      }
       
       // Import sharp dynamically to avoid module issues
       const sharp = (await import('sharp')).default;
@@ -1649,7 +1671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const thumbnailBase64 = `data:image/jpeg;base64,${thumbnailBuffer.toString('base64')}`;
       
-      // Update project with thumbnail
+      // Update project with thumbnail (will be uploaded to storage automatically)
       await storage.updateProject(projectId, {
         thumbnailUrl: thumbnailBase64
       });
@@ -1818,6 +1840,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "uploading",
       });
       
+      // Generate thumbnail for mockups and UI (much smaller than original)
+      const { generateThumbnail } = await import('./services/image-processor');
+      const thumbnailUrl = await generateThumbnail(req.file.buffer, 1200, 1200, 85);
+      console.log('📸 Generated thumbnail for project');
+      
       // Create project with explicit typing
       const project = await storage.createProject({
         userId: req.userId,
@@ -1831,7 +1858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resizedImages: [],
         etsyListing: null,
         zipUrl: null,
-        thumbnailUrl: null,
+        thumbnailUrl: thumbnailUrl, // Store thumbnail for mockup generation
         mockupTemplate: null,
         aiPrompt: null,
         metadata: null,
@@ -2180,8 +2207,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('AI art generation completed successfully');
       
       // Deduct 2 credits for AI art generation with transaction record
-      await storage.updateUserCreditsWithTransaction(req.userId!, -2, 'AI Art Generation', 'Generated AI artwork');
-      console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId}`);
+      const creditUpdateSuccess = await storage.updateUserCreditsWithTransaction(req.userId!, -2, 'AI Art Generation', 'Generated AI artwork');
+      if (!creditUpdateSuccess) {
+        console.error(`❌ Failed to deduct credits for user ${req.userId}`);
+        return res.status(500).json({ error: "Failed to process credit transaction" });
+      }
+      
+      // Get updated user to verify credits were deducted
+      const updatedUser = await storage.getUserById(req.userId!);
+      console.log(`💳 Deducted 2 credits for AI art generation. User ${req.userId} now has ${updatedUser?.credits} credits`);
       
       // Create a project to preserve the AI-generated image since user paid for it
       const projectData = {
@@ -2211,18 +2245,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const createdProject = await storage.createProject(projectData);
       console.log(`📁 Created project ${createdProject.id} for AI-generated artwork`);
       
-      // Automatically trigger upscaling for AI-generated images
-      console.log(`🔧 Auto-triggering upscaling for AI project: ${createdProject.id}`);
-      processProjectAsync(createdProject).catch(error => {
-        console.error(`🔧❌ Auto-processing failed for AI project ${createdProject.id}:`, error);
-        // Update status to failed if processing fails
-        storage.updateProject(createdProject.id, { status: "failed" }).catch(e => 
-          console.error(`Failed to update status for ${createdProject.id}:`, e)
-        );
-      });
+      // DO NOT auto-process - let user preview and decide first
+      console.log(`✅ AI artwork ready for user preview in project ${createdProject.id}`);
       
       res.json({ 
-        image: base64Image,
+        image: `data:image/jpeg;base64,${base64Image}`, // Include data URL prefix for display
         prompt: optimizedPrompt,
         projectId: createdProject.id // Return the actual project ID so frontend can reference it
       });
@@ -2491,9 +2518,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🎨 ComfyUI connection successful:', connectionTest.info);
 
-      // Prepare input for ComfyUI
+      // Generate thumbnail from artwork for faster processing
+      const { generateThumbnail } = await import('./services/image-processor');
+      const artworkThumbnail = await generateThumbnail(files.artwork[0].buffer, 1200, 1200, 85);
+      const thumbnailBuffer = Buffer.from(artworkThumbnail.split(',')[1], 'base64');
+      
+      // Prepare input for ComfyUI - use thumbnail for better performance
       const comfyInput = {
-        artworkImage: files.artwork[0].buffer,
+        artworkImage: thumbnailBuffer, // Use thumbnail instead of full image
         mockupTemplate: files.mockupTemplate ? files.mockupTemplate[0].buffer : undefined,
         prompt: req.body.prompt || "Create a professional product mockup",
         strength: parseFloat(req.body.strength) || 0.8,
@@ -2776,8 +2808,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
 
-      // Generate mockup for each selected template
-      for (const template of selectedTemplates) {
+      console.log(`🚀 Batch processing ${selectedTemplates.length} mockups in parallel...`);
+      const startTime = Date.now();
+
+      // Create temporary file for artwork (only once!)
+      const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
+      fs.writeFileSync(tempArtworkPath, req.file.buffer);
+
+      try {
+        // Use batch Python script to process all templates at once (5-10x faster!)
+        const batchResult = await new Promise<any>((resolve, reject) => {
+          const pythonExec = resolvePythonExecutable();
+          const scriptPath = path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
+          
+          const python = spawn(pythonExec.command, [
+            ...pythonExec.args,
+            scriptPath,
+            tempArtworkPath,
+            JSON.stringify(selectedTemplates)
+          ]);
+
+          python.on('error', (spawnError) => {
+            reject(new Error(`Failed to start Python process: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`));
+          });
+
+          let output = '';
+          let error = '';
+
+          python.stdout.on('data', (data: any) => {
+            output += data.toString();
+          });
+
+          python.stderr.on('data', (data: any) => {
+            error += data.toString();
+          });
+
+          python.on('close', (code: any) => {
+            if (code !== 0) {
+              reject(new Error(`Batch processing failed: ${error}`));
+              return;
+            }
+
+            try {
+              const result = JSON.parse(output.trim());
+              resolve(result);
+            } catch (e) {
+              reject(new Error(`Failed to parse batch output: ${output}`));
+            }
+          });
+        });
+
+        // Process successful results
+        if (batchResult?.mockups && Array.isArray(batchResult.mockups)) {
+          for (const result of batchResult.mockups) {
+            if (result.success && result.image_data) {
+              mockups.push({
+                template: result.template,
+                image_data: `data:image/png;base64,${result.image_data}`
+              });
+              console.log(`✅ Generated mockup for ${result.template.room}/${result.template.id}`);
+            } else {
+              console.error(`❌ Failed mockup for ${result.template?.room}/${result.template?.id}: ${result.error}`);
+            }
+          }
+        }
+
+        const elapsed = Date.now() - startTime;
+        console.log(`⚡ Batch processing completed in ${elapsed}ms (${mockups.length}/${selectedTemplates.length} successful)`);
+
+      } catch (batchError: any) {
+        console.error('❌ Batch processing error:', batchError.message);
+        
+        // Fallback to old sequential method if batch fails
+        console.log('⚠️ Falling back to sequential processing...');
+        for (const template of selectedTemplates) {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
@@ -3015,6 +3119,14 @@ else:
           
         } catch (templateError) {
           console.error(`Error generating template ${template.room}/${template.id}:`, templateError);
+        }
+      }
+      } finally {
+        // Clean up temp file
+        try {
+          fs.unlinkSync(tempArtworkPath);
+        } catch (e) {
+          // Ignore cleanup errors
         }
       }
 

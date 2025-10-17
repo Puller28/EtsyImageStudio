@@ -2,6 +2,45 @@ import sharp from "sharp";
 import { createCanvas, loadImage } from "canvas";
 import { DEFAULT_PRINT_FORMAT_IDS, PRINT_FORMATS, type PrintFormatId } from "@shared/print-formats";
 
+/**
+ * Generate a smaller thumbnail/preview version of an image for mockups and UI display
+ * This significantly reduces database size and improves performance
+ * @param imageBuffer - Original image buffer (can be very large)
+ * @param maxWidth - Maximum width for thumbnail (default: 1200px)
+ * @param maxHeight - Maximum height for thumbnail (default: 1200px)
+ * @param quality - JPEG quality (default: 85)
+ * @returns Thumbnail as base64 data URL
+ */
+export async function generateThumbnail(
+  imageBuffer: Buffer,
+  maxWidth: number = 1200,
+  maxHeight: number = 1200,
+  quality: number = 85
+): Promise<string> {
+  try {
+    const thumbnail = await sharp(imageBuffer, {
+      limitInputPixels: 500000000
+    })
+      .resize(maxWidth, maxHeight, {
+        fit: "inside", // Maintain aspect ratio, fit within bounds
+        withoutEnlargement: true, // Don't upscale small images
+      })
+      .jpeg({
+        quality,
+        mozjpeg: true, // Use mozjpeg for better compression
+      })
+      .toBuffer();
+
+    const base64 = thumbnail.toString('base64');
+    console.log(`📸 Generated thumbnail: ${Math.round(base64.length / 1024)}KB (from ${Math.round(imageBuffer.length / 1024)}KB)`);
+    
+    return `data:image/jpeg;base64,${base64}`;
+  } catch (error) {
+    console.error('Failed to generate thumbnail:', error);
+    throw new Error('Failed to generate thumbnail: ' + (error as Error).message);
+  }
+}
+
 export async function resizeImageToFormats(
   imageBuffer: Buffer,
   requestedFormats?: PrintFormatId[]
@@ -9,7 +48,10 @@ export async function resizeImageToFormats(
   const results: { [format in PrintFormatId]?: Buffer } = {};
 
   // Get original image dimensions for debugging
-  const originalMeta = await sharp(imageBuffer).metadata();
+  // Increase pixel limit to handle large upscaled images (4x upscaling can create very large images)
+  const originalMeta = await sharp(imageBuffer, { 
+    limitInputPixels: 500000000 // 500 megapixels (increased from default 268MP)
+  }).metadata();
   console.log(`dY-��,? Original image dimensions: ${originalMeta.width}x${originalMeta.height}`);
 
   const formatsToProcess = (requestedFormats && requestedFormats.length > 0
@@ -22,7 +64,9 @@ export async function resizeImageToFormats(
     try {
       console.log(`dY", Resizing to ${format}: ${dimensions.width}x${dimensions.height}`);
 
-      const resized = await sharp(imageBuffer)
+      const resized = await sharp(imageBuffer, {
+          limitInputPixels: 500000000 // Same limit for processing
+        })
         .resize(dimensions.width, dimensions.height, {
           fit: "fill", // Fill the entire target dimensions
           withoutEnlargement: false, // Allow enlargement for print formats
@@ -37,7 +81,9 @@ export async function resizeImageToFormats(
         .toBuffer();
 
       // Check actual dimensions of resized image
-      const resizedMeta = await sharp(resized).metadata();
+      const resizedMeta = await sharp(resized, {
+        limitInputPixels: 500000000
+      }).metadata();
       console.log(`�o. ${format} resized to: ${resizedMeta.width}x${resizedMeta.height}`);
 
       results[format] = resized;

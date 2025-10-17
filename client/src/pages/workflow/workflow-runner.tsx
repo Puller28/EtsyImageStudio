@@ -97,8 +97,9 @@ function SelectProjectStep({
 
 export default function WorkflowRunnerPage() {
   const { mode, setMode, selectedProjectId, setSelectedProjectId } = useWorkspace();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
+  const [lastProcessingStatus, setLastProcessingStatus] = useState<string | null>(null);
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -109,11 +110,63 @@ export default function WorkflowRunnerPage() {
     staleTime: 30_000,
   });
 
+  // Watch selected project for status changes to auto-advance
+  const { data: selectedProject } = useQuery<Project | null>({
+    queryKey: ["/api/projects", selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return null;
+      const res = await apiRequest("GET", `/api/projects/${selectedProjectId}`);
+      return res.json() as Promise<Project>;
+    },
+    enabled: !!selectedProjectId,
+    refetchInterval: 2000, // Poll every 2 seconds during workflow
+  });
+
+  // Check URL for project parameter and auto-select + skip to upscale step
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const projectIdFromUrl = params.get('project');
+    
+    if (projectIdFromUrl && projectIdFromUrl !== selectedProjectId) {
+      console.log('🔧 Auto-selecting project from URL:', projectIdFromUrl);
+      setSelectedProjectId(projectIdFromUrl);
+      // Skip project selection step and go directly to upscale
+      setCurrentStep(1);
+    }
+  }, [location, selectedProjectId, setSelectedProjectId]);
+
   useEffect(() => {
     if (mode !== "workflow") {
       setMode("workflow");
     }
   }, [mode, setMode]);
+
+  // Auto-advance when processing completes
+  useEffect(() => {
+    if (!selectedProject || !selectedProject.status) return;
+    
+    const currentStatus = selectedProject.status as string;
+    
+    // Detect when processing transitions from 'processing' to 'completed'
+    if (lastProcessingStatus === 'processing' && currentStatus === 'completed') {
+      console.log('✅ Processing completed, auto-advancing to next step');
+      
+      // Determine which step to advance to based on what's completed
+      if (currentStep === 1 && (selectedProject as any).hasUpscaledImage) {
+        // Upscale completed, go to mockups
+        setTimeout(() => setCurrentStep(2), 1000);
+      } else if (currentStep === 2 && (selectedProject as any).hasMockupImages) {
+        // Mockups completed, go to print formats
+        setTimeout(() => setCurrentStep(3), 1000);
+      } else if (currentStep === 3 && (selectedProject as any).hasResizedImages) {
+        // Print formats completed, go to listing
+        setTimeout(() => setCurrentStep(4), 1000);
+      }
+    }
+    
+    // Update last status
+    setLastProcessingStatus(currentStatus);
+  }, [selectedProject, lastProcessingStatus, currentStep]);
 
   const stepDefinitions: StepDefinition[] = useMemo(() => [
     {
@@ -125,7 +178,7 @@ export default function WorkflowRunnerPage() {
           projects={projects}
           selectedProjectId={selectedProjectId}
           onSelectProject={(projectId) => setSelectedProjectId(projectId)}
-          onCreateNew={() => navigate("/workflow/run?create=new")}
+          onCreateNew={() => navigate("/tools/upscale")}
           onOpenWorkspace={() => navigate("/workspace/projects")}
         />
       ),

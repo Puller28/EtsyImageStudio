@@ -93,7 +93,25 @@ async function uploadBase64ToStorage(base64Data: string, projectId: string, imag
     return storagePath;
   } catch (error) {
     console.error(`❌ Failed to upload ${imageType} to storage:`, error);
-    return base64Data; // Fallback to original if upload fails
+    
+    // Smart fallback: If image is very large (>2MB base64), try to compress it
+    const base64Size = base64Data.length;
+    const sizeInMB = base64Size / (1024 * 1024);
+    
+    if (sizeInMB > 2 && imageType === 'original') {
+      console.warn(`⚠️ Original image is very large (${sizeInMB.toFixed(1)}MB), generating compressed version for database storage`);
+      try {
+        const { generateThumbnail } = await import('./services/image-processor');
+        const buffer = Buffer.from(base64Data.split(',')[1], 'base64');
+        const compressed = await generateThumbnail(buffer, 1600, 1600, 80); // Larger thumbnail for originals
+        console.log(`✅ Compressed original from ${sizeInMB.toFixed(1)}MB to ${(compressed.length / (1024 * 1024)).toFixed(1)}MB`);
+        return compressed;
+      } catch (compressionError) {
+        console.error(`❌ Failed to compress image:`, compressionError);
+      }
+    }
+    
+    return base64Data; // Fallback to original if upload and compression fail
   }
 }
 
@@ -595,40 +613,64 @@ class MemStorage implements IStorage {
       createdAt,
     };
 
-    try {
-      console.log(`Database: Attempting to save project ${id} to database`);
-      const sql = createDbConnection();
+    // Try to save to database with retry logic for connection issues
+    let dbSaveSuccess = false;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`Database: Attempting to save project ${id} to database (attempt ${attempt}/3)`);
+        const sql = createDbConnection();
 
-      await sql`
-        INSERT INTO projects (
-          id, user_id, title, original_image_url, upscaled_image_url,
-          mockup_image_url, mockup_images, resized_images, etsy_listing,
-          mockup_template, upscale_option, status, zip_url, thumbnail_url,
-          ai_prompt, metadata, has_original_image, has_upscaled_image, has_mockup_image,
-          has_mockup_images, mockup_count, has_resized_images, resized_count, has_etsy_listing,
-          created_at
-        ) VALUES (
-          ${project.id}, ${project.userId}, ${project.title || ''}, ${project.originalImageUrl || null},
-          ${project.upscaledImageUrl || null}, ${project.mockupImageUrl || null}, ${JSON.stringify(project.mockupImages || [])},
-          ${JSON.stringify(project.resizedImages || [])}, ${project.etsyListing ? JSON.stringify(project.etsyListing) : null},
-          ${project.mockupTemplate || null}, ${project.upscaleOption || '2x'}, ${project.status || 'pending'}, ${project.zipUrl || null},
-          ${project.thumbnailUrl || null}, ${project.aiPrompt || null}, ${JSON.stringify(project.metadata || {})},
-          ${project.hasOriginalImage}, ${project.hasUpscaledImage}, ${project.hasMockupImage},
-          ${project.hasMockupImages}, ${project.mockupCount}, ${project.hasResizedImages},
-          ${project.resizedCount}, ${project.hasEtsyListing}, ${project.createdAt}
-        )
-      `;
+        await sql`
+          INSERT INTO projects (
+            id, user_id, title, original_image_url, upscaled_image_url,
+            mockup_image_url, mockup_images, resized_images, etsy_listing,
+            mockup_template, upscale_option, status, zip_url, thumbnail_url,
+            ai_prompt, metadata, has_original_image, has_upscaled_image, has_mockup_image,
+            has_mockup_images, mockup_count, has_resized_images, resized_count, has_etsy_listing,
+            created_at
+          ) VALUES (
+            ${project.id}, ${project.userId}, ${project.title || ''}, ${project.originalImageUrl || null},
+            ${project.upscaledImageUrl || null}, ${project.mockupImageUrl || null}, ${JSON.stringify(project.mockupImages || [])},
+            ${JSON.stringify(project.resizedImages || [])}, ${project.etsyListing ? JSON.stringify(project.etsyListing) : null},
+            ${project.mockupTemplate || null}, ${project.upscaleOption || '2x'}, ${project.status || 'pending'}, ${project.zipUrl || null},
+            ${project.thumbnailUrl || null}, ${project.aiPrompt || null}, ${JSON.stringify(project.metadata || {})},
+            ${project.hasOriginalImage}, ${project.hasUpscaledImage}, ${project.hasMockupImage},
+            ${project.hasMockupImages}, ${project.mockupCount}, ${project.hasResizedImages},
+            ${project.resizedCount}, ${project.hasEtsyListing}, ${project.createdAt}
+          )
+        `;
 
-      await sql.end();
-      console.log(`Database: Project ${id} successfully saved to database`);
-
-      this.projects.set(id, project);
-      this.projectListFetchedAt.set(project.userId, Date.now());
-      console.log(`MemStorage: Added project ${id} to cache`);
-    } catch (error) {
-      console.error(`CRITICAL: Failed to persist project ${id} to database:`, error);
-      throw new Error('Project creation failed: Unable to save project data to database');
+        await sql.end();
+        console.log(`✅ Database: Project ${id} successfully saved to database`);
+        dbSaveSuccess = true;
+        break;
+      } catch (error) {
+        lastError = error as Error;
+        console.error(`❌ Database save attempt ${attempt}/3 failed:`, error);
+        
+        // Wait before retry (exponential backoff)
+        if (attempt < 3) {
+          const waitTime = attempt * 1000; // 1s, 2s
+          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
     }
+    
+    if (!dbSaveSuccess) {
+      console.error(`CRITICAL: Failed to persist project ${id} to database after 3 attempts:`, lastError);
+      // Still cache the project in memory so user doesn't lose their work
+      this.projects.set(id, project);
+      console.warn(`⚠️ Project ${id} cached in memory only - database save failed`);
+      throw new Error('Project creation failed: Unable to save project data to database. Your project is cached but may be lost on server restart.');
+    }
+
+    this.projects.set(id, project);
+    this.projectListFetchedAt.set(project.userId, Date.now());
+    console.log(`MemStorage: Added project ${id} to cache`);
+
 
     return project;
   }
@@ -667,6 +709,7 @@ class MemStorage implements IStorage {
 
     try {
       const sql = createDbConnection();
+      const queryStartTime = Date.now();
 
       const rows = await sql`
         SELECT 
@@ -681,6 +724,9 @@ class MemStorage implements IStorage {
         LIMIT 1
       `;
 
+      const queryDuration = Date.now() - queryStartTime;
+      console.log(`MemStorage: Database query completed in ${queryDuration}ms`);
+
       await sql.end();
 
       if (rows.length > 0) {
@@ -689,8 +735,16 @@ class MemStorage implements IStorage {
         console.log('MemStorage: Cached project ' + id + ' after DB fetch');
         return project;
       }
-    } catch (error) {
-      console.warn('MemStorage: Failed to load project ' + id + ' from database:', error);
+    } catch (error: any) {
+      const errorCode = error?.code;
+      const errorMessage = error?.message || String(error);
+      
+      if (errorCode === '57014') {
+        console.error(`❌ Database timeout loading project ${id}. This usually means the project has very large base64 images stored in the database.`);
+        console.error('💡 Consider migrating large images to object storage or increasing statement_timeout.');
+      } else {
+        console.warn('MemStorage: Failed to load project ' + id + ' from database:', errorMessage);
+      }
     }
 
     return undefined;
@@ -725,10 +779,16 @@ class MemStorage implements IStorage {
 
   private async loadProjectsListFromDatabase(userId: string): Promise<Project[]> {
     // For list view, only fetch lightweight metadata - NOT the huge image blobs!
+    const connectionStart = Date.now();
     const sql = createDbConnection();
+    const connectionTime = Date.now() - connectionStart;
+    
+    if (connectionTime > 1000) {
+      console.warn(`⚠️ Slow database connection: ${connectionTime}ms`);
+    }
 
     try {
-      const startTime = Date.now();
+      const queryStart = Date.now();
       const rows = await sql`
         SELECT 
           id, user_id, title, status, thumbnail_url,
@@ -741,7 +801,13 @@ class MemStorage implements IStorage {
         ORDER BY created_at DESC
         LIMIT 20
       `;
-      const queryTime = Date.now() - startTime;
+      const queryTime = Date.now() - queryStart;
+      
+      if (queryTime > 5000) {
+        console.error(`🐌 VERY SLOW QUERY: ${queryTime}ms - Consider adding database index on user_id`);
+      } else if (queryTime > 1000) {
+        console.warn(`⚠️ Slow query: ${queryTime}ms`);
+      }
 
       // Transform rows with minimal data (no heavy image columns)
       const convertedProjects = rows.map((row: any) => {
@@ -859,8 +925,11 @@ class MemStorage implements IStorage {
     console.log(`📝 Updating project ${id} - uploading new images to storage if needed...`);
 
     // Upload any new base64 images to storage before updating database
+    // CRITICAL: Never allow originalImageUrl to become null (database constraint)
     const originalImageUrl = updates.originalImageUrl !== undefined
-      ? await uploadBase64ToStorage(updates.originalImageUrl || '', id, 'original')
+      ? (updates.originalImageUrl 
+          ? await uploadBase64ToStorage(updates.originalImageUrl, id, 'original')
+          : existing.originalImageUrl) // Preserve existing if update is null/empty
       : existing.originalImageUrl;
     
     const upscaledImageUrl = updates.upscaledImageUrl !== undefined
@@ -892,7 +961,8 @@ class MemStorage implements IStorage {
     const merged: ProjectBase = {
       ...existing,
       ...updates,
-      originalImageUrl: originalImageUrl ?? null,
+      // Preserve existing originalImageUrl if not provided in updates (critical for NOT NULL constraint)
+      originalImageUrl: originalImageUrl || existing.originalImageUrl,
       upscaledImageUrl: upscaledImageUrl ?? null,
       mockupImageUrl: mockupImageUrl ?? null,
       mockupImages: mockupImages as Record<string, string> | null,
@@ -906,6 +976,12 @@ class MemStorage implements IStorage {
       aiPrompt: updates.aiPrompt ?? existing.aiPrompt ?? null,
       metadata: updates.metadata ?? existing.metadata ?? {},
     };
+    
+    // Final safety check: originalImageUrl must never be null
+    if (!merged.originalImageUrl) {
+      console.error(`⚠️ CRITICAL: originalImageUrl is null for project ${id}, preserving existing value`);
+      merged.originalImageUrl = existing.originalImageUrl;
+    }
 
     const summary = deriveProjectSummary(merged);
     const metadataWithSummary = applySummaryToMetadata(merged.metadata, summary);
@@ -922,12 +998,17 @@ class MemStorage implements IStorage {
 
     try {
       const sql = createDbConnection();
+      
+      // Final validation before database update
+      if (!updatedProject.originalImageUrl) {
+        throw new Error(`Cannot update project ${id}: originalImageUrl is required but is null/empty`);
+      }
 
       await sql`
         UPDATE projects 
         SET 
           title = ${updatedProject.title || ''},
-          original_image_url = ${updatedProject.originalImageUrl || null},
+          original_image_url = ${updatedProject.originalImageUrl},
           upscaled_image_url = ${updatedProject.upscaledImageUrl || null},
           mockup_image_url = ${updatedProject.mockupImageUrl || null},
           mockup_images = ${JSON.stringify(updatedProject.mockupImages || {})},

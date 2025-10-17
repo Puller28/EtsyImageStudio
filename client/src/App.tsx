@@ -32,6 +32,7 @@ import UpscaleToolPage from "@/pages/tools/upscale-tool";
 import MockupToolPage from "@/pages/tools/mockup-tool";
 import PrintFormatsToolPage from "@/pages/tools/print-formats-tool";
 import ListingToolPage from "@/pages/tools/listing-tool";
+import GenerateToolPage from "@/pages/tools/generate-tool";
 import WorkflowPage from "@/pages/workflow/workflow-hub";
 import WorkflowRunnerPage from "@/pages/workflow/workflow-runner";
 import { AppShell } from "@/components/layout/app-shell";
@@ -82,6 +83,7 @@ function Router() {
               <Route path="/settings" component={Settings} />
               <Route path="/buy-credits" component={BuyCredits} />
               <Route path="/tools/upscale" component={() => <UpscaleToolPage />} />
+              <Route path="/tools/generate" component={() => <GenerateToolPage />} />
               <Route path="/tools/mockups" component={MockupToolPage} />
               <Route path="/tools/print-formats" component={() => <PrintFormatsToolPage />} />
               <Route path="/tools/listing" component={() => <ListingToolPage />} />
@@ -118,6 +120,9 @@ function Router() {
         <Route path="/privacy-policy" component={PrivacyPolicyPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/pricing" component={() => <Pricing onSelectPlan={() => {}} />} />
+        <Route path="/generate" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        <Route path="/upscale" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        <Route path="/template-mockups" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
         <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
         <Route path="/login" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
         <Route path="/register" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />

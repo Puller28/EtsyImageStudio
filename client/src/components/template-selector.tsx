@@ -338,8 +338,8 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:justify-between md:text-left">
-            <div className="flex flex-col items-center gap-2 md:flex-row md:items-center">
+          <div className="mb-4 flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col items-center gap-2">
               <Badge variant="outline">
                 {selectedCount}/{MAX_TEMPLATES} templates selected
               </Badge>

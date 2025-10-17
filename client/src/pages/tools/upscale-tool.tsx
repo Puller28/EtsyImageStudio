@@ -1,11 +1,11 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ImageUpload from "@/components/image-upload";
 import ProcessingControls from "@/components/processing-controls";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { Sparkles, ImageUp, Workflow } from "lucide-react";
 import { useLocation } from "wouter";
@@ -40,9 +40,25 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastResultProjectId, setLastResultProjectId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { setSelectedProjectId } = useWorkspace();
+  const { setSelectedProjectId, selectedProjectId } = useWorkspace();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  
+  // Check if selected project already has an image
+  const { data: selectedProject } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return null;
+      const res = await fetch(`/api/projects/${selectedProjectId}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!selectedProjectId,
+  });
 
   const startProcessing = async (projectId: string) => {
     try {
@@ -125,6 +141,28 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
     onSettled: () => setIsSubmitting(false),
   });
   const handleStartProcessing = async (options: StartProcessingOptions) => {
+    // If we have an existing project with an image, just start processing
+    if (hasExistingImage && selectedProjectId) {
+      setIsSubmitting(true);
+      try {
+        await startProcessing(selectedProjectId);
+        toast({
+          title: "Processing started",
+          description: "Your artwork is being upscaled and processed.",
+        });
+      } catch (error) {
+        toast({
+          title: "Processing failed",
+          description: "Unable to start processing. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+    
+    // Otherwise, create new project with uploaded image
     if (!uploadedImage) {
       toast({
         title: "Upload required",
@@ -150,9 +188,25 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
     formData.append("printFormats", JSON.stringify(options.selectedPrintFormats));
     createProjectMutation.mutate({ formData });
   };
+  // Check if we have a project with an existing image
+  const hasExistingImage = selectedProject && (
+    selectedProject.originalImageUrl || 
+    selectedProject.thumbnailUrl
+  );
+  
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-10">
-      {showIntro && (
+      {/* Show project info if coming from workflow with existing image */}
+      {hasExistingImage && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <p className="font-medium text-green-900">Project Selected: {selectedProject.title}</p>
+          <p className="text-sm text-green-700">
+            Your AI-generated artwork is ready. Choose your upscale option and processing settings below.
+          </p>
+        </div>
+      )}
+      
+      {showIntro && !hasExistingImage && (
         <header className="mb-8 space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -195,44 +249,67 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
         </header>
       )}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Sparkles className="h-4 w-4" />
-              Artwork Upload
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <label className="text-sm font-medium text-slate-200">
-                Project name
-                <span className="text-rose-400 ml-1">*</span>
-              </label>
-              <Input
-                placeholder="e.g. Boho Botanical Collection"
-                className="mt-2 border-slate-800 bg-slate-950/60 text-slate-100"
-                value={projectName}
-                onChange={(event) => setProjectName(event.target.value)}
+        {hasExistingImage ? (
+          // Show existing project image
+          <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-4 w-4" />
+                Your AI-Generated Artwork
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <img
+                src={selectedProject.thumbnailUrl || selectedProject.originalImageUrl}
+                alt={selectedProject.title}
+                className="w-full rounded-lg shadow-lg"
               />
-            </div>
-            <ImageUpload
-              onImageUpload={(file) => {
-                if (uploadedImage) {
-                  URL.revokeObjectURL(uploadedImage.preview);
-                }
-                const preview = URL.createObjectURL(file);
-                setUploadedImage({ file, preview });
-              }}
-              uploadedImage={uploadedImage}
-              onRemoveImage={() => {
-                if (uploadedImage) {
-                  URL.revokeObjectURL(uploadedImage.preview);
-                }
-                setUploadedImage(undefined);
-              }}
-            />
-          </CardContent>
-        </Card>
+              <p className="mt-4 text-sm text-slate-400">
+                This artwork is ready to be upscaled and processed. Choose your options on the right.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          // Show upload form for new projects
+          <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-4 w-4" />
+                Artwork Upload
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <label className="text-sm font-medium text-slate-200">
+                  Project name
+                  <span className="text-rose-400 ml-1">*</span>
+                </label>
+                <Input
+                  placeholder="e.g. Boho Botanical Collection"
+                  className="mt-2 border-slate-800 bg-slate-950/60 text-slate-100"
+                  value={projectName}
+                  onChange={(event) => setProjectName(event.target.value)}
+                />
+              </div>
+              <ImageUpload
+                onImageUpload={(file) => {
+                  if (uploadedImage) {
+                    URL.revokeObjectURL(uploadedImage.preview);
+                  }
+                  const preview = URL.createObjectURL(file);
+                  setUploadedImage({ file, preview });
+                }}
+                uploadedImage={uploadedImage}
+                onRemoveImage={() => {
+                  if (uploadedImage) {
+                    URL.revokeObjectURL(uploadedImage.preview);
+                  }
+                  setUploadedImage(undefined);
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
         <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
           <CardHeader>
             <CardTitle className="text-white">Processing Options</CardTitle>

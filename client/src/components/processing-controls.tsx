@@ -44,34 +44,34 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
           <h4 className="font-medium text-gray-900 mb-3">Image Upscaling</h4>
           <RadioGroup value={upscaleOption} onValueChange={(value) => setUpscaleOption(value as "none" | "2x" | "4x")}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <RadioGroupItem value="none" className="text-primary" />
-                <div className="ml-3 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="block font-medium text-gray-900">No Upscale</span>
-                    <span className="text-sm font-medium text-primary">0 credits</span>
+              <Label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <RadioGroupItem value="none" className="text-primary mt-0.5" />
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="font-medium text-gray-900 text-sm">No Upscale</span>
+                    <span className="text-xs font-medium text-primary whitespace-nowrap">0 credits</span>
                   </div>
-                  <span className="block text-sm text-gray-500">Use original resolution</span>
+                  <span className="block text-xs text-gray-500">Use original resolution</span>
                 </div>
               </Label>
-              <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <RadioGroupItem value="2x" className="text-primary" />
-                <div className="ml-3 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="block font-medium text-gray-900">2x Upscale</span>
-                    <span className="text-sm font-medium text-primary">1 credit</span>
+              <Label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <RadioGroupItem value="2x" className="text-primary mt-0.5" />
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="font-medium text-gray-900 text-sm">2x Upscale</span>
+                    <span className="text-xs font-medium text-primary whitespace-nowrap">1 credit</span>
                   </div>
-                  <span className="block text-sm text-gray-500">Recommended</span>
+                  <span className="block text-xs text-gray-500">Recommended</span>
                 </div>
               </Label>
-              <Label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <RadioGroupItem value="4x" className="text-primary" />
-                <div className="ml-3 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="block font-medium text-gray-900">4x Upscale</span>
-                    <span className="text-sm font-medium text-primary">2 credits</span>
+              <Label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <RadioGroupItem value="4x" className="text-primary mt-0.5" />
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="font-medium text-gray-900 text-sm">4x Upscale</span>
+                    <span className="text-xs font-medium text-primary whitespace-nowrap">2 credits</span>
                   </div>
-                  <span className="block text-sm text-gray-500">Higher quality</span>
+                  <span className="block text-xs text-gray-500">Higher quality</span>
                 </div>
               </Label>
             </div>

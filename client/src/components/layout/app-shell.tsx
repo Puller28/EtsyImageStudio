@@ -1,11 +1,11 @@
 import { ReactNode, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import type { Project } from "@shared/schema";
+import type { Project, User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ModeToggle } from "./mode-toggle";
@@ -49,6 +49,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Workspace", href: "/workspace", icon: <LayoutDashboard className="h-4 w-4" /> },
   { label: "Projects", href: "/workspace/projects", icon: <Grid className="h-4 w-4" /> },
+  { label: "Generate AI Art", href: "/tools/generate", icon: <Sparkles className="h-4 w-4" /> },
   { label: "Upscale", href: "/tools/upscale", icon: <ImageUp className="h-4 w-4" /> },
   { label: "Mockups", href: "/tools/mockups", icon: <Package className="h-4 w-4" /> },
   { label: "Print Formats", href: "/tools/print-formats", icon: <Layers className="h-4 w-4" /> },
@@ -58,11 +59,21 @@ const navItems: NavItem[] = [
 ];
 
 export function AppShell({ children }: AppShellProps) {
-  const { user, logout } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const { mode, setMode, selectedProjectId, setSelectedProjectId } = useWorkspace();
   const [location, navigate] = useLocation();
 
   const NO_PROJECT_VALUE = "__no_project__";
+
+  // Fetch live user data from API to get current credits
+  const { data: apiUser } = useQuery<User>({
+    queryKey: ["/api/user"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/user");
+      return res.json();
+    },
+    staleTime: 10_000, // Refresh every 10 seconds
+  });
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -73,6 +84,8 @@ export function AppShell({ children }: AppShellProps) {
     staleTime: 30_000,
   });
 
+  // Use API user data for credits (live), fallback to auth user
+  const user = apiUser || authUser;
   const credits = user?.credits ?? 0;
   const initials = useMemo(
     () => (user?.name ? user.name.split(" ").map((part) => part[0]).slice(0, 2).join("") : "U"),

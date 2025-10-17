@@ -11,3 +11,6 @@ fastapi*.log
 .env
 .local/
 .config/
+
+# Temporary files
+*.tmp

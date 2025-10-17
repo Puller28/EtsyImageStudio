@@ -33,7 +33,7 @@ interface SEOHeadProps {
 const getPageSEO = (path: string) => {
   const seoData: Record<string, { title: string; description: string }> = {
     '/': {
-      title: "Etsy Art & Image Upscaler Pro - AI-Powered Digital Art Tools",
+      title: "Image Upscaler Pro for Etsy - AI-Powered Digital Art Tools",
       description: "Professional AI image upscaling up to 4x, stunning mockups, print-ready formats, and automated Etsy listings. The ultimate platform for digital artists."
     },
     '/home': {

@@ -83,7 +83,32 @@ export default function TermsOfServicePage() {
 
             {/* Section 6 */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">6. Governing Law</h3>
+              <h3 className="text-lg font-semibold mb-2">6. Etsy Integration Terms</h3>
+              <p className="text-base leading-relaxed mb-3">
+                Our service integrates with Etsy to help you publish listings directly to your Etsy shop. By connecting 
+                your Etsy account, you agree to the following:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-base">
+                <li>You authorize us to access your Etsy shop and publish listings on your behalf</li>
+                <li>You are responsible for ensuring all published content complies with Etsy's policies and terms of service</li>
+                <li>We are not responsible for any violations of Etsy's policies that result from content you create or publish</li>
+                <li>You can disconnect your Etsy shop at any time, which will immediately revoke our access</li>
+                <li>We do not guarantee that listings will be approved by Etsy or remain active on their platform</li>
+              </ul>
+              <p className="text-base leading-relaxed mt-3">
+                <strong>Third-party service:</strong> Etsy is a third-party service not affiliated with Digital Art Helper. 
+                Your use of Etsy is subject to Etsy's own terms of service and policies. We are not responsible for any 
+                changes, interruptions, or termination of Etsy's services.
+              </p>
+              <p className="text-base leading-relaxed mt-3">
+                <strong>Intellectual property:</strong> You retain all rights to the artwork and content you create using 
+                our service. By publishing to Etsy, you grant Etsy the rights specified in their terms of service.
+              </p>
+            </div>
+
+            {/* Section 7 */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">7. Governing Law</h3>
               <p className="text-base leading-relaxed">
                 These Terms shall be governed and construed in accordance with the laws of South Africa, without regard to 
                 its conflict of law provisions.
@@ -118,7 +143,7 @@ export default function TermsOfServicePage() {
             <div className="mt-4 pt-4 border-t">
               <Link href="/auth">
                 <Button className="w-full" data-testid="button-get-started">
-                  Get Started with Etsy Art & Image Upscaler Pro
+                  Get Started with Image Upscaler Pro for Etsy
                 </Button>
               </Link>
             </div>

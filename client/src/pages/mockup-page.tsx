@@ -29,7 +29,17 @@ interface MockupPageProps {
 }
 
 function getProjectPreviewUrl(project: Project): string | null {
-  // Check actual URLs first (for full project data)
+  // Prefer original or thumbnail for faster loading (not the huge upscaled version!)
+  // The mockup generator will handle the quality
+  if (project.originalImageUrl) {
+    return project.originalImageUrl;
+  }
+
+  if (project.thumbnailUrl) {
+    return project.thumbnailUrl;
+  }
+
+  // Only use upscaled if nothing else available (it's huge and slow)
   if (project.upscaledImageUrl) {
     return project.upscaledImageUrl;
   }
@@ -39,14 +49,6 @@ function getProjectPreviewUrl(project: Project): string | null {
     if (firstWithUrl?.url) {
       return firstWithUrl.url;
     }
-  }
-
-  if (project.originalImageUrl) {
-    return project.originalImageUrl;
-  }
-
-  if (project.thumbnailUrl) {
-    return project.thumbnailUrl;
   }
 
   return null;
@@ -151,7 +153,15 @@ export function MockupPage({ showChrome = true }: MockupPageProps = {}) {
         return;
       }
 
-      const response = await fetch(previewUrl);
+      // Download the image in the background with streaming
+      // Using fetch with proper headers for faster download
+      const response = await fetch(previewUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'image/*',
+        },
+      });
+      
       if (!response.ok) {
         throw new Error(`Fetch failed with status ${response.status}`);
       }
@@ -168,6 +178,7 @@ export function MockupPage({ showChrome = true }: MockupPageProps = {}) {
       handleFileUpload(file);
       setSourceProjectId(project.id); // Remember which project this artwork came from
       setProjectPickerOpen(false);
+      
       toast({
         title: "Artwork selected",
         description: `Using the image from "${project.title || "Untitled project"}". Mockups will be added to this project.`,

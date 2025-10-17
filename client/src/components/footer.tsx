@@ -11,7 +11,7 @@ export function Footer() {
           <div className="md:col-span-1 space-y-4">
             <Link href="/">
               <h3 className="font-semibold text-lg text-foreground hover:text-primary transition-colors cursor-pointer">
-                Etsy Art & Image Upscaler Pro
+                Image Upscaler Pro for Etsy
               </h3>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed pr-4">
@@ -182,6 +182,13 @@ export function Footer() {
         </div>
 
         <Separator className="my-8" />
+
+        {/* Etsy Trademark Disclaimer - Required by Etsy API Terms */}
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground text-center">
+            The term 'Etsy' is a trademark of Etsy, Inc. This application uses the Etsy API but is not endorsed or certified by Etsy, Inc.
+          </p>
+        </div>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm text-muted-foreground">
           <div>

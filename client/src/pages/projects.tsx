@@ -133,10 +133,15 @@ export default function ProjectsPage({
 
   const generateThumbnailMutation = useMutation({
     mutationFn: async (projectId: string) => {
+      console.log(`🖼️ Requesting thumbnail generation for project ${projectId}`);
       return apiRequest("POST", `/api/projects/${projectId}/generate-thumbnail`, {});
     },
-    onSuccess: () => {
+    onSuccess: (data, projectId) => {
+      console.log(`✅ Thumbnail generated successfully for project ${projectId}`, data);
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    },
+    onError: (error, projectId) => {
+      console.error(`❌ Thumbnail generation failed for project ${projectId}:`, error);
     },
   });
 
@@ -144,14 +149,24 @@ export default function ProjectsPage({
     if (!projects.length || generateThumbnailMutation.isPending) {
       return;
     }
+    
+    console.log(`🔍 Checking ${projects.length} projects for thumbnail generation...`);
+    projects.forEach(p => {
+      console.log(`  - ${p.title}: status=${p.status}, hasOriginalImage=${p.hasOriginalImage}, hasThumbnail=${!!p.thumbnailUrl}`);
+    });
+    
     const needsThumbnail = projects.find(
       (project) =>
         project.status === "completed" &&
-        project.originalImageUrl?.startsWith("data:image/") &&
+        project.hasOriginalImage &&
         !project.thumbnailUrl
     );
+    
     if (needsThumbnail) {
+      console.log(`🎯 Found project needing thumbnail: ${needsThumbnail.title} (${needsThumbnail.id})`);
       generateThumbnailMutation.mutate(needsThumbnail.id);
+    } else {
+      console.log(`✅ No projects need thumbnail generation`);
     }
   }, [projects, generateThumbnailMutation.isPending]);
 

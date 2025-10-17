@@ -610,7 +610,7 @@ export default function Dashboard() {
             {!uploadedImage && !showAIGenerator && !showUploadMode && (
               <div className="bg-white rounded-lg shadow-sm p-8">
                 <div className="text-center space-y-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Start Your Etsy Art Project</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">Start Your Image Upscaling Project</h2>
                   <p className="text-gray-600">Choose how you want to begin:</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

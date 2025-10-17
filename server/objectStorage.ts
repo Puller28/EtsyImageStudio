@@ -41,6 +41,7 @@ async function uploadToSupabase(bucket: string, objectName: string, buffer: Buff
     method: "POST",
     headers: uploadHeaders,
     body: buffer,
+    signal: AbortSignal.timeout(30000), // 30 second timeout (increased from default 10s)
   });
 
   if (!response.ok) {

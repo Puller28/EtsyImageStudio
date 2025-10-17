@@ -59,10 +59,10 @@ export function TemplateMockupTest() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      // Check file size (5MB limit)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Check file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50MB
       if (selectedFile.size > maxSize) {
-        setError(`File is too large. Maximum size allowed is 5MB. Your file is ${(selectedFile.size / (1024 * 1024)).toFixed(1)}MB.`);
+        setError(`File is too large. Maximum size allowed is 50MB. Your file is ${(selectedFile.size / (1024 * 1024)).toFixed(1)}MB.`);
         return;
       }
       

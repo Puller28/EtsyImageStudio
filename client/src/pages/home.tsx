@@ -22,8 +22,8 @@ export default function HomePage() {
               AI-Powered Digital Art Tools
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-              Etsy Art & {" "}
               <span className="text-primary">Image Upscaler Pro</span>
+              {" "} for Etsy
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling up to 4x, 
@@ -31,7 +31,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
-                <Button size="lg" className="px-8 py-6 text-lg" data-testid="button-get-started">
+                <Button size="lg" className="px-8 py-6 text-lg bg-primary text-white hover:bg-primary/90" data-testid="button-get-started">
                   Get Started Free
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>

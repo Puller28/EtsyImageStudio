@@ -35,7 +35,7 @@ export default function ImageUpload({
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png']
     },
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 50 * 1024 * 1024, // 50MB
     multiple: false
   });
 
@@ -76,16 +76,16 @@ export default function ImageUpload({
                   {isDragActive ? "Drop your artwork here" : "Drop your AI artwork here"}
                 </p>
                 <p className="text-sm text-gray-500">or click to browse files</p>
-                <p className="text-xs text-gray-400">JPG, PNG up to 5MB</p>
+                <p className="text-xs text-gray-400">JPG, PNG up to 50MB</p>
               </div>
             </div>
 
             {onOpenProjectPicker && (
               <div className="mt-6 text-center">
-                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">or reuse</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">or reuse</div>
                 <Button
                   variant="outline"
-                  className="mt-2 inline-flex items-center gap-2"
+                  className="mt-2 inline-flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                   onClick={onOpenProjectPicker}
                   type="button"
                 >
@@ -105,7 +105,7 @@ export default function ImageUpload({
                       {errors.map((error) => (
                         <p key={error.code} className="text-xs">
                           {error.code === 'file-too-large' 
-                            ? `File is too large. Maximum size allowed is 5MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
+                            ? `File is too large. Maximum size allowed is 50MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
                             : error.message}
                         </p>
                       ))}

@@ -134,6 +134,20 @@ export class AIArtGeneratorService {
             // If JSON parsing fails, fall through to generic error
           }
           
+          // Check for common content policy violations
+          const isCelebrityBlock = errorText.toLowerCase().includes('no images were generated');
+          
+          if (isCelebrityBlock) {
+            throw new Error(
+              'Content policy violation: Your prompt may contain celebrity names, trademarked characters, or other restricted content. ' +
+              'Please try:\n' +
+              '• Describing the scene or action without using specific names\n' +
+              '• Using generic descriptions like "martial artist" instead of celebrity names\n' +
+              '• Focusing on the style, mood, or composition rather than specific people\n\n' +
+              'Example: Instead of "Bruce Lee fighting", try "martial artist in dynamic fighting pose, action scene"'
+            );
+          }
+          
           throw new Error(`Unable to generate image: ${errorText}. Please try rephrasing your prompt or contact support if the issue persists.`);
         } else {
           throw new Error(`Segmind API error (${response.status}): ${errorText}`);
