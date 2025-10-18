@@ -2763,9 +2763,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Scan all room directories
-      const roomDirs = fs.readdirSync(templateRoot, { withFileTypes: true })
+      const allContents = fs.readdirSync(templateRoot, { withFileTypes: true });
+      console.log('📂 Template directory contents:', allContents.map(d => `${d.name} (${d.isDirectory() ? 'dir' : 'file'})`));
+      
+      const roomDirs = allContents
         .filter(dirent => dirent.isDirectory())
         .map(dirent => dirent.name);
+      
+      console.log('📂 Room directories found:', roomDirs);
 
       for (const roomName of roomDirs) {
         const roomPath = path.join(templateRoot, roomName);
