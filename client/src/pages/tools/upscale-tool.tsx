@@ -202,10 +202,27 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
     selectedProject.thumbnailUrl
   );
   
+  // Check if project is already processed (has upscaled image and print formats)
+  const isProcessed = selectedProject && 
+    selectedProject.status === 'completed' && 
+    selectedProject.upscaledImageUrl && 
+    selectedProject.resizedImages && 
+    selectedProject.resizedImages.length > 0;
+  
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-10">
-      {/* Show project info if coming from workflow with existing image */}
-      {hasExistingImage && (
+      {/* Show success message if project is already processed */}
+      {isProcessed && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <p className="font-medium text-green-900">✅ Processing Complete: {selectedProject.title}</p>
+          <p className="text-sm text-green-700">
+            Your upscaled image and {selectedProject.resizedImages.length} print formats are ready! View them below or continue to the next workflow step.
+          </p>
+        </div>
+      )}
+      
+      {/* Show project info if coming from workflow with existing image but not yet processed */}
+      {hasExistingImage && !isProcessed && (
         <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
           <p className="font-medium text-green-900">Project Selected: {selectedProject.title}</p>
           <p className="text-sm text-green-700">
@@ -257,8 +274,72 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
         </header>
       )}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        {hasExistingImage ? (
-          // Show existing project image
+        {isProcessed ? (
+          // Show completed results
+          <div className="space-y-6">
+            <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Sparkles className="h-4 w-4" />
+                  Upscaled Image
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <img
+                  src={selectedProject.upscaledImageUrl}
+                  alt={`${selectedProject.title} - Upscaled`}
+                  className="w-full rounded-lg shadow-lg"
+                />
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    onClick={() => window.open(selectedProject.upscaledImageUrl, '_blank')}
+                    className="flex-1 bg-indigo-500 hover:bg-indigo-600"
+                  >
+                    View Full Size
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = selectedProject.upscaledImageUrl;
+                      a.download = `${selectedProject.title}-upscaled.jpg`;
+                      a.click();
+                    }}
+                    variant="outline"
+                    className="flex-1 border-slate-700 text-slate-200 hover:bg-slate-800"
+                  >
+                    Download
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
+              <CardHeader>
+                <CardTitle className="text-white">Print Formats ({selectedProject.resizedImages.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {selectedProject.resizedImages.map((format: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                      <div>
+                        <p className="font-medium text-white">{format.format}</p>
+                        <p className="text-sm text-slate-400">{format.dimensions}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(format.url, '_blank')}
+                        className="bg-indigo-500 hover:bg-indigo-600"
+                      >
+                        Download
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : hasExistingImage ? (
+          // Show existing project image (not yet processed)
           <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
@@ -318,22 +399,59 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
             </CardContent>
           </Card>
         )}
-        <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
-          <CardHeader>
-            <CardTitle className="text-white">Processing Options</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProcessingControls
-              onStartProcessing={({ upscaleOption, selectedPrintFormats }) =>
-                handleStartProcessing({
-                  upscaleOption: upscaleOption,
-                  selectedPrintFormats,
-                })
-              }
-              disabled={isSubmitting}
-            />
-          </CardContent>
-        </Card>
+        {!isProcessed && (
+          <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
+            <CardHeader>
+              <CardTitle className="text-white">Processing Options</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProcessingControls
+                onStartProcessing={({ upscaleOption, selectedPrintFormats }) =>
+                  handleStartProcessing({
+                    upscaleOption: upscaleOption,
+                    selectedPrintFormats,
+                  })
+                }
+                disabled={isSubmitting}
+              />
+            </CardContent>
+          </Card>
+        )}
+        
+        {isProcessed && (
+          <Card className="border-slate-800 bg-slate-900/70 text-slate-100">
+            <CardHeader>
+              <CardTitle className="text-white">Next Steps</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-300">
+                Your project is complete! You can:
+              </p>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => navigate("/tools/mockups")}
+                  className="w-full bg-indigo-500 hover:bg-indigo-600"
+                >
+                  Create Mockups
+                </Button>
+                <Button
+                  onClick={() => navigate("/tools/listing")}
+                  variant="outline"
+                  className="w-full border-slate-700 text-slate-200 hover:bg-slate-800"
+                >
+                  Generate Listing
+                </Button>
+                <Button
+                  onClick={() => navigate(`/workspace/projects/${selectedProjectId}`)}
+                  variant="outline"
+                  className="w-full border-slate-700 text-slate-200 hover:bg-slate-800"
+                >
+                  View in Workspace
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
