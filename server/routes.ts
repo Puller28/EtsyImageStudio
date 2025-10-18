@@ -3576,6 +3576,10 @@ async function processProjectAsync(project: any) {
     
     console.log(`✅ Original image loaded: ${originalBuffer.length} bytes`);
     
+    // Log memory usage
+    const memUsage = process.memoryUsage();
+    console.log(`📊 Memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
+    
     // Step 1: Upscale image using Segmind or fallback
     console.log('Step 1: Upscaling image...');
     let upscaledBuffer: Buffer;
@@ -3595,6 +3599,10 @@ async function processProjectAsync(project: any) {
         
         upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
         console.log('✅ Image upscaled successfully with Segmind');
+        
+        // Log memory after upscaling
+        const memAfterUpscale = process.memoryUsage();
+        console.log(`📊 Memory after upscale: ${Math.round(memAfterUpscale.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterUpscale.heapTotal / 1024 / 1024)}MB`);
       } else {
         console.log('⚠️ Segmind API key not found, using fallback upscaler');
         throw new Error('No Segmind API key');
