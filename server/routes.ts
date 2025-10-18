@@ -2868,29 +2868,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { room, templateId } = req.params;
       
-      // Try to find the background file in Supabase
-      // Common patterns: {templateId}_bg.png, background.png, {templateId}.png
-      const possibleFiles = [
-        `${templateId}_bg.png`,
-        'background.png',
-        `${templateId}.png`,
-        `${room}_bg.png`
+      // Map of known template background filenames based on what we uploaded
+      const filenamePatterns = [
+        `${templateId}_bg.png`,      // e.g., bedroom_01_bg.png
+        'background.png',             // Standard name
+        `${templateId}.png`,          // e.g., bedroom_01.png
+        `${room}_${templateId.split('_')[1]}_bg.png`, // e.g., bedroom_01_bg.png from bedroom/bedroom_01
       ];
       
-      for (const filename of possibleFiles) {
+      let lastError: any = null;
+      
+      for (const filename of filenamePatterns) {
         const objectPath = `templates/${room}/${templateId}/${filename}`;
         try {
           // Serve directly from Supabase using the ProjectImageStorage class
           await projectImageStorage.serveImage(`/objects/project-assets/${objectPath}`, res);
           return;
         } catch (error) {
+          lastError = error;
           // Try next filename
           continue;
         }
       }
       
-      // If no file found, return 404
-      res.status(404).json({ error: "Template preview not found" });
+      // If no file found, log the error and return 404
+      console.warn(`Template preview not found for ${room}/${templateId}, tried:`, filenamePatterns);
+      res.status(404).json({ 
+        error: "Template preview not found",
+        room,
+        templateId,
+        triedFiles: filenamePatterns
+      });
     } catch (error) {
       console.error("Template preview error:", error);
       res.status(500).json({ error: "Failed to serve template preview" });
