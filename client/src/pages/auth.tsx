@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -194,6 +194,14 @@ export default function Auth({ onLogin }: AuthProps) {
                   >
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
+                  
+                  <div className="text-center">
+                    <Link href="/forgot-password">
+                      <Button variant="link" className="text-sm text-muted-foreground hover:text-primary" type="button">
+                        Forgot your password?
+                      </Button>
+                    </Link>
+                  </div>
                 </form>
               </Form>
             </TabsContent>

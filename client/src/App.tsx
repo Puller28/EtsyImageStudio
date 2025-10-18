@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Auth from "@/pages/auth";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Pricing from "@/pages/pricing";
 import Settings from "@/pages/settings";
 import BuyCredits from "@/pages/buy-credits";
@@ -126,6 +128,8 @@ function Router() {
         <Route path="/auth" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
         <Route path="/login" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
         <Route path="/register" component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/terms" component={TermsOfServicePage} />
         <Route path="/privacy" component={PrivacyPolicyPage} />
         <Route component={() => <Auth onLogin={(result) => login(result.user, result.token)} />} />

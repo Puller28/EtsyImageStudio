@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
+import { nanoid } from 'nanoid';
+import { sendPasswordResetEmail } from './services/email-service';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -122,6 +124,65 @@ export class AuthService {
       user,
       token
     };
+  }
+
+  static async requestPasswordReset(email: string): Promise<{ success: boolean; message: string }> {
+    const user = await storage.getUserByEmail(email);
+    
+    // Always return success to prevent email enumeration attacks
+    if (!user) {
+      console.log(`Password reset requested for non-existent email: ${email}`);
+      return { 
+        success: true, 
+        message: 'If an account exists with this email, you will receive a password reset link.' 
+      };
+    }
+
+    // Generate reset token (valid for 1 hour)
+    const resetToken = nanoid(32);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Store reset token
+    await storage.createPasswordResetToken(user.id, resetToken, expiresAt);
+
+    // Send email
+    const emailResult = await sendPasswordResetEmail(user.email, resetToken, user.name);
+    
+    if (!emailResult.sent) {
+      console.error(`Failed to send password reset email to ${email}:`, emailResult.error);
+      // Still return success to prevent email enumeration
+    }
+
+    return { 
+      success: true, 
+      message: 'If an account exists with this email, you will receive a password reset link.' 
+    };
+  }
+
+  static async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    // Verify token and get user
+    const resetData = await storage.getPasswordResetToken(token);
+    
+    if (!resetData) {
+      return { success: false, message: 'Invalid or expired reset token.' };
+    }
+
+    // Check if token is expired
+    if (new Date() > resetData.expiresAt) {
+      await storage.deletePasswordResetToken(token);
+      return { success: false, message: 'Reset token has expired. Please request a new one.' };
+    }
+
+    // Hash new password
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    // Update user password
+    await storage.updateUserPassword(resetData.userId, hashedPassword);
+
+    // Delete used token
+    await storage.deletePasswordResetToken(token);
+
+    return { success: true, message: 'Password has been reset successfully.' };
   }
 }
 

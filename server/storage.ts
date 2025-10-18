@@ -361,6 +361,12 @@ export interface IStorage {
   createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber>;
   getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
   unsubscribeNewsletter(email: string): Promise<boolean>;
+
+  // Password reset
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+  getPasswordResetToken(token: string): Promise<{ userId: string; expiresAt: Date } | undefined>;
+  deletePasswordResetToken(token: string): Promise<void>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
 }
 
 class MemStorage implements IStorage {
@@ -371,6 +377,7 @@ class MemStorage implements IStorage {
   private processedPayments = new Set<string>();
   private contactMessages = new Map<string, any>();
   private newsletterSubscribers = new Map<string, NewsletterSubscriber>();
+  private passwordResetTokens = new Map<string, { userId: string; expiresAt: Date }>();
 
   private getCachedProjectsForUser(userId: string): Project[] {
     return Array.from(this.projects.values())
@@ -1497,6 +1504,110 @@ class MemStorage implements IStorage {
     }
 
     return true;
+  }
+
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    this.passwordResetTokens.set(token, { userId, expiresAt });
+
+    // Persist to database
+    try {
+      const sql = createDbConnection();
+
+      await sql`
+        INSERT INTO password_reset_tokens (token, user_id, expires_at, created_at)
+        VALUES (${token}, ${userId}, ${expiresAt}, ${new Date()})
+        ON CONFLICT (token) DO UPDATE SET
+          user_id = ${userId},
+          expires_at = ${expiresAt}
+      `;
+      
+      await sql.end();
+      console.log(`✅ Password reset token created for user ${userId}`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to create password reset token in database:`, dbError);
+    }
+  }
+
+  async getPasswordResetToken(token: string): Promise<{ userId: string; expiresAt: Date } | undefined> {
+    // Check memory first
+    const memToken = this.passwordResetTokens.get(token);
+    if (memToken) {
+      return memToken;
+    }
+
+    // Try database
+    try {
+      const sql = createDbConnection();
+
+      const tokens = await sql`
+        SELECT user_id, expires_at 
+        FROM password_reset_tokens 
+        WHERE token = ${token}
+        LIMIT 1
+      `;
+
+      await sql.end();
+
+      if (tokens.length > 0) {
+        const tokenData = {
+          userId: tokens[0].user_id,
+          expiresAt: new Date(tokens[0].expires_at)
+        };
+        this.passwordResetTokens.set(token, tokenData);
+        return tokenData;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Database query failed for reset token:`, error);
+    }
+
+    return undefined;
+  }
+
+  async deletePasswordResetToken(token: string): Promise<void> {
+    this.passwordResetTokens.delete(token);
+
+    // Delete from database
+    try {
+      const sql = createDbConnection();
+
+      await sql`
+        DELETE FROM password_reset_tokens 
+        WHERE token = ${token}
+      `;
+      
+      await sql.end();
+      console.log(`✅ Password reset token deleted`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to delete password reset token from database:`, dbError);
+    }
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      user.password = hashedPassword;
+      this.users.set(userId, user);
+    }
+
+    // Update in database
+    try {
+      const sql = createDbConnection();
+
+      await sql`
+        UPDATE public.users 
+        SET password = ${hashedPassword}
+        WHERE id = ${userId}
+      `;
+      
+      await sql.end();
+      console.log(`✅ Password updated for user ${userId}`);
+      
+    } catch (dbError) {
+      console.error(`⚠️ Failed to update password in database:`, dbError);
+      throw new Error('Failed to update password');
+    }
   }
 }
 
