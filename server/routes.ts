@@ -2877,8 +2877,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { room, templateId } = req.params;
       
-      // Templates are now in dist/templates after build
-      const templatesRoot = path.join(process.cwd(), 'templates');
+      // Templates are in dist/templates (same directory as the bundled code)
+      const templatesRoot = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
       const templateDir = path.join(templatesRoot, room, templateId);
       
       // Check if template directory exists
@@ -3046,12 +3046,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const pythonExec = resolvePythonExecutable();
           const scriptPath = path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
           
+          // Set TEMPLATES_PATH to point to dist/templates
+          const templatesPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
+          const env = { ...process.env, TEMPLATES_PATH: templatesPath };
+          
+          console.log(`🔍 Setting TEMPLATES_PATH for Python: ${templatesPath}`);
+          
           const python = spawn(pythonExec.command, [
             ...pythonExec.args,
             scriptPath,
             tempArtworkPath,
             JSON.stringify(selectedTemplates)
-          ]);
+          ], { env });
 
           python.on('error', (spawnError) => {
             reject(new Error(`Failed to start Python process: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`));
