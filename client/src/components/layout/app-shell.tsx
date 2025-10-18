@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles } from "lucide-react";
+import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles, Scissors } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,6 +51,7 @@ const navItems: NavItem[] = [
   { label: "Projects", href: "/workspace/projects", icon: <Grid className="h-4 w-4" /> },
   { label: "Generate AI Art", href: "/tools/generate", icon: <Sparkles className="h-4 w-4" /> },
   { label: "Upscale", href: "/tools/upscale", icon: <ImageUp className="h-4 w-4" /> },
+  { label: "Background Removal", href: "/tools/background-removal", icon: <Scissors className="h-4 w-4" /> },
   { label: "Mockups", href: "/tools/mockups", icon: <Package className="h-4 w-4" /> },
   { label: "Print Formats", href: "/tools/print-formats", icon: <Layers className="h-4 w-4" /> },
   { label: "Listings", href: "/tools/listing", icon: <FileText className="h-4 w-4" /> },
