@@ -112,7 +112,7 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
       }
       return response.json();
     },
-    onSuccess: (project: any) => {
+    onSuccess: async (project: any) => {
       toast({
         title: "Processing started",
         description: "Taking you to the workflow to track progress...",
@@ -122,13 +122,11 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
 
       if (project?.id) {
-        startProcessing(project.id);
+        // IMPORTANT: Wait for processing to start before navigating
+        await startProcessing(project.id);
         
         // Navigate to workflow with the project selected
-        // Use setTimeout to ensure state updates complete
-        setTimeout(() => {
-          navigate(`/workflow/run?project=${project.id}`);
-        }, 500);
+        navigate(`/workflow/run?project=${project.id}`);
       }
 
       setProjectName("");
