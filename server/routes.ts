@@ -3017,79 +3017,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
       fs.writeFileSync(tempArtworkPath, req.file.buffer);
 
-      // In production, download templates from Supabase to temp directory
-      let templatesPath = path.join(process.cwd(), 'templates');
-      if (process.env.NODE_ENV === 'production') {
-        console.log('📥 Downloading templates from Supabase Storage...');
-        templatesPath = path.join(process.cwd(), 'temp_templates');
-        
-        // Create temp templates directory structure
-        for (const template of selectedTemplates) {
-          const templateDir = path.join(templatesPath, template.room, template.id);
-          fs.mkdirSync(templateDir, { recursive: true });
-          
-          // Download manifest.json
-          try {
-            const manifestPath = `templates/${template.room}/${template.id}/manifest.json`;
-            const manifestResponse = await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/authenticated/project-assets/${manifestPath}`, {
-              headers: {
-                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
-                'apikey': process.env.SUPABASE_SERVICE_KEY!
-              }
-            });
-            if (manifestResponse.ok) {
-              const manifestData = await manifestResponse.text();
-              fs.writeFileSync(path.join(templateDir, 'manifest.json'), manifestData);
-            }
-          } catch (e) {
-            console.warn(`Failed to download manifest for ${template.room}/${template.id}`);
-          }
-          
-          // Download background image (try different patterns)
-          const bgPatterns = [
-            `${template.id}_bg.png`,
-            'background.png',
-            `${template.id.replace('_room_', '_')}_bg.png`,
-            `${template.id.replace(/-/g, '_')}_bg.png`
-          ];
-          
-          for (const bgFile of bgPatterns) {
-            try {
-              const bgPath = `templates/${template.room}/${template.id}/${bgFile}`;
-              const bgResponse = await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/authenticated/project-assets/${bgPath}`, {
-                headers: {
-                  'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
-                  'apikey': process.env.SUPABASE_SERVICE_KEY!
-                }
-              });
-              if (bgResponse.ok) {
-                const bgBuffer = Buffer.from(await bgResponse.arrayBuffer());
-                fs.writeFileSync(path.join(templateDir, bgFile), bgBuffer);
-                console.log(`✅ Downloaded ${template.room}/${template.id}/${bgFile}`);
-                break; // Found the file, stop trying
-              }
-            } catch (e) {
-              continue; // Try next pattern
-            }
-          }
-        }
-      }
-
       try {
         // Use batch Python script to process all templates at once (5-10x faster!)
         const batchResult = await new Promise<any>((resolve, reject) => {
           const pythonExec = resolvePythonExecutable();
           const scriptPath = path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
           
-          // Set TEMPLATES_PATH environment variable for Python script
-          const env = { ...process.env, TEMPLATES_PATH: templatesPath };
-          
           const python = spawn(pythonExec.command, [
             ...pythonExec.args,
             scriptPath,
             tempArtworkPath,
             JSON.stringify(selectedTemplates)
-          ], { env });
+          ]);
 
           python.on('error', (spawnError) => {
             reject(new Error(`Failed to start Python process: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`));

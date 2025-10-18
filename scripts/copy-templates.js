@@ -1,37 +1,61 @@
 import fs from 'fs';
 import path from 'path';
-import https from 'https';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 
-const execAsync = promisify(exec);
-
-// Ensure templates exist - download from GitHub if missing
 const templatesDir = 'templates';
+const distTemplatesDir = 'dist/templates';
 
-console.log('📂 Checking templates directory...');
+console.log('📂 Copying templates to dist folder...');
 
-async function ensureTemplates() {
-  // Check if templates directory exists and has content
-  if (fs.existsSync(templatesDir)) {
-    const contents = fs.readdirSync(templatesDir);
-    if (contents.length > 0) {
-      console.log(`✅ Templates directory exists with ${contents.length} items`);
-      return;
+function copyRecursive(src, dest) {
+  if (!fs.existsSync(src)) {
+    console.error(`❌ Source directory not found: ${src}`);
+    return false;
+  }
+
+  // Create destination directory
+  fs.mkdirSync(dest, { recursive: true });
+
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  let fileCount = 0;
+
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      copyRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+      fileCount++;
     }
   }
 
-  console.log('⚠️ Templates directory is missing or empty');
-  console.log('📥 Attempting to restore templates from git...');
-
-  try {
-    // Try to restore templates from git
-    await execAsync('git checkout HEAD -- templates/');
-    console.log('✅ Templates restored from git');
-  } catch (error) {
-    console.error('❌ Failed to restore templates:', error.message);
-    console.log('⚠️ Mockup generation will not be available');
-  }
+  return fileCount;
 }
 
-await ensureTemplates();
+try {
+  // Check if source templates exist
+  if (!fs.existsSync(templatesDir)) {
+    console.error(`❌ Templates directory not found: ${templatesDir}`);
+    console.log('⚠️ Mockup generation will not be available');
+    process.exit(0); // Don't fail the build
+  }
+
+  const contents = fs.readdirSync(templatesDir);
+  if (contents.length === 0) {
+    console.error('❌ Templates directory is empty');
+    console.log('⚠️ Mockup generation will not be available');
+    process.exit(0); // Don't fail the build
+  }
+
+  console.log(`📂 Found ${contents.length} room directories in templates/`);
+
+  // Copy templates to dist
+  const fileCount = copyRecursive(templatesDir, distTemplatesDir);
+  console.log(`✅ Copied templates to ${distTemplatesDir} (${fileCount} files)`);
+
+} catch (error) {
+  console.error('❌ Failed to copy templates:', error.message);
+  console.log('⚠️ Mockup generation will not be available');
+  process.exit(0); // Don't fail the build
+}

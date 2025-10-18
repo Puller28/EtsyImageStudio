@@ -18,9 +18,7 @@ from PIL import Image, ImageOps
 
 def _load_manifest(room, template_id):
     """Load template manifest and validate paths"""
-    # Use TEMPLATES_PATH environment variable if set (for production with Supabase)
-    templates_path = os.environ.get('TEMPLATES_PATH', './templates')
-    template_root = Path(templates_path)
+    template_root = Path("./templates")
     room_dir = template_root / room
     if not room_dir.exists():
         raise Exception(f"Room folder not found: {room_dir}")
