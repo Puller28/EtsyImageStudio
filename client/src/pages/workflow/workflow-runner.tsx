@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useWorkspace } from "@/contexts/workspace-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Project } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,7 @@ export default function WorkflowRunnerPage() {
   const [location, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [lastProcessingStatus, setLastProcessingStatus] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -150,6 +151,9 @@ export default function WorkflowRunnerPage() {
     // Detect when processing transitions from 'processing' to 'completed'
     if (lastProcessingStatus === 'processing' && currentStatus === 'completed') {
       console.log('✅ Processing completed, auto-advancing to next step');
+      
+      // Invalidate projects list to refresh the status in the sidebar
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       
       // Determine which step to advance to based on what's completed
       if (currentStep === 1 && (selectedProject as any).hasUpscaledImage) {
