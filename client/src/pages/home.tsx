@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { ArrowRight, Sparkles, Zap, Shield, Users, Star, CheckCircle, Upload, RotateCcw, Palette, Download, HelpCircle } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, Shield, Users, Star, CheckCircle, Upload, RotateCcw, Palette, Download, HelpCircle, Scissors, Clock, DollarSign } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
 import { SEOHead } from "@/components/seo-head";
@@ -25,17 +25,17 @@ export default function HomePage() {
           <div className="text-center space-y-8">
             <Badge variant="secondary" className="px-4 py-2">
               <Sparkles className="h-4 w-4 mr-2" />
-              AI-Powered Digital Art Tools
+              Complete Digital Art Workflow Platform
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-              <span className="text-primary">AI Image Upscaler</span> for Etsy Sellers
+              <span className="text-primary">Complete Digital Art Studio</span> for Etsy Sellers
               <span className="block text-3xl md:text-4xl mt-4 text-muted-foreground font-normal">
-                4x Resolution, Mockups & Print-Ready Formats in Minutes
+                From AI Art to Etsy Sale in Minutes - All-in-One Platform
               </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling up to 4x, 
-              stunning mockups, print-ready formats, and automated Etsy listings - everything you need in one place. Read our <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">essential print sizes guide</span></Link> and learn about <Link href="/blog/mockup-generation-digital-art"><span className="text-primary hover:underline">mockup generation strategies</span></Link>.
+              Stop juggling multiple tools. Create, upscale, remove backgrounds, generate mockups, and list your digital art - all in one place. 
+              Professional AI-powered workflow automation for Etsy sellers and digital artists. Read our <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">essential print sizes guide</span></Link> and learn about <Link href="/blog/mockup-generation-digital-art"><span className="text-primary hover:underline">mockup generation strategies</span></Link>.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
@@ -59,10 +59,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Everything You Need for Digital Art Success
+              8 Powerful Tools, One Complete Workflow
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From AI art generation to professional mockups, streamline your entire workflow with our comprehensive suite of tools.
+              Replace 5+ separate tools with our all-in-one platform. Save time, save money, and focus on what matters - creating and selling.
             </p>
           </div>
 
@@ -112,6 +112,21 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
+            {/* Background Removal */}
+            <Card className="border-2 hover:border-primary/50 transition-colors">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Scissors className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Background Removal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center">
+                  AI-powered background removal for product photos, portraits, and mockups. Get transparent PNGs in seconds.
+                </p>
+              </CardContent>
+            </Card>
+
             {/* Print Formats */}
             <Card className="border-2 hover:border-primary/50 transition-colors">
               <CardHeader className="text-center">
@@ -124,6 +139,194 @@ export default function HomePage() {
                 <p className="text-sm text-muted-foreground text-center">
                   Automatically generate 5 standard print sizes optimized for Etsy and print-on-demand services. <Link href="/blog/best-print-sizes-digital-art-etsy"><span className="text-primary hover:underline">Learn about essential print sizes</span></Link>.
                 </p>
+              </CardContent>
+            </Card>
+
+            {/* Etsy Optimization */}
+            <Card className="border-2 hover:border-primary/50 transition-colors">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Star className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Etsy SEO & Listings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center">
+                  Automated listing creation with SEO-optimized titles, tags, and descriptions for maximum visibility.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Workflow Automation */}
+            <Card className="border-2 hover:border-primary/50 transition-colors">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-lg">One-Click Workflows</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center">
+                  Automate your entire process from AI generation to final ZIP package with customizable workflows.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* ZIP Downloads */}
+            <Card className="border-2 hover:border-primary/50 transition-colors">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Download className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-lg">ZIP Package Export</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center">
+                  Download complete packages with all formats, mockups, and listings ready to upload to Etsy.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Section - NEW */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              Why Choose an All-in-One Platform?
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Stop paying for multiple subscriptions. Save time and money with our complete solution.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Traditional Approach */}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-xl text-center">Traditional Approach</CardTitle>
+                <CardDescription className="text-center">Using Multiple Tools</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">MidJourney - $10/month</p>
+                      <p className="text-muted-foreground">AI art generation</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Topaz Gigapixel - $99 one-time</p>
+                      <p className="text-muted-foreground">Image upscaling</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">remove.bg - $9/month</p>
+                      <p className="text-muted-foreground">Background removal</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Canva Pro - $13/month</p>
+                      <p className="text-muted-foreground">Mockups and design</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Photoshop - $10/month</p>
+                      <p className="text-muted-foreground">Resizing and formats</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">2-3 hours per listing</p>
+                      <p className="text-muted-foreground">Manual work and switching tools</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-center font-bold text-lg text-red-600">
+                    Total: $42/month + $99 + Hours of Work
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Our Platform */}
+            <Card className="border-2 border-primary shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-xl text-center text-primary">Our Platform</CardTitle>
+                <CardDescription className="text-center">All-in-One Solution</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">AI Art Generation</p>
+                      <p className="text-muted-foreground">Google Imagen 3 included</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">4x AI Upscaling</p>
+                      <p className="text-muted-foreground">Real-ESRGAN included</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Background Removal</p>
+                      <p className="text-muted-foreground">AI-powered included</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Mockup Generation</p>
+                      <p className="text-muted-foreground">5 room templates included</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Print Formats & Listings</p>
+                      <p className="text-muted-foreground">Automated included</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">5 minutes per listing</p>
+                      <p className="text-muted-foreground">One-click workflow automation</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-center font-bold text-lg text-green-600">
+                    Starting at $19/month
+                  </p>
+                  <p className="text-center text-sm text-muted-foreground mt-1">
+                    Save $23/month + Hours of Time
+                  </p>
+                </div>
+                <Link href="/auth">
+                  <Button className="w-full" size="lg">
+                    Start Free Trial
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
