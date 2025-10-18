@@ -678,11 +678,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Background removal endpoint
   app.post('/api/remove-background', authenticateToken, upload.single('image'), async (req: AuthenticatedRequest, res) => {
     try {
+      console.log('🎨 Background removal request received');
+      console.log('🎨 User ID:', req.userId);
+      console.log('🎨 Has file:', !!req.file);
+      
       if (!req.userId) {
+        console.error('❌ No user ID in request');
         return res.status(401).json({ error: 'Authentication required' });
       }
 
       if (!req.file) {
+        console.error('❌ No file in request');
         return res.status(400).json({ error: 'No image file provided' });
       }
 

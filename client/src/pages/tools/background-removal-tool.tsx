@@ -88,10 +88,12 @@ export default function BackgroundRemovalTool() {
 
       // Get auth token
       const token = localStorage.getItem('token');
+      console.log('Auth token exists:', !!token);
       if (!token) {
         throw new Error('Authentication required');
       }
 
+      console.log('Sending background removal request...');
       // Send request
       const apiResponse = await fetch('/api/remove-background', {
         method: 'POST',
@@ -101,11 +103,13 @@ export default function BackgroundRemovalTool() {
         body: formData,
       });
 
-      const result = await apiResponse.json();
-
       if (!apiResponse.ok) {
+        const result = await apiResponse.json();
+        console.error('API Error Response:', { status: apiResponse.status, result });
         throw new Error(result.error || 'Failed to remove background');
       }
+
+      const result = await apiResponse.json();
 
       setProcessedImage(result.imageBase64);
 
