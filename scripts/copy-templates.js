@@ -9,7 +9,7 @@ console.log('📂 Copying templates to dist folder...');
 function copyRecursive(src, dest) {
   if (!fs.existsSync(src)) {
     console.error(`❌ Source directory not found: ${src}`);
-    return false;
+    return 0;
   }
 
   // Create destination directory
@@ -23,7 +23,8 @@ function copyRecursive(src, dest) {
     const destPath = path.join(dest, entry.name);
 
     if (entry.isDirectory()) {
-      copyRecursive(srcPath, destPath);
+      // Recursively copy directory and add its file count
+      fileCount += copyRecursive(srcPath, destPath);
     } else {
       fs.copyFileSync(srcPath, destPath);
       fileCount++;
