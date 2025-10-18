@@ -2008,6 +2008,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Process project (upscale, resize, mockup, SEO) - REAL PROCESSING
   app.post("/api/projects/:id/process", async (req, res) => {
     try {
+      // Check if project is already processing to prevent duplicate jobs
+      const existingProject = await storage.getProject(req.params.id);
+      if (existingProject?.status === 'processing') {
+        console.log(`⚠️ Project ${req.params.id} is already processing, ignoring duplicate request`);
+        return res.json({ message: "Processing already in progress" });
+      }
+      
       // Force reload from database to get fresh data including originalImageUrl
       const dbProjects = await db.select().from(projects).where(eq(projects.id, req.params.id)).limit(1);
       
@@ -3538,6 +3545,11 @@ async function processProjectAsync(project: any) {
   const startTime = Date.now();
   
   console.log(`🔧 processProjectAsync called for project: ${project.id}`);
+  
+  // Log memory at start of processing
+  const startMem = process.memoryUsage();
+  console.log(`📊 Memory at START: ${Math.round(startMem.heapUsed / 1024 / 1024)}MB / ${Math.round(startMem.heapTotal / 1024 / 1024)}MB (RSS: ${Math.round(startMem.rss / 1024 / 1024)}MB)`);
+  
   console.log(`🔧 Project data:`, JSON.stringify(project, null, 2));
   
   try {
