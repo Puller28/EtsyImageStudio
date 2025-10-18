@@ -19,7 +19,8 @@
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "migrate:images": "tsx scripts/migrate-images-to-storage.ts"
+    "migrate:images": "tsx scripts/migrate-images-to-storage.ts",
+    "upload:templates": "tsx scripts/upload-templates-to-supabase.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.17.0",

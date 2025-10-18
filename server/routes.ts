@@ -2732,103 +2732,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Single mockup generation endpoint for sequential processing - Requires paid plan
-  // Get available templates - automatically discover from filesystem
+  // Get available templates - now served from Supabase Storage
   app.get("/api/templates", async (req, res) => {
     try {
-      // Use absolute path to ensure it works in production
-      const templateRoot = path.join(process.cwd(), 'templates');
+      console.log('🔍 Template discovery from Supabase Storage...');
       
-      console.log('🔍 Template discovery - cwd:', process.cwd());
-      console.log('🔍 Template root path:', templateRoot);
-      console.log('🔍 Template directory exists:', fs.existsSync(templateRoot));
-      
-      // Check if templates directory exists
-      if (!fs.existsSync(templateRoot)) {
-        // List what IS in the current directory for debugging
-        const cwdContents = fs.readdirSync(process.cwd());
-        console.log('📂 Current directory contents:', cwdContents);
-        
-        return res.status(404).json({ 
-          error: 'Templates directory not found',
-          template_root: templateRoot,
-          cwd: process.cwd(),
-          cwd_contents: cwdContents
-        });
-      }
-
+      // Hardcoded template structure since they're now in Supabase
       const templatesData = {
-        template_root: templateRoot,
+        template_root: 'supabase://project-assets/templates',
         exists: true,
         rooms: {} as Record<string, any[]>
       };
 
-      // Scan all room directories
-      const allContents = fs.readdirSync(templateRoot, { withFileTypes: true });
-      console.log('📂 Template directory contents:', allContents.map(d => `${d.name} (${d.isDirectory() ? 'dir' : 'file'})`));
-      
-      const roomDirs = allContents
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name);
-      
-      console.log('📂 Room directories found:', roomDirs);
+      // Define all available templates (this matches what we uploaded)
+      const templateDefinitions = {
+        bedroom: ['bedroom_01', 'bedroom_02', 'bedroom_03', 'bedroom_04', 'bedroom_05'],
+        gallery: ['gallery_01'],
+        kids_room: ['kids-03', 'kids-04', 'kids-05', 'kids_room_01', 'kids_room_02'],
+        living_room: ['1760168747153', 'living-room-5', 'living-room-6', 'living-room-7', 'living_01', 'living_02', 'living_03', 'living_04'],
+        study: ['study-03', 'study-04', 'study-05', 'study-06', 'study-07', 'study-08', 'study_01', 'study_02']
+      };
+
+      const roomDirs = Object.keys(templateDefinitions);
 
       for (const roomName of roomDirs) {
-        const roomPath = path.join(templateRoot, roomName);
         templatesData.rooms[roomName] = [];
+        const templateIds = templateDefinitions[roomName as keyof typeof templateDefinitions];
 
-        // Scan all template directories within the room
-        const templateDirs = fs.readdirSync(roomPath, { withFileTypes: true })
-          .filter(dirent => dirent.isDirectory())
-          .map(dirent => dirent.name);
-
-        for (const templateId of templateDirs) {
-          const templatePath = path.join(roomPath, templateId);
-          const manifestPath = path.join(templatePath, 'manifest.json');
-
+        for (const templateId of templateIds) {
           try {
-            // Check if manifest exists
-            if (!fs.existsSync(manifestPath)) {
-              console.warn(`Template ${roomName}/${templateId} missing manifest.json - skipping`);
-              continue;
-            }
-
-            // Read and parse manifest
-            const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-            const manifest = JSON.parse(manifestContent);
-
-            // Check if background image exists
-            const bgPath = path.join(templatePath, manifest.background);
-            const bgExists = fs.existsSync(bgPath);
-
-            if (!bgExists) {
-              console.warn(`Template ${roomName}/${templateId} missing background image: ${manifest.background} - skipping`);
-              continue;
-            }
-
-            // Get image dimensions if available
-            let width = 1024, height = 1024; // defaults
-            try {
-              const sharp = await import('sharp');
-              const imageMetadata = await sharp.default(bgPath).metadata();
-              width = imageMetadata.width || 1024;
-              height = imageMetadata.height || 1024;
-            } catch (e) {
-              console.warn(`Could not read image metadata for ${roomName}/${templateId}`);
-            }
-
-            // Build template info
+            // Build template info with Supabase URLs
             const templateInfo = {
               id: templateId,
               room: roomName,
-              name: manifest.name || `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
+              name: `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
               manifest_present: true,
-              bg_present: bgExists,
+              bg_present: true,
               preview_url: `/api/templates/preview/${roomName}/${templateId}`,
-              corners: manifest.corners || [[100, 100], [400, 100], [400, 400], [100, 400]],
-              width,
-              height,
-              ...(manifest.description && { description: manifest.description }),
-              ...(manifest.tags && { tags: manifest.tags })
+              corners: [[100, 100], [400, 100], [400, 400], [100, 400]], // Default corners
+              width: 1024,
+              height: 1024
             };
 
             templatesData.rooms[roomName].push(templateInfo);
@@ -2854,28 +2797,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve template preview images
-  app.get("/api/templates/preview/:room/:templateId", (req, res) => {
+  // Serve template preview images from Supabase Storage
+  app.get("/api/templates/preview/:room/:templateId", async (req, res) => {
     try {
       const { room, templateId } = req.params;
       
-      const templatePath = path.join(process.cwd(), 'templates', room, templateId);
-      const manifestPath = path.join(templatePath, 'manifest.json');
+      // Try to find the background file in Supabase
+      // Common patterns: {templateId}_bg.png, background.png, {templateId}.png
+      const possibleFiles = [
+        `${templateId}_bg.png`,
+        'background.png',
+        `${templateId}.png`,
+        `${room}_bg.png`
+      ];
       
-      if (!fs.existsSync(manifestPath)) {
-        return res.status(404).json({ error: "Template not found" });
+      for (const filename of possibleFiles) {
+        const objectPath = `templates/${room}/${templateId}/${filename}`;
+        try {
+          // Serve directly from Supabase using the ProjectImageStorage class
+          await projectImageStorage.serveImage(`/objects/project-assets/${objectPath}`, res);
+          return;
+        } catch (error) {
+          // Try next filename
+          continue;
+        }
       }
       
-      const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-      const manifest = JSON.parse(manifestContent);
-      const bgFile = manifest.background || '';
-      const bgPath = path.join(templatePath, bgFile);
-      
-      if (!fs.existsSync(bgPath)) {
-        return res.status(404).json({ error: "Background image not found" });
-      }
-      
-      res.sendFile(path.resolve(bgPath));
+      // If no file found, return 404
+      res.status(404).json({ error: "Template preview not found" });
     } catch (error) {
       console.error("Template preview error:", error);
       res.status(500).json({ error: "Failed to serve template preview" });
