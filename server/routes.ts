@@ -3502,6 +3502,18 @@ else:
     }
   });
 
+  // Catch-all route - serve React app for all non-API routes
+  // This must be the LAST route defined
+  app.get('*', (req, res) => {
+    // Don't catch API routes or static assets
+    if (req.path.startsWith('/api/') || req.path.startsWith('/objects/')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    
+    // Serve the React app's index.html for all other routes
+    res.sendFile(path.join(process.cwd(), 'dist', 'public', 'index.html'));
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -3684,15 +3696,3 @@ async function processProjectAsync(project: any) {
     await storage.updateProject(project.id, { status: "failed" });
   }
 }
-
-  // Catch-all route - serve React app for all non-API routes
-  // This must be the LAST route defined
-  app.get('*', (req, res) => {
-    // Don't catch API routes or static assets
-    if (req.path.startsWith('/api/') || req.path.startsWith('/objects/')) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-    
-    // Serve the React app's index.html for all other routes
-    res.sendFile(path.join(process.cwd(), 'dist', 'public', 'index.html'));
-  });
