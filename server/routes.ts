@@ -2872,62 +2872,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve template preview images from Supabase Storage
+  // Serve template preview images from local filesystem
   app.get("/api/templates/preview/:room/:templateId", async (req, res) => {
     try {
       const { room, templateId } = req.params;
       
-      // Map of known template background filenames based on what we uploaded
-      // Handle different naming patterns:
-      // - bedroom_01 -> bedroom_01_bg.png
-      // - kids-04 -> background.png
-      // - kids_room_01 -> kids_01_bg.png (strips "room_" from middle)
-      // - living_03 -> living_03_bg.png
-      // - study-03 -> background.png
-      const filenamePatterns: string[] = [
-        `${templateId}_bg.png`,                    // e.g., bedroom_01_bg.png, living_03_bg.png
-        'background.png',                           // Standard name (kids-04, study-03, etc.)
-      ];
+      // Templates are now in dist/templates after build
+      const templatesRoot = path.join(process.cwd(), 'templates');
+      const templateDir = path.join(templatesRoot, room, templateId);
       
-      // For kids_room_XX -> try kids_XX_bg.png
-      if (templateId.includes('_room_')) {
-        const withoutRoom = templateId.replace('_room_', '_');
-        filenamePatterns.push(`${withoutRoom}_bg.png`);
+      // Check if template directory exists
+      if (!fs.existsSync(templateDir)) {
+        return res.status(404).json({ 
+          error: "Template not found",
+          room,
+          templateId
+        });
       }
       
-      // For IDs with hyphens (kids-04, study-03) -> try with underscores
-      if (templateId.includes('-')) {
-        const withUnderscores = templateId.replace(/-/g, '_');
-        filenamePatterns.push(`${withUnderscores}_bg.png`);
+      // Read manifest to get background filename
+      const manifestPath = path.join(templateDir, 'manifest.json');
+      if (!fs.existsSync(manifestPath)) {
+        return res.status(404).json({ 
+          error: "Template manifest not found",
+          room,
+          templateId
+        });
       }
       
-      // Fallback without _bg suffix
-      filenamePatterns.push(`${templateId}.png`);
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      const bgFilename = manifest.background;
       
-      let lastError: any = null;
-      
-      for (const filename of filenamePatterns) {
-        const objectPath = `templates/${room}/${templateId}/${filename}`;
-        try {
-          // Serve directly from Supabase using the ProjectImageStorage class
-          // serveImage expects /objects/{objectName} format, bucket is already set to project-assets
-          await projectImageStorage.serveImage(`/objects/${objectPath}`, res);
-          return;
-        } catch (error) {
-          lastError = error;
-          // Try next filename
-          continue;
-        }
+      if (!bgFilename) {
+        return res.status(404).json({ 
+          error: "Background filename not specified in manifest",
+          room,
+          templateId
+        });
       }
       
-      // If no file found, log the error and return 404
-      console.warn(`Template preview not found for ${room}/${templateId}, tried:`, filenamePatterns);
-      res.status(404).json({ 
-        error: "Template preview not found",
-        room,
-        templateId,
-        triedFiles: filenamePatterns
-      });
+      const bgPath = path.join(templateDir, bgFilename);
+      
+      if (!fs.existsSync(bgPath)) {
+        return res.status(404).json({ 
+          error: "Background image not found",
+          room,
+          templateId,
+          expectedFile: bgFilename
+        });
+      }
+      
+      // Serve the image
+      const contentType = bgFilename.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      
+      const imageBuffer = fs.readFileSync(bgPath);
+      res.send(imageBuffer);
+      
     } catch (error) {
       console.error("Template preview error:", error);
       res.status(500).json({ error: "Failed to serve template preview" });
