@@ -293,7 +293,7 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
                 <div className="mt-4 flex gap-2">
                   <Button
                     onClick={() => window.open(selectedProject.upscaledImageUrl, '_blank')}
-                    className="flex-1 bg-indigo-500 hover:bg-indigo-600"
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                   >
                     View Full Size
                   </Button>
@@ -305,7 +305,7 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
                       a.click();
                     }}
                     variant="outline"
-                    className="flex-1 border-slate-700 text-slate-200 hover:bg-slate-800"
+                    className="flex-1 border-slate-600 bg-slate-800 text-white font-semibold hover:bg-slate-700"
                   >
                     Download
                   </Button>
@@ -320,15 +320,15 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
               <CardContent>
                 <div className="space-y-3">
                   {selectedProject.resizedImages.map((format: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                      <div>
-                        <p className="font-medium text-white">{format.format}</p>
-                        <p className="text-sm text-slate-400">{format.dimensions}</p>
+                    <div key={index} className="flex items-center justify-between rounded-lg border border-slate-600 bg-slate-800 p-4">
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg text-white">{format.format || format.name || `Format ${index + 1}`}</p>
+                        <p className="text-sm text-slate-300 mt-1">{format.dimensions || format.size || 'Print ready'}</p>
                       </div>
                       <Button
                         size="sm"
                         onClick={() => window.open(format.url, '_blank')}
-                        className="bg-indigo-500 hover:bg-indigo-600"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4"
                       >
                         Download
                       </Button>
@@ -430,21 +430,21 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
               <div className="space-y-2">
                 <Button
                   onClick={() => navigate("/tools/mockups")}
-                  className="w-full bg-indigo-500 hover:bg-indigo-600"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                 >
                   Create Mockups
                 </Button>
                 <Button
                   onClick={() => navigate("/tools/listing")}
                   variant="outline"
-                  className="w-full border-slate-700 text-slate-200 hover:bg-slate-800"
+                  className="w-full border-slate-600 bg-slate-800 text-white font-semibold hover:bg-slate-700"
                 >
                   Generate Listing
                 </Button>
                 <Button
                   onClick={() => navigate(`/workspace/projects/${selectedProjectId}`)}
                   variant="outline"
-                  className="w-full border-slate-700 text-slate-200 hover:bg-slate-800"
+                  className="w-full border-slate-600 bg-slate-800 text-white font-semibold hover:bg-slate-700"
                 >
                   View in Workspace
                 </Button>
