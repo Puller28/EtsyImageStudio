@@ -2869,11 +2869,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { room, templateId } = req.params;
       
       // Map of known template background filenames based on what we uploaded
+      // Handle different naming patterns:
+      // - bedroom_01 -> bedroom_01_bg.png
+      // - kids-04 -> background.png
+      // - kids_room_01 -> kids_01_bg.png (strips "room_" from middle)
+      // - living_03 -> living_03_bg.png
       const filenamePatterns = [
-        `${templateId}_bg.png`,      // e.g., bedroom_01_bg.png
-        'background.png',             // Standard name
-        `${templateId}.png`,          // e.g., bedroom_01.png
-        `${room}_${templateId.split('_')[1]}_bg.png`, // e.g., bedroom_01_bg.png from bedroom/bedroom_01
+        `${templateId}_bg.png`,                    // e.g., bedroom_01_bg.png, living_03_bg.png
+        'background.png',                           // Standard name (kids-04, etc.)
+        `${templateId.replace('_room_', '_')}_bg.png`, // e.g., kids_01_bg.png from kids_room_01
+        `${templateId.replace(/-/g, '_')}_bg.png`, // e.g., kids_04_bg.png from kids-04
+        `${templateId}.png`,                        // Fallback without _bg
       ];
       
       let lastError: any = null;
