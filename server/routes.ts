@@ -119,6 +119,12 @@ function collectProjectStoragePaths(project: Project): string[] {
 }
 
 function resolvePythonExecutable(): { command: string; args: string[] } {
+  // In production (Render), always use system Python
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🐍 Using system Python in production environment');
+    return { command: "python3", args: [] };
+  }
+
   const fromEnv = process.env.PYTHON_EXECUTABLE?.trim();
   if (fromEnv) {
     if (fs.existsSync(fromEnv)) {
@@ -143,6 +149,7 @@ function resolvePythonExecutable(): { command: string; args: string[] } {
 
   for (const candidate of candidatePaths) {
     if (fs.existsSync(candidate)) {
+      console.log(`🐍 Using Python from: ${candidate}`);
       return { command: candidate, args: [] };
     }
   }
@@ -157,9 +164,11 @@ function resolvePythonExecutable(): { command: string; args: string[] } {
 
   const python3Check = spawnSync("python3", ["--version"], { stdio: "ignore" });
   if (!python3Check.error && python3Check.status === 0) {
+    console.log('🐍 Using system python3');
     return { command: "python3", args: [] };
   }
 
+  console.log('🐍 Falling back to system python');
   return { command: "python", args: [] };
 }
 
