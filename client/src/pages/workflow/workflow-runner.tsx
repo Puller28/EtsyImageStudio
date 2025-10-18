@@ -156,13 +156,13 @@ export default function WorkflowRunnerPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       
       // Determine which step to advance to based on what's completed
-      if (currentStep === 1 && (selectedProject as any).hasUpscaledImage) {
+      if (currentStep === 1 && selectedProject.upscaledImageUrl) {
         // Upscale completed, go to mockups
         setTimeout(() => setCurrentStep(2), 1000);
-      } else if (currentStep === 2 && (selectedProject as any).hasMockupImages) {
+      } else if (currentStep === 2 && selectedProject.mockupImages) {
         // Mockups completed, go to print formats
         setTimeout(() => setCurrentStep(3), 1000);
-      } else if (currentStep === 3 && (selectedProject as any).hasResizedImages) {
+      } else if (currentStep === 3 && selectedProject.resizedImages && selectedProject.resizedImages.length > 0) {
         // Print formats completed, go to listing
         setTimeout(() => setCurrentStep(4), 1000);
       }
