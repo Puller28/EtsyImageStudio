@@ -3580,6 +3580,12 @@ async function processProjectAsync(project: any) {
     const memUsage = process.memoryUsage();
     console.log(`📊 Memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
     
+    // Force garbage collection if available (requires --expose-gc flag)
+    if (global.gc) {
+      console.log('🗑️ Running garbage collection before upscaling...');
+      global.gc();
+    }
+    
     // Step 1: Upscale image using Segmind or fallback
     console.log('Step 1: Upscaling image...');
     let upscaledBuffer: Buffer;
@@ -3592,7 +3598,7 @@ async function processProjectAsync(project: any) {
         
         // Convert buffer to base64 for Segmind API
         const originalBase64 = originalBuffer.toString('base64');
-        const upscaledBase64 = await segmind.upscaleImage({
+        let upscaledBase64 = await segmind.upscaleImage({
           scale,
           image: originalBase64
         });
@@ -3600,9 +3606,20 @@ async function processProjectAsync(project: any) {
         upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
         console.log('✅ Image upscaled successfully with Segmind');
         
+        // Clear the base64 string to free memory
+        upscaledBase64 = '';
+        
         // Log memory after upscaling
         const memAfterUpscale = process.memoryUsage();
         console.log(`📊 Memory after upscale: ${Math.round(memAfterUpscale.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterUpscale.heapTotal / 1024 / 1024)}MB`);
+        
+        // Force GC after upscaling
+        if (global.gc) {
+          console.log('🗑️ Running GC after upscaling...');
+          global.gc();
+          const memAfterGC = process.memoryUsage();
+          console.log(`📊 Memory after GC: ${Math.round(memAfterGC.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterGC.heapTotal / 1024 / 1024)}MB`);
+        }
       } else {
         console.log('⚠️ Segmind API key not found, using fallback upscaler');
         throw new Error('No Segmind API key');
@@ -3620,6 +3637,15 @@ async function processProjectAsync(project: any) {
         console.error('❌ Fallback upscaling also failed, using original:', fallbackError);
         upscaledBuffer = originalBuffer; // Use original if all upscaling fails
       }
+    }
+    
+    // Clear original buffer to free memory (no longer needed)
+    originalBuffer = Buffer.alloc(0);
+    
+    // Force GC before creating print formats
+    if (global.gc) {
+      console.log('🗑️ Running GC before print formats...');
+      global.gc();
     }
     
     // Step 2: Create print format sizes
