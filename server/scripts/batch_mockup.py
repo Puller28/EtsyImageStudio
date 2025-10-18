@@ -208,9 +208,9 @@ def main():
     artwork_path = sys.argv[1]
     templates = json.loads(sys.argv[2])
     
-    # Process templates in parallel (4 workers for optimal performance)
+    # Process templates in parallel (2 workers to avoid memory issues on Render)
     results = []
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=2) as executor:
         futures = {
             executor.submit(process_single_template, artwork_path, t): t 
             for t in templates
