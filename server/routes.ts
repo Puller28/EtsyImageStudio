@@ -2738,11 +2738,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use absolute path to ensure it works in production
       const templateRoot = path.join(process.cwd(), 'templates');
       
+      console.log('🔍 Template discovery - cwd:', process.cwd());
+      console.log('🔍 Template root path:', templateRoot);
+      console.log('🔍 Template directory exists:', fs.existsSync(templateRoot));
+      
       // Check if templates directory exists
       if (!fs.existsSync(templateRoot)) {
+        // List what IS in the current directory for debugging
+        const cwdContents = fs.readdirSync(process.cwd());
+        console.log('📂 Current directory contents:', cwdContents);
+        
         return res.status(404).json({ 
           error: 'Templates directory not found',
-          template_root: templateRoot 
+          template_root: templateRoot,
+          cwd: process.cwd(),
+          cwd_contents: cwdContents
         });
       }
 
