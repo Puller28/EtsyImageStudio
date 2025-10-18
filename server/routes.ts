@@ -3015,6 +3015,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🚀 Batch processing ${selectedTemplates.length} mockups in parallel...`);
       const startTime = Date.now();
 
+      // Debug: Check if templates directory exists
+      const templatesDir = path.join(process.cwd(), 'templates');
+      console.log(`🔍 Checking templates directory: ${templatesDir}`);
+      console.log(`🔍 Templates directory exists: ${fs.existsSync(templatesDir)}`);
+      if (fs.existsSync(templatesDir)) {
+        const contents = fs.readdirSync(templatesDir);
+        console.log(`🔍 Templates directory contents: ${contents.join(', ')}`);
+      }
+
       // Create temporary file for artwork (only once!)
       const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
       fs.writeFileSync(tempArtworkPath, req.file.buffer);
