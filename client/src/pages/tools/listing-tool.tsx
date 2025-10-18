@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { Wand2, FileText } from "lucide-react";
+import { Wand2, FileText, Copy, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ListingToolPageProps {
@@ -131,7 +131,52 @@ export default function ListingToolPage({ showIntro = true }: ListingToolPagePro
 
           <Card className="border-slate-800 bg-slate-900/60 text-slate-100">
             <CardHeader>
-              <CardTitle className="text-white">Current listing draft</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white">Current listing draft</CardTitle>
+                {project?.etsyListing && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                      onClick={() => {
+                        const listingText = `Title: ${project.etsyListing.title}\n\nTags: ${project.etsyListing.tags?.join(', ')}\n\nDescription:\n${project.etsyListing.description}`;
+                        navigator.clipboard.writeText(listingText);
+                        toast({
+                          title: "Copied!",
+                          description: "Listing copied to clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      onClick={() => {
+                        const listingText = `Title: ${project.etsyListing.title}\n\nTags: ${project.etsyListing.tags?.join(', ')}\n\nDescription:\n${project.etsyListing.description}`;
+                        const blob = new Blob([listingText], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${project.title}-etsy-listing.txt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast({
+                          title: "Downloaded!",
+                          description: "Listing saved as text file",
+                        });
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {project?.etsyListing ? (

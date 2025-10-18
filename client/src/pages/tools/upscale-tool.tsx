@@ -327,7 +327,14 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => window.open(format.url, '_blank')}
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = format.url;
+                          a.download = `${selectedProject.title}-${format.format || `format-${index + 1}`}.jpg`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4"
                       >
                         Download
