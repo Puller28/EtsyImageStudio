@@ -16,7 +16,7 @@ export default function BackgroundRemovalTool() {
   const [quality, setQuality] = useState<'auto' | 'preview' | 'full' | 'hd'>('auto');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const CREDITS_REQUIRED = 2;
 
@@ -86,11 +86,10 @@ export default function BackgroundRemovalTool() {
       formData.append('type', imageType);
       formData.append('size', quality);
 
-      // Get auth token
-      const token = localStorage.getItem('token');
+      // Get auth token from Zustand store
       console.log('Auth token exists:', !!token);
       if (!token) {
-        throw new Error('Authentication required');
+        throw new Error('Authentication required. Please log in.');
       }
 
       console.log('Sending background removal request...');
