@@ -114,8 +114,8 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
     },
     onSuccess: (project: any) => {
       toast({
-        title: "Project created",
-        description: "Upscaling and asset preparation has started.",
+        title: "Processing started",
+        description: "Taking you to the workflow to track progress...",
       });
       setLastResultProjectId(project?.id || null);
       setSelectedProjectId(project?.id || null);
@@ -123,6 +123,12 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
 
       if (project?.id) {
         startProcessing(project.id);
+        
+        // Navigate to workflow with the project selected
+        // Use setTimeout to ensure state updates complete
+        setTimeout(() => {
+          navigate(`/workflow/run?project=${project.id}`);
+        }, 500);
       }
 
       setProjectName("");
@@ -148,15 +154,19 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
         await startProcessing(selectedProjectId);
         toast({
           title: "Processing started",
-          description: "Your artwork is being upscaled and processed.",
+          description: "Taking you to the workflow to track progress...",
         });
+        
+        // Navigate to workflow to show progress
+        setTimeout(() => {
+          navigate(`/workflow/run?project=${selectedProjectId}`);
+        }, 500);
       } catch (error) {
         toast({
           title: "Processing failed",
           description: "Unable to start processing. Please try again.",
           variant: "destructive",
         });
-      } finally {
         setIsSubmitting(false);
       }
       return;

@@ -4,7 +4,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { RefreshCcw, Loader2 } from "lucide-react";
 
 interface WorkflowSummaryProps {
   projectId: string | null;
@@ -24,6 +25,11 @@ export function WorkflowSummary({ projectId }: WorkflowSummaryProps) {
       if (!projectId) return null;
       const res = await apiRequest("GET", `/api/projects/${projectId}`);
       return res.json() as Promise<Project>;
+    },
+    refetchInterval: (query) => {
+      // Auto-refresh every 2 seconds if processing
+      const data = query.state.data;
+      return data?.status === 'processing' ? 2000 : false;
     },
   });
 
@@ -64,14 +70,25 @@ export function WorkflowSummary({ projectId }: WorkflowSummaryProps) {
       ? project.resizedCount
       : project.resizedImages?.length || 0;
 
+  const isProcessing = project.status === 'processing';
+
   return (
     <Card className="border-slate-800 bg-slate-900/60 text-slate-100">
       <CardHeader className="flex flex-row items-start justify-between gap-2">
-        <div>
+        <div className="flex-1">
           <CardTitle className="text-white">{project.title}</CardTitle>
-          <Badge className="mt-2 bg-indigo-500/20 text-indigo-100">
-            {project.status || "pending"}
-          </Badge>
+          <div className="mt-2 flex items-center gap-2">
+            <Badge className={isProcessing ? "bg-amber-500/20 text-amber-100" : "bg-indigo-500/20 text-indigo-100"}>
+              {isProcessing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+              {project.status || "pending"}
+            </Badge>
+          </div>
+          {isProcessing && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-slate-400">Processing your artwork...</p>
+              <Progress value={undefined} className="h-1" />
+            </div>
+          )}
         </div>
         <Button
           size="icon"

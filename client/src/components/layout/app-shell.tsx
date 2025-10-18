@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles, Scissors } from "lucide-react";
+import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles, Scissors, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -197,37 +197,56 @@ export function AppShell({ children }: AppShellProps) {
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <ModeToggle mode={mode} onModeChange={handleModeChange} />
-              <div className="hidden sm:flex items-center gap-2">
+              
+              {/* Prominent Project Selector */}
+              <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-lg border-2 border-indigo-500/40 bg-indigo-500/10">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-indigo-400" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider text-indigo-300 font-semibold">Active Project</span>
+                    <span className="text-xs text-slate-400 -mt-0.5">Drives all tools & features</span>
+                  </div>
+                </div>
+                <div className="h-8 w-px bg-indigo-500/30" />
                 <Select
                   value={selectedProjectId ?? NO_PROJECT_VALUE}
                   onValueChange={(value) => handleProjectChange(value)}
                 >
                   <SelectTrigger
-                    className="w-64 max-w-sm border-indigo-400/40 bg-slate-900/80 text-left text-slate-100 hover:border-indigo-300 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-400/50"
+                    className="w-56 border-0 bg-transparent text-left text-slate-100 hover:bg-indigo-500/10 focus:ring-2 focus:ring-indigo-400/50 h-auto py-1"
                     title={selectedProject?.title ?? "No project selected"}
                   >
-                    <SelectValue placeholder="Select project" />
+                    <SelectValue placeholder="Select a project..." />
                   </SelectTrigger>
-                  <SelectContent className="min-w-[16rem] max-w-sm border-slate-700 bg-slate-900/95 text-slate-100">
+                  <SelectContent className="min-w-[20rem] border-slate-700 bg-slate-900/95 text-slate-100">
+                    <div className="px-3 py-2 border-b border-slate-700 bg-indigo-500/10">
+                      <p className="text-xs font-semibold text-indigo-200">Choose Active Project</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">This project will be used across all tools</p>
+                    </div>
                     <SelectItem value={NO_PROJECT_VALUE}>
-                      <span className="text-sm text-slate-400">No project selected</span>
+                      <span className="text-sm text-slate-400 italic">No project selected</span>
                     </SelectItem>
                     {projects.map((project) => (
                       <SelectItem
                         key={project.id}
                         value={project.id}
-                        className="text-slate-200 focus:bg-indigo-600/20 focus:text-indigo-200 data-[state=checked]:bg-indigo-600/25 data-[state=checked]:text-indigo-50"
+                        className="text-slate-200 focus:bg-indigo-600/20 focus:text-indigo-200 data-[state=checked]:bg-indigo-600/25 data-[state=checked]:text-indigo-50 py-3"
                         title={project.title}
                       >
-                        <div className="flex w-full flex-col">
-                          <span className="text-sm font-medium text-slate-100 truncate">
-                            {formatProjectDisplayName(project.title)}
-                          </span>
-                          <span className="text-[11px] text-slate-400">
-                            {project.status?.toUpperCase() || "PENDING"}
-                          </span>
+                        <div className="flex w-full items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-indigo-500/20 text-indigo-300">
+                            <FolderOpen className="h-5 w-5" />
+                          </div>
+                          <div className="flex flex-col flex-1">
+                            <span className="text-sm font-medium text-slate-100 truncate">
+                              {formatProjectDisplayName(project.title)}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              Status: {project.status?.toUpperCase() || "PENDING"}
+                            </span>
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -251,7 +270,7 @@ export function AppShell({ children }: AppShellProps) {
                     className="flex items-center gap-2 rounded-full px-1.5 text-slate-200 hover:bg-slate-800"
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user?.avatar} alt={user?.name || "User avatar"} />
+                      <AvatarImage src={user?.avatar || undefined} alt={user?.name || "User avatar"} />
                       <AvatarFallback className="bg-indigo-500/80 text-sm font-semibold text-white">
                         {initials}
                       </AvatarFallback>
