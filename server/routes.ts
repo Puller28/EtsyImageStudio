@@ -3016,12 +3016,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
 
       // Debug: Check if templates directory exists
-      const templatesDir = path.join(process.cwd(), 'templates');
+      // In production, templates are in dist/templates (same directory as the running code)
+      const templatesDir = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
+      console.log(`🔍 Process cwd: ${process.cwd()}`);
+      console.log(`🔍 Import meta url: ${import.meta.url}`);
       console.log(`🔍 Checking templates directory: ${templatesDir}`);
       console.log(`🔍 Templates directory exists: ${fs.existsSync(templatesDir)}`);
       if (fs.existsSync(templatesDir)) {
         const contents = fs.readdirSync(templatesDir);
         console.log(`🔍 Templates directory contents: ${contents.join(', ')}`);
+      } else {
+        // Try alternative path (process.cwd() + templates)
+        const altPath = path.join(process.cwd(), 'templates');
+        console.log(`🔍 Trying alternative path: ${altPath}`);
+        console.log(`🔍 Alternative path exists: ${fs.existsSync(altPath)}`);
+        if (fs.existsSync(altPath)) {
+          const contents = fs.readdirSync(altPath);
+          console.log(`🔍 Alternative path contents: ${contents.join(', ')}`);
+        }
       }
 
       // Create temporary file for artwork (only once!)
