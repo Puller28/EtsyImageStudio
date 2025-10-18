@@ -178,7 +178,10 @@ export default function WorkflowRunnerPage() {
           projects={projects}
           selectedProjectId={selectedProjectId}
           onSelectProject={(projectId) => setSelectedProjectId(projectId)}
-          onCreateNew={() => navigate("/tools/upscale")}
+          onCreateNew={() => {
+            setSelectedProjectId(null);
+            navigate("/tools/upscale");
+          }}
           onOpenWorkspace={() => navigate("/workspace/projects")}
         />
       ),
