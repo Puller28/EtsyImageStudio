@@ -3,10 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { ArrowRight, Sparkles, Zap, Shield, Users, Star, CheckCircle, Upload, RotateCcw, Palette, Download } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, Shield, Users, Star, CheckCircle, Upload, RotateCcw, Palette, Download, HelpCircle } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
 import { SEOHead } from "@/components/seo-head";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function HomePage() {
   return (
@@ -22,8 +28,10 @@ export default function HomePage() {
               AI-Powered Digital Art Tools
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-              <span className="text-primary">Image Upscaler Pro</span>
-              {" "} for Etsy
+              <span className="text-primary">AI Image Upscaler</span> for Etsy Sellers
+              <span className="block text-3xl md:text-4xl mt-4 text-muted-foreground font-normal">
+                4x Resolution, Mockups & Print-Ready Formats in Minutes
+              </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               The ultimate AI-powered platform for digital artists and Etsy sellers. Professional image upscaling up to 4x, 
@@ -414,6 +422,194 @@ export default function HomePage() {
               </Card>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center space-y-4 mb-12">
+            <Badge variant="secondary" className="px-4 py-2">
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Frequently Asked Questions
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              Common Questions About AI Image Upscaling
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Everything you need to know about upscaling images for Etsy and print-on-demand
+            </p>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            <AccordionItem value="item-1" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                How does AI image upscaling work?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Our AI upscaler uses Real-ESRGAN technology to intelligently enhance image resolution up to 4x. 
+                Unlike simple resizing that stretches pixels, AI upscaling analyzes patterns and adds realistic 
+                detail to create crisp, print-ready images. Perfect for transforming low-resolution artwork into 
+                high-quality Etsy listings and print-on-demand products.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-2" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                What file formats do you support?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                We support all common image formats including JPG, JPEG, PNG, and WEBP. Your upscaled images are 
+                exported as high-quality PNG files at 300 DPI, which is the industry standard for print. We also 
+                automatically generate 5 standard print sizes (8x10", 11x14", 16x20", 18x24", 24x36") optimized 
+                for Etsy digital downloads and print-on-demand services.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-3" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                Can I use upscaled images commercially on Etsy?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Yes! All images you upscale through our platform are yours to use commercially. Whether you're 
+                selling digital downloads, print-on-demand products, or physical prints on Etsy, you retain full 
+                commercial rights. For AI-generated art created with our tool, you also have full commercial usage 
+                rights as specified in our terms of service.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-4" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                What's the difference between 2x and 4x upscaling?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                2x upscaling doubles your image dimensions (e.g., 500x500 becomes 1000x1000) and is included in 
+                our free plan. 4x upscaling quadruples dimensions (500x500 becomes 2000x2000) and is available on 
+                Pro and Pro+ plans. For Etsy listings, 2x is usually sufficient for digital downloads, while 4x 
+                is recommended for large format prints (24x36" and above) or when you need maximum detail.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-5" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                How long does it take to upscale an image?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Most images are upscaled in 30-60 seconds depending on size and complexity. Our automated workflow 
+                then generates mockups and print formats in an additional 2-3 minutes. The entire process from 
+                upload to download-ready ZIP file typically takes under 5 minutes. You can process multiple images 
+                simultaneously on Pro and Pro+ plans.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-6" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                Do I need design experience to use this tool?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                No design experience required! Our platform is built for Etsy sellers and digital artists of all 
+                skill levels. Simply upload your artwork (or generate new art with AI), and our automated workflow 
+                handles upscaling, mockup generation, print format creation, and even Etsy SEO optimization. 
+                Everything is point-and-click simple with no technical knowledge needed.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-7" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                What makes your mockups better than free alternatives?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Our mockups are professionally designed with realistic lighting, shadows, and room settings 
+                (bedroom, living room, gallery, study, kids' room). Unlike free mockup generators that often look 
+                artificial, our templates use high-resolution photography and advanced perspective matching. Plus, 
+                they're automatically generated as part of your workflow - no manual editing required. This saves 
+                hours compared to creating mockups in Photoshop or Canva.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-8" className="bg-background border rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                Can I cancel my subscription anytime?
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Yes, you can cancel your subscription at any time with no penalties or fees. Your access continues 
+                until the end of your current billing period. We also offer a free tier with 10 credits per month, 
+                so you can always downgrade instead of canceling completely. No credit card required for the free plan.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {/* FAQ Schema Markup */}
+          <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "How does AI image upscaling work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Our AI upscaler uses Real-ESRGAN technology to intelligently enhance image resolution up to 4x. Unlike simple resizing that stretches pixels, AI upscaling analyzes patterns and adds realistic detail to create crisp, print-ready images."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What file formats do you support?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "We support all common image formats including JPG, JPEG, PNG, and WEBP. Your upscaled images are exported as high-quality PNG files at 300 DPI, which is the industry standard for print."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I use upscaled images commercially on Etsy?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! All images you upscale through our platform are yours to use commercially. Whether you're selling digital downloads, print-on-demand products, or physical prints on Etsy, you retain full commercial rights."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What's the difference between 2x and 4x upscaling?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "2x upscaling doubles your image dimensions and is included in our free plan. 4x upscaling quadruples dimensions and is available on Pro and Pro+ plans. For Etsy listings, 2x is usually sufficient for digital downloads, while 4x is recommended for large format prints."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How long does it take to upscale an image?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Most images are upscaled in 30-60 seconds depending on size and complexity. The entire process from upload to download-ready ZIP file typically takes under 5 minutes."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need design experience to use this tool?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No design experience required! Our platform is built for Etsy sellers and digital artists of all skill levels. Simply upload your artwork and our automated workflow handles everything."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What makes your mockups better than free alternatives?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Our mockups are professionally designed with realistic lighting, shadows, and room settings. They're automatically generated as part of your workflow - no manual editing required."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I cancel my subscription anytime?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, you can cancel your subscription at any time with no penalties or fees. Your access continues until the end of your current billing period."
+                }
+              }
+            ]
+          })}} />
         </div>
       </section>
 
