@@ -675,6 +675,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Background removal endpoint
+  app.post('/api/remove-background', authenticateToken, upload.single('image'), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      // Check user credits (background removal costs 2 credits)
+      const CREDITS_REQUIRED = 2;
+      const user = await storage.getUserById(req.userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      if (user.credits < CREDITS_REQUIRED) {
+        return res.status(400).json({ 
+          error: `Insufficient credits. Required: ${CREDITS_REQUIRED}, Available: ${user.credits}` 
+        });
+      }
+
+      // Import background removal service
+      const { BackgroundRemovalService } = await import('./services/background-removal-service');
+
+      // Get options from request
+      const options = {
+        size: req.body.size || 'auto',
+        type: req.body.type || 'auto',
+        format: 'png' as const,
+      };
+
+      console.log(`🎨 Removing background for user ${req.userId} with options:`, options);
+
+      // Remove background
+      const result = await BackgroundRemovalService.removeBackground(req.file.buffer, options);
+
+      if (!result.success) {
+        return res.status(500).json({ 
+          error: result.error || 'Failed to remove background' 
+        });
+      }
+
+      // Deduct credits
+      const deductResult = await storage.updateUserCreditsWithTransaction(
+        req.userId,
+        -CREDITS_REQUIRED,
+        'spend',
+        'Background removal'
+      );
+
+      if (!deductResult) {
+        console.error('Failed to deduct credits for background removal');
+      }
+
+      // Get updated balance
+      const updatedUser = await storage.getUserById(req.userId);
+      const newBalance = updatedUser?.credits || 0;
+
+      console.log(`✅ Background removed successfully. Credits deducted: ${CREDITS_REQUIRED}, New balance: ${newBalance}`);
+
+      res.json({
+        success: true,
+        imageBase64: result.imageBase64,
+        creditsUsed: CREDITS_REQUIRED,
+        newBalance,
+      });
+    } catch (error) {
+      console.error('Background removal error:', error);
+      res.status(500).json({ error: 'Failed to remove background' });
+    }
+  });
+
   // Deduct credits from user account with transaction tracking
   app.post("/api/deduct-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

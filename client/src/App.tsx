@@ -35,6 +35,7 @@ import MockupToolPage from "@/pages/tools/mockup-tool";
 import PrintFormatsToolPage from "@/pages/tools/print-formats-tool";
 import ListingToolPage from "@/pages/tools/listing-tool";
 import GenerateToolPage from "@/pages/tools/generate-tool";
+import BackgroundRemovalToolPage from "@/pages/tools/background-removal-tool";
 import WorkflowPage from "@/pages/workflow/workflow-hub";
 import WorkflowRunnerPage from "@/pages/workflow/workflow-runner";
 import { AppShell } from "@/components/layout/app-shell";
@@ -89,6 +90,7 @@ function Router() {
               <Route path="/tools/mockups" component={MockupToolPage} />
               <Route path="/tools/print-formats" component={() => <PrintFormatsToolPage />} />
               <Route path="/tools/listing" component={() => <ListingToolPage />} />
+              <Route path="/tools/background-removal" component={() => <BackgroundRemovalToolPage />} />
               <Route path="/workflow" component={WorkflowPage} />
               <Route path="/workflow/run" component={WorkflowRunnerPage} />
               <Route path="/projects/:id" component={() => <ProjectDetailPage showChrome={false} />} />
