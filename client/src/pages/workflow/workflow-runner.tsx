@@ -142,11 +142,14 @@ export default function WorkflowRunnerPage() {
     }
   }, [mode, setMode]);
 
-  // Auto-advance when processing completes
+  // Auto-advance when processing completes or new content is added
+  const [lastMockupCount, setLastMockupCount] = useState(0);
+  
   useEffect(() => {
     if (!selectedProject || !selectedProject.status) return;
     
     const currentStatus = selectedProject.status as string;
+    const mockupCount = selectedProject.mockupImages ? Object.keys(selectedProject.mockupImages).length : 0;
     
     // Detect when processing transitions from 'processing' to 'completed'
     if (lastProcessingStatus === 'processing' && currentStatus === 'completed') {
@@ -168,9 +171,17 @@ export default function WorkflowRunnerPage() {
       }
     }
     
-    // Update last status
+    // Also detect when mockups are added (even if status doesn't change)
+    if (currentStep === 2 && mockupCount > lastMockupCount && mockupCount > 0) {
+      console.log(`✅ Mockups added (${mockupCount}), auto-advancing to print formats`);
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setTimeout(() => setCurrentStep(3), 1000);
+    }
+    
+    // Update last status and mockup count
     setLastProcessingStatus(currentStatus);
-  }, [selectedProject, lastProcessingStatus, currentStep]);
+    setLastMockupCount(mockupCount);
+  }, [selectedProject, lastProcessingStatus, lastMockupCount, currentStep, queryClient]);
 
   const stepDefinitions: StepDefinition[] = useMemo(() => [
     {

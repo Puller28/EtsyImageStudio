@@ -3410,6 +3410,7 @@ else:
         await storage.updateProject(existingProjectId, {
           mockupImages: mergedMockups,
           mockupTemplate: 'multiple', // Multiple templates now
+          status: 'completed', // Ensure status is completed so workflow can advance
           metadata: {
             ...existingProject.metadata,
             mockupCount: Object.keys(mergedMockups).length.toString(),
