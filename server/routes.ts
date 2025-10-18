@@ -2735,7 +2735,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available templates - automatically discover from filesystem
   app.get("/api/templates", async (req, res) => {
     try {
-      const templateRoot = './templates';
+      // Use absolute path to ensure it works in production
+      const templateRoot = path.join(process.cwd(), 'templates');
       
       // Check if templates directory exists
       if (!fs.existsSync(templateRoot)) {
@@ -2843,7 +2844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { room, templateId } = req.params;
       
-      const templatePath = path.join('./templates', room, templateId);
+      const templatePath = path.join(process.cwd(), 'templates', room, templateId);
       const manifestPath = path.join(templatePath, 'manifest.json');
       
       if (!fs.existsSync(manifestPath)) {
