@@ -8,6 +8,7 @@ import json
 import base64
 import io
 import math
+import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
@@ -17,7 +18,9 @@ from PIL import Image, ImageOps
 
 def _load_manifest(room, template_id):
     """Load template manifest and validate paths"""
-    template_root = Path("./templates")
+    # Use TEMPLATES_PATH environment variable if set (for production with Supabase)
+    templates_path = os.environ.get('TEMPLATES_PATH', './templates')
+    template_root = Path(templates_path)
     room_dir = template_root / room
     if not room_dir.exists():
         raise Exception(f"Room folder not found: {room_dir}")
