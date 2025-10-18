@@ -2874,13 +2874,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // - kids-04 -> background.png
       // - kids_room_01 -> kids_01_bg.png (strips "room_" from middle)
       // - living_03 -> living_03_bg.png
-      const filenamePatterns = [
+      // - study-03 -> background.png
+      const filenamePatterns: string[] = [
         `${templateId}_bg.png`,                    // e.g., bedroom_01_bg.png, living_03_bg.png
-        'background.png',                           // Standard name (kids-04, etc.)
-        `${templateId.replace('_room_', '_')}_bg.png`, // e.g., kids_01_bg.png from kids_room_01
-        `${templateId.replace(/-/g, '_')}_bg.png`, // e.g., kids_04_bg.png from kids-04
-        `${templateId}.png`,                        // Fallback without _bg
+        'background.png',                           // Standard name (kids-04, study-03, etc.)
       ];
+      
+      // For kids_room_XX -> try kids_XX_bg.png
+      if (templateId.includes('_room_')) {
+        const withoutRoom = templateId.replace('_room_', '_');
+        filenamePatterns.push(`${withoutRoom}_bg.png`);
+      }
+      
+      // For IDs with hyphens (kids-04, study-03) -> try with underscores
+      if (templateId.includes('-')) {
+        const withUnderscores = templateId.replace(/-/g, '_');
+        filenamePatterns.push(`${withUnderscores}_bg.png`);
+      }
+      
+      // Fallback without _bg suffix
+      filenamePatterns.push(`${templateId}.png`);
       
       let lastError: any = null;
       
