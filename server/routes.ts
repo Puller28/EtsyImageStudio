@@ -2744,7 +2744,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rooms: {} as Record<string, any[]>
       };
 
-      // Define all available templates (this matches what we uploaded)
+      // Define all available templates (this matches what we uploaded to Supabase)
+      // To add new templates: 
+      // 1. Upload files using POST /api/admin/templates/upload
+      // 2. Add the template ID to the appropriate room array below
       const templateDefinitions = {
         bedroom: ['bedroom_01', 'bedroom_02', 'bedroom_03', 'bedroom_04', 'bedroom_05'],
         gallery: ['gallery_01'],
@@ -2794,6 +2797,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Template discovery error:', error);
       res.status(500).json({ error: 'Failed to discover templates' });
+    }
+  });
+
+  // Admin endpoint to upload new templates to Supabase Storage
+  app.post("/api/admin/templates/upload", authenticateToken, upload.fields([
+    { name: 'background', maxCount: 1 },
+    { name: 'mask', maxCount: 1 },
+    { name: 'manifest', maxCount: 1 }
+  ]), async (req: AuthenticatedRequest, res) => {
+    try {
+      // TODO: Add admin role check here
+      // if (req.userRole !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+      
+      const { room, templateId } = req.body;
+      
+      if (!room || !templateId) {
+        return res.status(400).json({ error: 'Room and templateId are required' });
+      }
+      
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files.background || !files.manifest) {
+        return res.status(400).json({ error: 'Background image and manifest.json are required' });
+      }
+      
+      const uploadedFiles: string[] = [];
+      
+      // Upload background image
+      const bgFile = files.background[0];
+      const bgPath = `templates/${room}/${templateId}/${bgFile.originalname}`;
+      await projectImageStorage.uploadImage(bgPath, bgFile.buffer, bgFile.mimetype);
+      uploadedFiles.push(bgPath);
+      
+      // Upload mask if provided
+      if (files.mask) {
+        const maskFile = files.mask[0];
+        const maskPath = `templates/${room}/${templateId}/${maskFile.originalname}`;
+        await projectImageStorage.uploadImage(maskPath, maskFile.buffer, maskFile.mimetype);
+        uploadedFiles.push(maskPath);
+      }
+      
+      // Upload manifest
+      const manifestFile = files.manifest[0];
+      const manifestPath = `templates/${room}/${templateId}/manifest.json`;
+      await projectImageStorage.uploadImage(manifestPath, manifestFile.buffer, 'application/json');
+      uploadedFiles.push(manifestPath);
+      
+      console.log(`✅ Uploaded new template: ${room}/${templateId}`);
+      
+      res.json({
+        success: true,
+        message: 'Template uploaded successfully',
+        files: uploadedFiles,
+        template: {
+          room,
+          id: templateId,
+          preview_url: `/api/templates/preview/${room}/${templateId}`
+        }
+      });
+      
+    } catch (error) {
+      console.error('Template upload error:', error);
+      res.status(500).json({ error: 'Failed to upload template' });
     }
   });
 
@@ -3505,8 +3571,13 @@ else:
   // Catch-all route - serve React app for all non-API routes
   // This must be the LAST route defined
   app.get('*', (req, res) => {
-    // Don't catch API routes or static assets
-    if (req.path.startsWith('/api/') || req.path.startsWith('/objects/')) {
+    // Don't catch API routes, static assets, or files with extensions
+    if (
+      req.path.startsWith('/api/') || 
+      req.path.startsWith('/objects/') ||
+      req.path.startsWith('/assets/') ||
+      req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)
+    ) {
       return res.status(404).json({ error: 'Not found' });
     }
     
