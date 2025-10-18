@@ -2888,7 +2888,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const objectPath = `templates/${room}/${templateId}/${filename}`;
         try {
           // Serve directly from Supabase using the ProjectImageStorage class
-          await projectImageStorage.serveImage(`/objects/project-assets/${objectPath}`, res);
+          // serveImage expects /objects/{objectName} format, bucket is already set to project-assets
+          await projectImageStorage.serveImage(`/objects/${objectPath}`, res);
           return;
         } catch (error) {
           lastError = error;
