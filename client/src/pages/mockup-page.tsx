@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useWorkspace } from "@/contexts/workspace-context";
 
 interface GeneratedMockup {
   template: {
@@ -84,9 +85,11 @@ export function MockupPage({ showChrome = true, inWorkflow = false }: MockupPage
   const [projectSearch, setProjectSearch] = useState("");
   const [importingProjectId, setImportingProjectId] = useState<string | null>(null);
   const [sourceProjectId, setSourceProjectId] = useState<string | null>(null); // Track which project the artwork came from
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false); // Track if we've auto-loaded the workflow project
 
   const { toast } = useToast();
   const { user: authUser } = useAuth();
+  const { selectedProjectId } = useWorkspace();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -233,6 +236,18 @@ export function MockupPage({ showChrome = true, inWorkflow = false }: MockupPage
     }
   }, [isProjectPickerOpen]);
 
+  // Auto-load selected project's artwork when in workflow mode
+  useEffect(() => {
+    if (inWorkflow && selectedProjectId && !hasAutoLoaded && projects.length > 0) {
+      const project = projects.find(p => p.id === selectedProjectId);
+      if (project && hasProjectArtwork(project)) {
+        console.log('🎨 Auto-loading artwork from workflow project:', project.id);
+        setHasAutoLoaded(true);
+        handleUseProjectArtwork(project);
+      }
+    }
+  }, [inWorkflow, selectedProjectId, hasAutoLoaded, projects]);
+
   const hasUploadedImage = Boolean(uploadedFile);
   const showResults = generatedMockups.length > 0;
 
@@ -247,10 +262,12 @@ export function MockupPage({ showChrome = true, inWorkflow = false }: MockupPage
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Select Different Templates
                 </Button>
-                <Button variant="ghost" onClick={handleStartOver} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Upload New Artwork
-                </Button>
+                {!inWorkflow && (
+                  <Button variant="ghost" onClick={handleStartOver} className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Upload New Artwork
+                  </Button>
+                )}
               </div>
               {uploadedImageUrl && (
                 <div className="flex items-center space-x-3 bg-muted/40 px-3 py-2 rounded-md border">
