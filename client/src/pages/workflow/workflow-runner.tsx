@@ -130,13 +130,20 @@ export default function WorkflowRunnerPage() {
     const params = new URLSearchParams(location.split('?')[1] || '');
     const projectIdFromUrl = params.get('project');
     
-    if (projectIdFromUrl && projectIdFromUrl !== selectedProjectId) {
-      console.log('🔧 Auto-selecting project from URL:', projectIdFromUrl);
-      setSelectedProjectId(projectIdFromUrl);
+    if (projectIdFromUrl) {
+      // Always set the project from URL, even if one is already selected
+      if (projectIdFromUrl !== selectedProjectId) {
+        console.log('🔧 Auto-selecting project from URL:', projectIdFromUrl);
+        setSelectedProjectId(projectIdFromUrl);
+        // Mark step 0 as complete since we auto-selected
+        setSessionCompletedSteps(prev => new Set([...prev, 0]));
+      }
       // Skip project selection step and go directly to upscale
-      setCurrentStep(1);
+      if (currentStep === 0) {
+        setCurrentStep(1);
+      }
     }
-  }, [location, selectedProjectId, setSelectedProjectId]);
+  }, [location, selectedProjectId, setSelectedProjectId, currentStep]);
 
   useEffect(() => {
     if (mode !== "workflow") {

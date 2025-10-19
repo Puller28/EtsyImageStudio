@@ -56,7 +56,7 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
                 </div>
               </Label>
               <Label className="relative flex items-start p-4 border-2 border-primary rounded-lg cursor-pointer bg-primary/5 hover:bg-primary/10 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-md transition-all">
-                <Badge className="absolute -top-2 -right-2 bg-amber-500 hover:bg-amber-600 text-white">
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 hover:bg-amber-600 text-white text-xs whitespace-nowrap">
                   <Star className="h-3 w-3 mr-1" />
                   Best Value
                 </Badge>
@@ -64,9 +64,9 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
                 <div className="ml-3 flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <span className="font-semibold text-gray-900">2x Upscale</span>
-                    <Badge variant="default" className="text-xs">1 credit</Badge>
+                    <Badge variant="default" className="text-xs shrink-0">1 credit</Badge>
                   </div>
-                  <span className="block text-xs text-primary font-medium">Recommended for most prints</span>
+                  <span className="block text-xs text-primary font-medium">Recommended</span>
                 </div>
               </Label>
               <Label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm transition-all">

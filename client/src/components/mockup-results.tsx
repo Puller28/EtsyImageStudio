@@ -145,45 +145,18 @@ export function MockupResults({ mockups, onReset, inWorkflow = false }: MockupRe
         </CardContent>
       </Card>
 
-      {/* Workflow Next Steps */}
+      {/* Workflow Success Message */}
       {inWorkflow && (
-        <Card className="border-indigo-500/20 bg-indigo-500/5">
+        <Card className="border-green-500/20 bg-green-500/5">
           <CardHeader>
-            <CardTitle>✨ Mockups Complete!</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-2xl">✨</span>
+              Mockups Complete!
+            </CardTitle>
             <CardDescription>
-              Your mockups look great! Continue with the workflow or explore other options.
+              Your mockups have been generated and saved to your project. Use the "Next step" button below to continue with print formats and listing creation.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">
-              What would you like to do next?
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button 
-                onClick={() => navigate("/workflow/run")}
-                className="justify-between"
-              >
-                Continue Workflow
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => navigate("/tools/listing")}
-                className="justify-between"
-              >
-                Generate Listing
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button 
-              variant="ghost"
-              onClick={() => navigate("/workspace/projects")}
-              className="w-full justify-between"
-            >
-              View in Workspace
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
         </Card>
       )}
 

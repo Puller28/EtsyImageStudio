@@ -206,7 +206,10 @@ export default function TemplateCreatePage() {
   };
 
   const handleDeleteTemplate = async (roomName: string, templateIdValue: string) => {
+    console.log('🗑️ Delete template called:', { roomName, templateIdValue, isAuthenticated, hasToken: !!token });
+    
     if (!isAuthenticated || !token) {
+      console.error('❌ Delete failed: Not authenticated or no token', { isAuthenticated, token: token ? 'exists' : 'null' });
       toast({
         title: "Login required",
         description: "You need to be signed in to delete templates.",
@@ -236,6 +239,7 @@ export default function TemplateCreatePage() {
     markTemplateDeleting(key, true);
 
     try {
+      console.log('🔄 Sending DELETE request to:', `/api/templates/${encodeURIComponent(roomName)}/${encodeURIComponent(templateIdValue)}`);
       const response = await fetch(
         `/api/templates/${encodeURIComponent(roomName)}/${encodeURIComponent(templateIdValue)}`,
         {
@@ -246,6 +250,8 @@ export default function TemplateCreatePage() {
         },
       );
 
+      console.log('📡 DELETE response:', { status: response.status, ok: response.ok });
+      
       if (!response.ok) {
         let message = `Failed to delete template (${response.status})`;
         try {
