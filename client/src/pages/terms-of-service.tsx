@@ -143,7 +143,7 @@ export default function TermsOfServicePage() {
             <div className="mt-4 pt-4 border-t">
               <Link href="/auth">
                 <Button className="w-full" data-testid="button-get-started">
-                  Get Started with Etsy Art Studio
+                  Get Started with Art Studio for Etsy
                 </Button>
               </Link>
             </div>

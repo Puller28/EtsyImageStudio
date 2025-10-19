@@ -11,7 +11,7 @@ export function Footer() {
           <div className="md:col-span-1 space-y-4">
             <Link href="/">
               <h3 className="font-semibold text-lg text-foreground hover:text-primary transition-colors cursor-pointer">
-                Etsy Art Studio
+                Art Studio for Etsy
               </h3>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed pr-4">

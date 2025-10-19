@@ -145,7 +145,7 @@ export default function Pricing({ onSelectPlan }: PricingProps) {
       }
       
       toast({
-        title: "Welcome to Etsy Art Studio!",
+        title: "Welcome to Art Studio for Etsy!",
         description: "Your free credits are ready to use. Start creating amazing artwork!",
       });
       onSelectPlan?.(planName);

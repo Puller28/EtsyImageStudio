@@ -291,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - Etsy Art & Image Upscaler Pro</title>
+  <title>${title} - Art Studio for Etsy</title>
   <meta name="description" content="${description}">
   <link rel="canonical" href="https://imageupscaler.app${path}">
   <script>setTimeout(() => window.location.href = "/auth", 3000);</script>
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - Etsy Art & Image Upscaler Pro</title>
+  <title>${title} - Art Studio for Etsy</title>
   <meta name="description" content="${description}">
   <link rel="canonical" href="https://imageupscaler.app/blog/${slug}">
   <script>setTimeout(() => window.location.href = "/blog/${slug}", 2000);</script>

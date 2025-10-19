@@ -36,7 +36,7 @@ export default function Navigation({ user }: NavigationProps) {
                 <span className="text-white font-bold text-sm">EA</span>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Etsy Art Studio
+                Art Studio for Etsy
               </span>
             </div>
           </Link>

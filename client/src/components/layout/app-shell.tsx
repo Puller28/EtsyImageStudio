@@ -147,8 +147,8 @@ export function AppShell({ children }: AppShellProps) {
             EI
           </div>
           <div>
-            <p className="text-sm font-semibold text-white tracking-wide">Etsy Art Studio</p>
-            <p className="text-xs text-slate-400">Creative Workspace</p>
+            <p className="text-sm font-semibold text-white tracking-wide">Image Upscaler Pro</p>
+            <p className="text-xs text-slate-400">for Etsy Sellers</p>
           </div>
         </div>
 
