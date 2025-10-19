@@ -36,7 +36,7 @@ export default function Navigation({ user }: NavigationProps) {
                 <span className="text-white font-bold text-sm">EA</span>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Image Upscaler Pro for Etsy
+                Etsy Art Studio
               </span>
             </div>
           </Link>

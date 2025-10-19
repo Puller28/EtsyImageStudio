@@ -114,7 +114,7 @@ export default function NotFound() {
           <p className="text-sm">
             Looking for AI-powered image upscaling, mockup generation, or digital art tools? 
             Visit our <Link href="/features" className="text-primary hover:underline">features page</Link> to 
-            discover how Image Upscaler Pro for Etsy can transform your creative workflow.
+            discover how Etsy Art Studio can transform your creative workflow.
           </p>
         </div>
       </div>
