@@ -33,7 +33,7 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
   const noFormatsSelected = selectedPrintFormats.length === 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm max-w-4xl">
+    <div className="bg-white rounded-lg shadow-sm w-full">
       <div className="p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-6">
           <Settings className="inline w-5 h-5 text-primary mr-2" />
@@ -44,7 +44,7 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
         <div className="mb-6">
           <h4 className="font-medium text-gray-900 mb-4">Image Upscaling</h4>
           <RadioGroup value={upscaleOption} onValueChange={(value) => setUpscaleOption(value as "none" | "2x" | "4x")}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
               <Label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm transition-all">
                 <RadioGroupItem value="none" className="text-primary mt-0.5" />
                 <div className="ml-3 flex-1 min-w-0">
