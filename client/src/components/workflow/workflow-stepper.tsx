@@ -8,15 +8,16 @@ interface WorkflowStep {
 interface WorkflowStepperProps {
   steps: WorkflowStep[];
   currentStep: number;
+  completedSteps?: number[]; // Array of step indices that are complete
 }
 
-export function WorkflowStepper({ steps, currentStep }: WorkflowStepperProps) {
+export function WorkflowStepper({ steps, currentStep, completedSteps = [] }: WorkflowStepperProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         {steps.map((step, index) => {
           const isActive = index === currentStep;
-          const isCompleted = index < currentStep;
+          const isCompleted = completedSteps.includes(index) || index < currentStep;
 
           return (
             <div

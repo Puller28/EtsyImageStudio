@@ -119,8 +119,13 @@ def _blend(bg_bgra, fg_bgra, mask, mode, opacity):
     return out
 
 
-def process_single_template(artwork_path, template):
-    """Process one template and return result"""
+def process_single_template(art, template):
+    """Process one template and return result
+    
+    Args:
+        art: Pre-loaded PIL Image (RGBA) to avoid loading from disk multiple times
+        template: Template configuration dict
+    """
     try:
         room = template['room']
         template_id = template['id']
@@ -136,10 +141,7 @@ def process_single_template(artwork_path, template):
         corners = manifest["corners"]
         TL, TR, BR, BL = [tuple(map(float, p)) for p in corners]
         
-        # Load and prepare artwork
-        with Image.open(artwork_path) as art_img:
-            art = art_img.convert("RGBA")
-            art = ImageOps.exif_transpose(art)
+        # Artwork is already loaded and passed in (memory optimization)
         
         dst_w = math.dist(TL, TR)
         dst_h = math.dist(TL, BL)
@@ -208,16 +210,22 @@ def main():
     artwork_path = sys.argv[1]
     templates = json.loads(sys.argv[2])
     
-    # Process templates in parallel (2 workers to avoid memory issues on Render)
-    results = []
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = {
-            executor.submit(process_single_template, artwork_path, t): t 
-            for t in templates
-        }
+    # Load artwork ONCE to avoid loading it multiple times in parallel workers
+    # This significantly reduces memory usage (was loading artwork N times for N workers)
+    with Image.open(artwork_path) as art_img:
+        art = art_img.convert("RGBA")
+        art = ImageOps.exif_transpose(art)
         
-        for future in as_completed(futures):
-            results.append(future.result())
+        # Process templates in parallel (2 workers to avoid memory issues on Render)
+        results = []
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {
+                executor.submit(process_single_template, art, t): t 
+                for t in templates
+            }
+            
+            for future in as_completed(futures):
+                results.append(future.result())
     
     # Output results as JSON
     print(json.dumps({'mockups': results}))

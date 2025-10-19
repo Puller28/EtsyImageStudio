@@ -1,0 +1,15 @@
+{
+  "id": "1760168747153",
+  "background": "background.png",
+  "width": 1024,
+  "height": 1536,
+  "corners": [
+    [200, 200],
+    [824, 200],
+    [824, 1336],
+    [200, 1336]
+  ],
+  "blend": { "mode": "normal", "opacity": 1.0 },
+  "feather_px": 1.0,
+  "pad_inset_px": 0
+}

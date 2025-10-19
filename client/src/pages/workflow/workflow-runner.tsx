@@ -213,7 +213,7 @@ export default function WorkflowRunnerPage() {
       key: "mockups",
       title: "Template mockups",
       description: "Generate scene previews with your art",
-      render: () => <MockupPage showChrome={false} />,
+      render: () => <MockupPage showChrome={false} inWorkflow={true} />,
     },
     {
       key: "formats",
@@ -235,6 +235,37 @@ export default function WorkflowRunnerPage() {
   const activeStep = stepDefinitions[currentStep];
   const nextDisabled = activeStep.canProceed ? !activeStep.canProceed() : false;
 
+  // Determine which steps are completed based on project data
+  const completedSteps = useMemo(() => {
+    const completed: number[] = [];
+    if (!selectedProject) return completed;
+    
+    // Step 0: Select project - always completed if we have a project
+    if (selectedProjectId) completed.push(0);
+    
+    // Step 1: Upscale & assets - completed if upscaled and resized images exist
+    if (selectedProject.upscaledImageUrl && selectedProject.resizedImages && selectedProject.resizedImages.length > 0) {
+      completed.push(1);
+    }
+    
+    // Step 2: Mockups - completed if mockups exist
+    if (selectedProject.mockupImages && Object.keys(selectedProject.mockupImages).length > 0) {
+      completed.push(2);
+    }
+    
+    // Step 3: Print formats - completed if resized images exist
+    if (selectedProject.resizedImages && selectedProject.resizedImages.length > 0) {
+      completed.push(3);
+    }
+    
+    // Step 4: Listing - completed if listing exists
+    if (selectedProject.etsyListing && Object.keys(selectedProject.etsyListing).length > 0) {
+      completed.push(4);
+    }
+    
+    return completed;
+  }, [selectedProject, selectedProjectId]);
+
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-10 text-slate-100">
       <header className="mb-6 flex flex-col gap-2">
@@ -247,6 +278,7 @@ export default function WorkflowRunnerPage() {
       <WorkflowStepper
         steps={stepDefinitions.map(({ title, description }) => ({ title, description }))}
         currentStep={currentStep}
+        completedSteps={completedSteps}
       />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

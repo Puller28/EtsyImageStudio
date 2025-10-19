@@ -26,6 +26,7 @@ interface GeneratedMockup {
 
 interface MockupPageProps {
   showChrome?: boolean;
+  inWorkflow?: boolean; // Whether we're in the workflow (show next steps after mockup generation)
 }
 
 function getProjectPreviewUrl(project: Project): string | null {
@@ -75,7 +76,7 @@ function formatProjectDate(value?: string | Date | null): string {
   return date.toLocaleDateString();
 }
 
-export function MockupPage({ showChrome = true }: MockupPageProps = {}) {
+export function MockupPage({ showChrome = true, inWorkflow = false }: MockupPageProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [generatedMockups, setGeneratedMockups] = useState<GeneratedMockup[]>([]);
@@ -242,7 +243,7 @@ export function MockupPage({ showChrome = true }: MockupPageProps = {}) {
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-3 justify-between">
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" onClick={handleReset} data-testid="button-back">
+                <Button variant="secondary" onClick={handleReset} data-testid="button-back">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Select Different Templates
                 </Button>
@@ -265,7 +266,7 @@ export function MockupPage({ showChrome = true }: MockupPageProps = {}) {
                 </div>
               )}
             </div>
-            <MockupResults mockups={generatedMockups} onReset={handleReset} />
+            <MockupResults mockups={generatedMockups} onReset={handleReset} inWorkflow={inWorkflow} />
           </div>
         ) : (
           <div className="space-y-6">

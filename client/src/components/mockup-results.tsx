@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, ArrowRight } from "lucide-react";
 import JSZip from "jszip";
 import { analytics } from "@/lib/analytics";
+import { useLocation } from "wouter";
 
 interface GeneratedMockup {
   template: {
@@ -18,10 +19,12 @@ interface GeneratedMockup {
 interface MockupResultsProps {
   mockups: GeneratedMockup[];
   onReset: () => void;
+  inWorkflow?: boolean; // Show workflow next steps after mockups
 }
 
-export function MockupResults({ mockups, onReset }: MockupResultsProps) {
+export function MockupResults({ mockups, onReset, inWorkflow = false }: MockupResultsProps) {
   const [selectedMockup, setSelectedMockup] = useState<GeneratedMockup | null>(null);
+  const [, navigate] = useLocation();
 
   const downloadSingle = (mockup: GeneratedMockup) => {
     // Track individual mockup download
@@ -141,6 +144,48 @@ export function MockupResults({ mockups, onReset }: MockupResultsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Workflow Next Steps */}
+      {inWorkflow && (
+        <Card className="border-indigo-500/20 bg-indigo-500/5">
+          <CardHeader>
+            <CardTitle>✨ Mockups Complete!</CardTitle>
+            <CardDescription>
+              Your mockups look great! Continue with the workflow or explore other options.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground mb-4">
+              What would you like to do next?
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button 
+                onClick={() => navigate("/workflow/run")}
+                className="justify-between"
+              >
+                Continue Workflow
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/tools/listing")}
+                className="justify-between"
+              >
+                Generate Listing
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button 
+              variant="ghost"
+              onClick={() => navigate("/workspace/projects")}
+              className="w-full justify-between"
+            >
+              View in Workspace
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Full-size preview modal */}
       {selectedMockup && (
