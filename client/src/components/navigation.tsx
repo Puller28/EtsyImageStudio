@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Coins, LogOut, Settings, User } from "lucide-react";
+import { Coins, LogOut, Settings, User, HelpCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavigationProps {
@@ -107,6 +107,12 @@ export default function Navigation({ user }: NavigationProps) {
                     <Link href="/settings" className="flex items-center w-full">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Account</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/contact" className="flex items-center w-full">
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      <span>Help & Support</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

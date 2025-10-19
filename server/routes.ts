@@ -24,8 +24,14 @@ import { ImageMigrationService } from "./services/image-migration-service";
 import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+import sgMail from "@sendgrid/mail";
 
 const projectImageStorage = new ProjectImageStorage();
+
+// Initialize SendGrid with API key from environment
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 function extractStoragePath(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -231,6 +237,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/robots.txt', (req, res) => {
     res.set('Content-Type', 'text/plain');
     res.send(SEOService.generateRobots());
+  });
+
+  // Contact form endpoint
+  app.post('/api/contact', async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+
+      // Validate input
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ error: 'All fields are required' });
+      }
+
+      // Send email via SendGrid
+      if (process.env.SENDGRID_API_KEY) {
+        const msg = {
+          to: 'info@imageupscaler.app',
+          from: 'info@imageupscaler.app',
+          replyTo: email,
+          subject: `Contact Form: ${subject}`,
+          text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+          html: `
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Subject:</strong> ${subject}</p>
+            <h3>Message:</h3>
+            <p>${message.replace(/\n/g, '<br>')}</p>
+          `,
+        };
+
+        await sgMail.send(msg);
+        console.log(`✅ Contact form email sent from ${email}`);
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Thank you for contacting us! We will get back to you soon.' 
+      });
+
+    } catch (error) {
+      console.error('❌ Contact form error:', error);
+      res.status(500).json({ 
+        error: 'Failed to send message. Please try again or email us directly at info@imageupscaler.app' 
+      });
+    }
   });
 
   // SEO-friendly feature page routes with crawler-visible internal links

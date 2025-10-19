@@ -86,8 +86,8 @@ export default function ContactPage() {
               Back to Home
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
-          <p className="text-muted-foreground">Get in touch with our team. Learn about our <Link href="/features" className="text-primary hover:underline">complete feature set</Link> or explore our <Link href="/blog" className="text-primary hover:underline">guides and tutorials</Link>.</p>
+          <h1 className="text-3xl font-bold mb-2">Help & Support</h1>
+          <p className="text-muted-foreground">Need help or found an issue? Let us know! We're here to help. You can also check out our <Link href="/features" className="text-primary hover:underline">complete feature set</Link> or explore our <Link href="/blog" className="text-primary hover:underline">guides and tutorials</Link>.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -151,9 +151,9 @@ export default function ContactPage() {
           {/* Contact Form */}
           <Card>
             <CardHeader>
-              <CardTitle>Send us a Message</CardTitle>
+              <CardTitle>Report an Issue or Get Help</CardTitle>
               <CardDescription>
-                Fill out the form below and we'll get back to you shortly.
+                Found a bug? Feature not working? Need help? Fill out the form below and we'll get back to you shortly.
               </CardDescription>
             </CardHeader>
             <CardContent>
