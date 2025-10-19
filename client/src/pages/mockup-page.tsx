@@ -28,6 +28,7 @@ interface GeneratedMockup {
 interface MockupPageProps {
   showChrome?: boolean;
   inWorkflow?: boolean; // Whether we're in the workflow (show next steps after mockup generation)
+  onMockupsComplete?: () => void; // Callback when mockups are successfully generated
 }
 
 function getProjectPreviewUrl(project: Project): string | null {
@@ -77,7 +78,7 @@ function formatProjectDate(value?: string | Date | null): string {
   return date.toLocaleDateString();
 }
 
-export function MockupPage({ showChrome = true, inWorkflow = false }: MockupPageProps) {
+export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsComplete }: MockupPageProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [generatedMockups, setGeneratedMockups] = useState<GeneratedMockup[]>([]);
@@ -203,6 +204,12 @@ export function MockupPage({ showChrome = true, inWorkflow = false }: MockupPage
     analytics.mockupComplete(mockups.length, 0);
     analytics.funnelStep("mockup_generation_complete", 3);
     setGeneratedMockups(mockups);
+    
+    // Notify workflow that mockups are complete
+    if (onMockupsComplete) {
+      console.log('✅ Mockups generated, notifying workflow');
+      onMockupsComplete();
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

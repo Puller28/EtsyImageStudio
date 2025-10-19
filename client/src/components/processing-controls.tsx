@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Play, Settings } from "lucide-react";
+import { Play, Settings, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { analytics } from "@/lib/analytics";
 import { DEFAULT_PRINT_FORMAT_IDS, PRINT_FORMAT_OPTIONS, type PrintFormatId } from "@shared/print-formats";
 
@@ -43,35 +44,39 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
         <div className="mb-6">
           <h4 className="font-medium text-gray-900 mb-3">Image Upscaling</h4>
           <RadioGroup value={upscaleOption} onValueChange={(value) => setUpscaleOption(value as "none" | "2x" | "4x")}>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm transition-all">
                 <RadioGroupItem value="none" className="text-primary mt-0.5" />
                 <div className="ml-3 flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="font-medium text-gray-900 text-sm">No Upscale</span>
-                    <span className="text-xs font-medium text-primary whitespace-nowrap">0 credits</span>
+                    <span className="font-semibold text-gray-900">No Upscale</span>
+                    <Badge variant="secondary" className="text-xs">Free</Badge>
                   </div>
                   <span className="block text-xs text-gray-500">Use original resolution</span>
                 </div>
               </Label>
-              <Label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <Label className="relative flex items-start p-4 border-2 border-primary rounded-lg cursor-pointer bg-primary/5 hover:bg-primary/10 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-md transition-all">
+                <Badge className="absolute -top-2 -right-2 bg-amber-500 hover:bg-amber-600 text-white">
+                  <Star className="h-3 w-3 mr-1" />
+                  Best Value
+                </Badge>
                 <RadioGroupItem value="2x" className="text-primary mt-0.5" />
                 <div className="ml-3 flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="font-medium text-gray-900 text-sm">2x Upscale</span>
-                    <span className="text-xs font-medium text-primary whitespace-nowrap">1 credit</span>
+                    <span className="font-semibold text-gray-900">2x Upscale</span>
+                    <Badge variant="default" className="text-xs">1 credit</Badge>
                   </div>
-                  <span className="block text-xs text-gray-500">Recommended</span>
+                  <span className="block text-xs text-primary font-medium">Recommended for most prints</span>
                 </div>
               </Label>
-              <Label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <Label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm transition-all">
                 <RadioGroupItem value="4x" className="text-primary mt-0.5" />
                 <div className="ml-3 flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="font-medium text-gray-900 text-sm">4x Upscale</span>
-                    <span className="text-xs font-medium text-primary whitespace-nowrap">2 credits</span>
+                    <span className="font-semibold text-gray-900">4x Upscale</span>
+                    <Badge variant="default" className="text-xs">2 credits</Badge>
                   </div>
-                  <span className="block text-xs text-gray-500">Higher quality</span>
+                  <span className="block text-xs text-gray-500">Maximum quality</span>
                 </div>
               </Label>
             </div>

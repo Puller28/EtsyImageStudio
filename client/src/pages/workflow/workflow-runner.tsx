@@ -100,6 +100,8 @@ export default function WorkflowRunnerPage() {
   const [location, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [lastProcessingStatus, setLastProcessingStatus] = useState<string | null>(null);
+  const [sessionCompletedSteps, setSessionCompletedSteps] = useState<Set<number>>(new Set());
+  const [isMockupGenerating, setIsMockupGenerating] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: projects = [] } = useQuery<Project[]>({
@@ -142,14 +144,11 @@ export default function WorkflowRunnerPage() {
     }
   }, [mode, setMode]);
 
-  // Auto-advance when processing completes or new content is added
-  const [lastMockupCount, setLastMockupCount] = useState(0);
-  
+  // Auto-advance when processing completes (but NOT for mockups - they need manual confirmation)
   useEffect(() => {
     if (!selectedProject || !selectedProject.status) return;
     
     const currentStatus = selectedProject.status as string;
-    const mockupCount = selectedProject.mockupImages ? Object.keys(selectedProject.mockupImages).length : 0;
     
     // Detect when processing transitions from 'processing' to 'completed'
     if (lastProcessingStatus === 'processing' && currentStatus === 'completed') {
@@ -161,27 +160,18 @@ export default function WorkflowRunnerPage() {
       // Determine which step to advance to based on what's completed
       if (currentStep === 1 && selectedProject.upscaledImageUrl) {
         // Upscale completed, go to mockups
+        setSessionCompletedSteps(prev => new Set([...prev, 1]));
         setTimeout(() => setCurrentStep(2), 1000);
-      } else if (currentStep === 2 && selectedProject.mockupImages) {
-        // Mockups completed, go to print formats
-        setTimeout(() => setCurrentStep(3), 1000);
       } else if (currentStep === 3 && selectedProject.resizedImages && selectedProject.resizedImages.length > 0) {
         // Print formats completed, go to listing
+        setSessionCompletedSteps(prev => new Set([...prev, 3]));
         setTimeout(() => setCurrentStep(4), 1000);
       }
     }
     
-    // Also detect when mockups are added (even if status doesn't change)
-    if (currentStep === 2 && mockupCount > lastMockupCount && mockupCount > 0) {
-      console.log(`✅ Mockups added (${mockupCount}), auto-advancing to print formats`);
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      setTimeout(() => setCurrentStep(3), 1000);
-    }
-    
-    // Update last status and mockup count
+    // Update last status
     setLastProcessingStatus(currentStatus);
-    setLastMockupCount(mockupCount);
-  }, [selectedProject, lastProcessingStatus, lastMockupCount, currentStep, queryClient]);
+  }, [selectedProject, lastProcessingStatus, currentStep, queryClient]);
 
   const stepDefinitions: StepDefinition[] = useMemo(() => [
     {
@@ -218,7 +208,16 @@ export default function WorkflowRunnerPage() {
       key: "mockups",
       title: "Template mockups",
       description: "Generate scene previews with your art",
-      render: () => <MockupPage showChrome={false} inWorkflow={true} />,
+      render: () => (
+        <MockupPage 
+          showChrome={false} 
+          inWorkflow={true}
+          onMockupsComplete={() => {
+            console.log('🎨 Mockups completed in workflow, marking step as done');
+            setSessionCompletedSteps(prev => new Set([...prev, 2]));
+          }}
+        />
+      ),
     },
     {
       key: "formats",
@@ -240,36 +239,21 @@ export default function WorkflowRunnerPage() {
   const activeStep = stepDefinitions[currentStep];
   const nextDisabled = activeStep.canProceed ? !activeStep.canProceed() : false;
 
-  // Determine which steps are completed based on project data
+  // Determine which steps are completed based on SESSION progress (not just data existence)
   const completedSteps = useMemo(() => {
     const completed: number[] = [];
-    if (!selectedProject) return completed;
     
-    // Step 0: Select project - always completed if we have a project
-    if (selectedProjectId) completed.push(0);
-    
-    // Step 1: Upscale & assets - completed if upscaled and resized images exist
-    if (selectedProject.upscaledImageUrl && selectedProject.resizedImages && selectedProject.resizedImages.length > 0) {
-      completed.push(1);
+    // Step 0: Select project - completed if we have a project selected
+    if (selectedProjectId) {
+      completed.push(0);
     }
     
-    // Step 2: Mockups - completed if mockups exist
-    if (selectedProject.mockupImages && Object.keys(selectedProject.mockupImages).length > 0) {
-      completed.push(2);
-    }
-    
-    // Step 3: Print formats - completed if resized images exist
-    if (selectedProject.resizedImages && selectedProject.resizedImages.length > 0) {
-      completed.push(3);
-    }
-    
-    // Step 4: Listing - completed if listing exists
-    if (selectedProject.etsyListing && Object.keys(selectedProject.etsyListing).length > 0) {
-      completed.push(4);
-    }
+    // Only mark steps as complete if they were completed in THIS session
+    // This prevents showing all steps as green when resuming an old project
+    sessionCompletedSteps.forEach(step => completed.push(step));
     
     return completed;
-  }, [selectedProject, selectedProjectId]);
+  }, [selectedProjectId, sessionCompletedSteps]);
 
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-10 text-slate-100">
