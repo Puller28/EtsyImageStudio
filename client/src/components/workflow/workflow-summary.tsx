@@ -74,49 +74,58 @@ export function WorkflowSummary({ projectId }: WorkflowSummaryProps) {
 
   return (
     <Card className="border-slate-800 bg-slate-900/60 text-slate-100">
-      <CardHeader className="flex flex-row items-start justify-between gap-2">
-        <div className="flex-1">
-          <CardTitle className="text-white">{project.title}</CardTitle>
-          <div className="mt-2 flex items-center gap-2">
-            <Badge className={isProcessing ? "bg-amber-500/20 text-amber-100" : "bg-indigo-500/20 text-indigo-100"}>
-              {isProcessing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-              {project.status || "pending"}
-            </Badge>
-          </div>
-          {isProcessing && (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs text-slate-400">Processing your artwork...</p>
-              <Progress value={undefined} className="h-1" />
+      <CardContent className="p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Project Title and Status */}
+          <div className="flex items-center gap-3">
+            <div>
+              <h3 className="font-semibold text-white">{project.title}</h3>
+              <Badge className={isProcessing ? "bg-amber-500/20 text-amber-100 mt-1" : "bg-indigo-500/20 text-indigo-100 mt-1"}>
+                {isProcessing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                {project.status || "pending"}
+              </Badge>
             </div>
-          )}
+          </div>
+
+          {/* Stats - Horizontal Layout */}
+          <div className="flex flex-wrap items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Mockups:</span>
+              <span className="font-medium text-white">{mockupCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Print formats:</span>
+              <span className="font-medium text-white">{formatCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Upscale:</span>
+              <span className="font-medium text-white">{project.upscaleOption || "n/a"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Created:</span>
+              <span className="font-medium text-white">{formatDate(project.createdAt)}</span>
+            </div>
+          </div>
+
+          {/* Refresh Button */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 text-slate-300 hover:text-white shrink-0"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <RefreshCcw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+          </Button>
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-9 w-9 text-slate-300 hover:text-white"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
-          <RefreshCcw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Mockups</span>
-          <span className="text-white">{mockupCount}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Print formats</span>
-          <span className="text-white">{formatCount}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Upcale option</span>
-          <span className="text-white">{project.upscaleOption || "n/a"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Created</span>
-          <span className="text-white">{formatDate(project.createdAt)}</span>
-        </div>
+
+        {/* Processing Progress Bar */}
+        {isProcessing && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-slate-400">Processing your artwork...</p>
+            <Progress value={undefined} className="h-1" />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -277,11 +277,14 @@ export default function WorkflowRunnerPage() {
         completedSteps={completedSteps}
       />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          {activeStep.render()}
-        </div>
+      {/* Project Summary - Horizontal at Top */}
+      <div className="mt-6">
         <WorkflowSummary projectId={selectedProjectId} />
+      </div>
+
+      {/* Main Content - Full Width */}
+      <div className="mt-6">
+        {activeStep.render()}
       </div>
       
       {/* Navigation Buttons - Fixed at bottom of dark section */}
