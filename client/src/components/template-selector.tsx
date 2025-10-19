@@ -144,9 +144,11 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
         
         // Handle different response formats
         if (data.mockups && Array.isArray(data.mockups)) {
+          // Mockups generated successfully - pass to parent component
           onMockupsGenerated(data.mockups);
+          // Don't redirect - let the parent component (workflow or mockup page) handle display
         } else if (data.project_id) {
-          // If we got a project ID, redirect to projects page
+          // If we got a project ID but no mockups array, redirect to projects page
           setTimeout(() => {
             window.location.href = `/projects/${data.project_id}`;
           }, 1500);
@@ -160,9 +162,12 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
         // Clear selected templates
         setSelectedTemplates([]);
         
-        // Invalidate queries to refresh user data
+        // Invalidate queries to refresh user data and specific project
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+        if (data.project_id) {
+          queryClient.invalidateQueries({ queryKey: ["/api/projects", data.project_id] });
+        }
         
         // Track successful completion
         analytics.funnelStep('mockup_generation_complete', 4);

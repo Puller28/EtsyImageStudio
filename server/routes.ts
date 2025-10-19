@@ -2741,49 +2741,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Single mockup generation endpoint for sequential processing - Requires paid plan
-  // Get available templates - now served from Supabase Storage
+  // Get available templates - served from local dist/templates folder
   app.get("/api/templates", async (req, res) => {
     try {
-      console.log('🔍 Template discovery from Supabase Storage...');
+      console.log('🔍 Template discovery from local dist/templates folder...');
       
-      // Hardcoded template structure since they're now in Supabase
+      // In production, templates are in dist/templates, in dev they're in templates
+      const templatesDir = process.env.NODE_ENV === 'production'
+        ? path.join(process.cwd(), 'dist', 'templates')
+        : path.join(process.cwd(), 'templates');
+      
+      console.log(`📂 Looking for templates in: ${templatesDir}`);
+      
+      if (!fs.existsSync(templatesDir)) {
+        console.error(`❌ Templates directory not found: ${templatesDir}`);
+        return res.status(500).json({ error: 'Templates directory not found' });
+      }
+
       const templatesData = {
-        template_root: 'supabase://project-assets/templates',
+        template_root: templatesDir,
         exists: true,
         rooms: {} as Record<string, any[]>
       };
 
-      // Define all available templates (this matches what we uploaded to Supabase)
-      // To add new templates: 
-      // 1. Upload files using POST /api/admin/templates/upload
-      // 2. Add the template ID to the appropriate room array below
-      const templateDefinitions = {
-        bedroom: ['bedroom_01', 'bedroom_02', 'bedroom_03', 'bedroom_04', 'bedroom_05'],
-        gallery: ['gallery_01'],
-        kids_room: ['kids-03', 'kids-04', 'kids-05', 'kids_room_01', 'kids_room_02'],
-        living_room: ['1760168747153', 'living-room-5', 'living-room-6', 'living-room-7', 'living_01', 'living_02', 'living_03', 'living_04'],
-        study: ['study-03', 'study-04', 'study-05', 'study-06', 'study-07', 'study-08', 'study_01', 'study_02']
-      };
-
-      const roomDirs = Object.keys(templateDefinitions);
+      const roomDirs = fs.readdirSync(templatesDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
 
       for (const roomName of roomDirs) {
         templatesData.rooms[roomName] = [];
-        const templateIds = templateDefinitions[roomName as keyof typeof templateDefinitions];
+        const roomPath = path.join(templatesDir, roomName);
+        
+        const templateDirs = fs.readdirSync(roomPath, { withFileTypes: true })
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name);
 
-        for (const templateId of templateIds) {
+        for (const templateId of templateDirs) {
           try {
-            // Build template info with Supabase URLs
+            const templatePath = path.join(roomPath, templateId);
+            const manifestPath = path.join(templatePath, 'manifest.json');
+            
+            if (!fs.existsSync(manifestPath)) {
+              console.warn(`⚠️ No manifest.json for ${roomName}/${templateId}`);
+              continue;
+            }
+
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+            const bgPath = path.join(templatePath, manifest.background);
+            
             const templateInfo = {
               id: templateId,
               room: roomName,
-              name: `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
+              name: manifest.name || `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
               manifest_present: true,
-              bg_present: true,
+              bg_present: fs.existsSync(bgPath),
               preview_url: `/api/templates/preview/${roomName}/${templateId}`,
-              corners: [[100, 100], [400, 100], [400, 400], [100, 400]], // Default corners
-              width: 1024,
-              height: 1024
+              corners: manifest.corners || [[100, 100], [400, 100], [400, 400], [100, 400]],
+              width: manifest.width || 1024,
+              height: manifest.height || 1024
             };
 
             templatesData.rooms[roomName].push(templateInfo);
