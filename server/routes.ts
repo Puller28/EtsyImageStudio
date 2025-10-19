@@ -2963,7 +2963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // All users pay 1 credit per mockup regardless of plan
       const isFreeUser = !user.subscriptionPlan || user.subscriptionPlan === 'free' || user.subscriptionStatus !== 'active';
       const creditCost = 1; // 1 credit per mockup for all users
-      const maxTemplates = 5; // All users can select up to 5 templates
+      const maxTemplates = 10; // All users can select up to 10 templates
 
       // Check template limit (same for all users)
       if (selectedTemplates.length > maxTemplates) {

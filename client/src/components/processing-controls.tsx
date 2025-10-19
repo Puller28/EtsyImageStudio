@@ -42,9 +42,9 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
         
         {/* Upscaling Options */}
         <div className="mb-6">
-          <h4 className="font-medium text-gray-900 mb-3">Image Upscaling</h4>
+          <h4 className="font-medium text-gray-900 mb-4">Image Upscaling</h4>
           <RadioGroup value={upscaleOption} onValueChange={(value) => setUpscaleOption(value as "none" | "2x" | "4x")}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
               <Label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm transition-all">
                 <RadioGroupItem value="none" className="text-primary mt-0.5" />
                 <div className="ml-3 flex-1 min-w-0">
@@ -55,8 +55,8 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
                   <span className="block text-xs text-gray-500">Use original resolution</span>
                 </div>
               </Label>
-              <Label className="relative flex items-start p-4 border-2 border-primary rounded-lg cursor-pointer bg-primary/5 hover:bg-primary/10 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-md transition-all">
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 hover:bg-amber-600 text-white text-xs whitespace-nowrap">
+              <Label className="relative flex items-start p-4 pt-6 border-2 border-primary rounded-lg cursor-pointer bg-primary/5 hover:bg-primary/10 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-md transition-all">
+                <Badge className="absolute top-1 left-1/2 -translate-x-1/2 bg-amber-500 hover:bg-amber-600 text-white text-xs whitespace-nowrap px-2 py-0.5">
                   <Star className="h-3 w-3 mr-1" />
                   Best Value
                 </Badge>
