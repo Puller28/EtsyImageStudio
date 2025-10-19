@@ -86,7 +86,7 @@ export default function ContactPage() {
               Back to Home
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Help & Support</h1>
+          <h1 className="text-3xl font-bold mb-2 text-foreground">Help & Support</h1>
           <p className="text-muted-foreground">Need help or found an issue? Let us know! We're here to help. You can also check out our <Link href="/features" className="text-primary hover:underline">complete feature set</Link> or explore our <Link href="/blog" className="text-primary hover:underline">guides and tutorials</Link>.</p>
         </div>
 
