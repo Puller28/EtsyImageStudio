@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
 
-import Navigation from "@/components/navigation";
 import CreditTransactionHistory from "@/components/credit-transaction-history";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,12 +123,6 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation user={currentUser ? {
-        name: currentUser.name,
-        avatar: currentUser.avatar || undefined,
-        credits: currentUser.credits
-      } : undefined} />
-      
       <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center">
