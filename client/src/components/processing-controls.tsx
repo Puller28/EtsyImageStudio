@@ -33,7 +33,7 @@ export default function ProcessingControls({ onStartProcessing, disabled }: Proc
   const noFormatsSelected = selectedPrintFormats.length === 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
+    <div className="bg-white rounded-lg shadow-sm max-w-4xl">
       <div className="p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-6">
           <Settings className="inline w-5 h-5 text-primary mr-2" />

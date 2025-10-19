@@ -280,31 +280,33 @@ export default function WorkflowRunnerPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           {activeStep.render()}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="secondary"
-              className="bg-slate-800 text-slate-200 hover:bg-slate-700"
-              disabled={currentStep === 0}
-              onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
-            >
-              Previous step
-            </Button>
-            <Button
-              className="bg-indigo-500 hover:bg-indigo-600"
-              disabled={nextDisabled}
-              onClick={() => {
-                if (isLastStep) {
-                  navigate("/workspace/projects" + (selectedProjectId ? `/${selectedProjectId}` : ""));
-                } else {
-                  setCurrentStep((step) => Math.min(step + 1, stepCount - 1));
-                }
-              }}
-            >
-              {isLastStep ? "Finish" : activeStep.ctaLabel ?? "Next step"}
-            </Button>
-          </div>
         </div>
         <WorkflowSummary projectId={selectedProjectId} />
+      </div>
+      
+      {/* Navigation Buttons - Fixed at bottom of dark section */}
+      <div className="mt-8 flex items-center justify-between border-t border-slate-800 pt-6">
+        <Button
+          variant="secondary"
+          className="bg-slate-800 text-slate-200 hover:bg-slate-700 border-slate-700"
+          disabled={currentStep === 0}
+          onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
+        >
+          Previous step
+        </Button>
+        <Button
+          className="bg-indigo-500 hover:bg-indigo-600"
+          disabled={nextDisabled}
+          onClick={() => {
+            if (isLastStep) {
+              navigate("/workspace/projects" + (selectedProjectId ? `/${selectedProjectId}` : ""));
+            } else {
+              setCurrentStep((step) => Math.min(step + 1, stepCount - 1));
+            }
+          }}
+        >
+          {isLastStep ? "Finish" : activeStep.ctaLabel ?? "Next step"}
+        </Button>
       </div>
     </div>
   );

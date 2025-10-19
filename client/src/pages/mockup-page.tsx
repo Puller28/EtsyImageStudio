@@ -323,24 +323,24 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
             
             {/* Orientation Warning */}
             {imageOrientation && (
-              <Alert className="border-amber-500/50 bg-amber-500/10">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <AlertDescription className="text-sm">
+              <Alert className="border-amber-600 bg-amber-50 dark:bg-amber-900/20">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                <AlertDescription className="text-sm text-gray-900 dark:text-gray-100 font-medium">
                   {imageOrientation === 'landscape' && (
                     <span>
-                      <strong>Landscape image detected.</strong> Your artwork will look best in horizontal/landscape mockup templates. 
+                      <strong className="text-amber-900 dark:text-amber-400">Landscape image detected.</strong> Your artwork will look best in horizontal/landscape mockup templates. 
                       Portrait templates may crop or distort your image.
                     </span>
                   )}
                   {imageOrientation === 'portrait' && (
                     <span>
-                      <strong>Portrait image detected.</strong> Your artwork will look best in vertical/portrait mockup templates. 
+                      <strong className="text-amber-900 dark:text-amber-400">Portrait image detected.</strong> Your artwork will look best in vertical/portrait mockup templates. 
                       Landscape templates may crop or distort your image.
                     </span>
                   )}
                   {imageOrientation === 'square' && (
                     <span>
-                      <strong>Square image detected.</strong> Your artwork will work well with most mockup templates.
+                      <strong className="text-amber-900 dark:text-amber-400">Square image detected.</strong> Your artwork will work well with most mockup templates.
                     </span>
                   )}
                 </AlertDescription>
