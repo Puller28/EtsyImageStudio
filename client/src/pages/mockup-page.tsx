@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import ImageUpload from "@/components/image-upload";
 import { TemplateSelector } from "@/components/template-selector";
 import { MockupResults } from "@/components/mockup-results";
@@ -12,6 +12,7 @@ import type { User, Project } from "@shared/schema";
 import { analytics } from "@/lib/analytics";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useWorkspace } from "@/contexts/workspace-context";
@@ -87,6 +88,7 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
   const [importingProjectId, setImportingProjectId] = useState<string | null>(null);
   const [sourceProjectId, setSourceProjectId] = useState<string | null>(null); // Track which project the artwork came from
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false); // Track if we've auto-loaded the workflow project
+  const [imageOrientation, setImageOrientation] = useState<'landscape' | 'portrait' | 'square' | null>(null);
 
   const { toast } = useToast();
   const { user: authUser } = useAuth();
@@ -137,7 +139,22 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
     }
     setGeneratedMockups([]);
     setUploadedFile(file);
-    setUploadedImageUrl(URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    setUploadedImageUrl(url);
+    
+    // Detect image orientation
+    const img = new Image();
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      if (aspectRatio > 1.1) {
+        setImageOrientation('landscape');
+      } else if (aspectRatio < 0.9) {
+        setImageOrientation('portrait');
+      } else {
+        setImageOrientation('square');
+      }
+    };
+    img.src = url;
   };
 
   const handleUseProjectArtwork = async (project: Project) => {
@@ -303,6 +320,33 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
                 and generate polished previews in one go.
               </p>
             </div>
+            
+            {/* Orientation Warning */}
+            {imageOrientation && (
+              <Alert className="border-amber-500/50 bg-amber-500/10">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-sm">
+                  {imageOrientation === 'landscape' && (
+                    <span>
+                      <strong>Landscape image detected.</strong> Your artwork will look best in horizontal/landscape mockup templates. 
+                      Portrait templates may crop or distort your image.
+                    </span>
+                  )}
+                  {imageOrientation === 'portrait' && (
+                    <span>
+                      <strong>Portrait image detected.</strong> Your artwork will look best in vertical/portrait mockup templates. 
+                      Landscape templates may crop or distort your image.
+                    </span>
+                  )}
+                  {imageOrientation === 'square' && (
+                    <span>
+                      <strong>Square image detected.</strong> Your artwork will work well with most mockup templates.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
               <ImageUpload
                 onImageUpload={handleFileUpload}

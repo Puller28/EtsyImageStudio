@@ -8,7 +8,11 @@ export default function WorkspaceHomePage() {
 
   return (
     <ProjectsOverview
-      onCreateProject={() => setLocation("/tools/upscale")}
+      onCreateProject={() => {
+        // Clear any selected project before creating a new one
+        setSelectedProjectId(null);
+        setLocation("/tools/upscale");
+      }}
       onSelectProject={(projectId) => {
         setSelectedProjectId(projectId);
         setLocation(`/workspace/projects/${projectId}`);
