@@ -187,6 +187,10 @@ def process_single_template(art, template):
         out_img.save(buf, "PNG")
         b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         
+        # Explicitly close/delete large objects to free memory immediately
+        del bg_bgra, art_bgra, warped, composed, out_img, bg, art_resized, art_canvas
+        buf.close()
+        
         return {
             'success': True,
             'template': {'room': room, 'id': template_id, 'name': name},
@@ -202,7 +206,7 @@ def process_single_template(art, template):
 
 
 def main():
-    """Main entry point - process all templates in parallel"""
+    """Main entry point - process all templates SEQUENTIALLY to minimize memory usage"""
     if len(sys.argv) < 3:
         print(json.dumps({'error': 'Usage: batch_mockup.py <artwork_path> <templates_json>'}), file=sys.stderr)
         sys.exit(1)
@@ -210,22 +214,31 @@ def main():
     artwork_path = sys.argv[1]
     templates = json.loads(sys.argv[2])
     
-    # Load artwork ONCE to avoid loading it multiple times in parallel workers
-    # This significantly reduces memory usage (was loading artwork N times for N workers)
+    # Load artwork ONCE to avoid loading it multiple times
     with Image.open(artwork_path) as art_img:
         art = art_img.convert("RGBA")
         art = ImageOps.exif_transpose(art)
         
-        # Process templates in parallel (2 workers to avoid memory issues on Render)
+        # Process templates SEQUENTIALLY (one at a time) to minimize memory usage
+        # This is critical for supporting 10 mockups without running out of RAM
         results = []
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(process_single_template, art, t): t 
-                for t in templates
-            }
+        for i, template in enumerate(templates, 1):
+            print(f"Processing mockup {i}/{len(templates)}: {template.get('name', template['id'])}", file=sys.stderr)
+            result = process_single_template(art, template)
+            results.append(result)
             
-            for future in as_completed(futures):
-                results.append(future.result())
+            # Force garbage collection after each mockup to free memory immediately
+            import gc
+            gc.collect()
+            
+            # Log memory usage for monitoring
+            try:
+                import psutil
+                process = psutil.Process()
+                mem_mb = process.memory_info().rss / 1024 / 1024
+                print(f"Memory usage after mockup {i}: {mem_mb:.1f}MB", file=sys.stderr)
+            except ImportError:
+                pass  # psutil not available, skip memory logging
     
     # Output results as JSON
     print(json.dumps({'mockups': results}))
