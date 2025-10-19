@@ -70,7 +70,7 @@ export class SEOService {
     const urls = indexablePages.map(page => 
       `  <url>
     <loc>${this.generateCanonicalUrl(page.path)}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${todayISO}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`
