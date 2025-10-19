@@ -158,9 +158,9 @@ export function AppShell({ children }: AppShellProps) {
               const isActive = location === item.href;
               return (
                 <Link href={item.href} key={item.href}>
-                  <a
+                  <div
                     className={cn(
-                      "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition",
+                      "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition cursor-pointer",
                       isActive
                         ? "bg-indigo-500/20 text-indigo-100"
                         : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -170,7 +170,7 @@ export function AppShell({ children }: AppShellProps) {
                       {item.icon}
                     </span>
                     {item.label}
-                  </a>
+                  </div>
                 </Link>
               );
             })}
@@ -181,9 +181,9 @@ export function AppShell({ children }: AppShellProps) {
           <p className="text-xs uppercase tracking-wide text-slate-500">Credits</p>
           <p className="mt-1 text-lg font-semibold text-white">{credits}</p>
           <Link href="/buy-credits">
-            <a className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-indigo-400/50 bg-indigo-500/20 px-3 text-xs font-medium text-indigo-100 hover:bg-indigo-500/30">
+            <div className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-indigo-400/50 bg-indigo-500/20 px-3 text-xs font-medium text-indigo-100 hover:bg-indigo-500/30 cursor-pointer">
               Buy credits
-            </a>
+            </div>
           </Link>
         </div>
       </aside>
@@ -286,10 +286,10 @@ export function AppShell({ children }: AppShellProps) {
                   <DropdownMenuSeparator className="bg-slate-700" />
                   <DropdownMenuItem asChild className="cursor-pointer focus:bg-slate-800">
                     <Link href="/settings">
-                      <a className="flex w-full items-center gap-2">
+                      <div className="flex w-full items-center gap-2">
                         <Settings className="h-4 w-4" />
                         Account settings
-                      </a>
+                      </div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-slate-700" />
