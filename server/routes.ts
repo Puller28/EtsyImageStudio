@@ -3012,7 +3012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
 
-      console.log(`🚀 Batch processing ${selectedTemplates.length} mockups in parallel...`);
+      console.log(`🚀 Batch processing ${selectedTemplates.length} mockups sequentially (memory optimized)...`);
       const startTime = Date.now();
 
       // Debug: Check if templates directory exists
@@ -3041,10 +3041,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(tempArtworkPath, req.file.buffer);
 
       try {
-        // Use batch Python script to process all templates at once (5-10x faster!)
+        // Use batch Python script to process all templates at once (memory optimized!)
         const batchResult = await new Promise<any>((resolve, reject) => {
           const pythonExec = resolvePythonExecutable();
-          const scriptPath = path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
+          // In production, script is in dist/server/scripts, in dev it's in server/scripts
+          const scriptPath = process.env.NODE_ENV === 'production'
+            ? path.join(process.cwd(), 'dist', 'server', 'scripts', 'batch_mockup.py')
+            : path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
           
           // Set TEMPLATES_PATH to point to dist/templates
           const templatesPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
@@ -3071,7 +3074,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           python.stderr.on('data', (data: any) => {
-            error += data.toString();
+            const msg = data.toString();
+            error += msg;
+            // Log Python progress messages in real-time
+            console.log(`🐍 ${msg.trim()}`);
           });
 
           python.on('close', (code: any) => {

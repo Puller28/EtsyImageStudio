@@ -55,6 +55,27 @@ try {
   const fileCount = copyRecursive(templatesDir, distTemplatesDir);
   console.log(`✅ Copied templates to ${distTemplatesDir} (${fileCount} files)`);
 
+  // Copy Python scripts to dist
+  console.log('📂 Copying Python scripts to dist folder...');
+  const serverScriptsDir = 'server/scripts';
+  const distScriptsDir = 'dist/server/scripts';
+  
+  if (fs.existsSync(serverScriptsDir)) {
+    fs.mkdirSync(distScriptsDir, { recursive: true });
+    const pythonFiles = fs.readdirSync(serverScriptsDir).filter(f => f.endsWith('.py'));
+    
+    for (const file of pythonFiles) {
+      const srcPath = path.join(serverScriptsDir, file);
+      const destPath = path.join(distScriptsDir, file);
+      fs.copyFileSync(srcPath, destPath);
+      console.log(`  ✅ Copied ${file}`);
+    }
+    
+    console.log(`✅ Copied ${pythonFiles.length} Python scripts to ${distScriptsDir}`);
+  } else {
+    console.log('⚠️ No server/scripts directory found, skipping Python scripts');
+  }
+
 } catch (error) {
   console.error('❌ Failed to copy templates:', error.message);
   console.log('⚠️ Mockup generation will not be available');
