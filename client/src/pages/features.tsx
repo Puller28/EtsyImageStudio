@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { ArrowLeft, Sparkles, Zap, Palette, RotateCcw, FileText, Package, Upload, Download, CheckCircle, Star } from "lucide-react";
+import { ArrowLeft, Sparkles, Zap, Palette, RotateCcw, FileText, Package, Upload, Download, CheckCircle, Star, Scissors } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
 import { SEOHead } from "@/components/seo-head";
@@ -127,6 +127,37 @@ export default function FeaturesPage() {
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
                     Professional lighting and staging
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Background Removal */}
+            <Card className="border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Scissors className="h-8 w-8 text-primary" />
+                </div>
+                <CardTitle className="text-xl">Background Removal</CardTitle>
+                <CardDescription>AI-powered background removal for clean product images</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                    One-click background removal
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                    AI-powered edge detection
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                    Clean transparent PNG output
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                    Perfect for product mockups
                   </li>
                 </ul>
               </CardContent>
