@@ -102,6 +102,13 @@ function Router() {
               <Route path="/template-mockups" component={() => <MockupPage showChrome={false} />} />
               <Route path="/payment-callback/:reference" component={PaymentCallback} />
               <Route path="/payment-callback" component={PaymentCallback} />
+              <Route path="/blog" component={BlogPage} />
+              <Route path="/blog/:slug" component={BlogPostPage} />
+              <Route path="/about-us" component={AboutUsPage} />
+              <Route path="/features" component={FeaturesPage} />
+              <Route path="/contact" component={ContactPage} />
+              <Route path="/terms-of-service" component={TermsOfServicePage} />
+              <Route path="/privacy-policy" component={PrivacyPolicyPage} />
               <Route component={NotFound} />
             </Switch>
           </AppShell>
