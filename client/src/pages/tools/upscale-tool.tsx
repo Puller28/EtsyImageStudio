@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 
 interface UpscaleToolPageProps {
   showIntro?: boolean;
+  onNavigateToMockups?: () => void; // Callback for workflow navigation
 }
 
 interface UploadedImage {
@@ -34,7 +35,7 @@ function getAuthToken(): string | null {
   }
   return null;
 }
-export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPageProps = {}) {
+export default function UpscaleToolPage({ showIntro = true, onNavigateToMockups }: UpscaleToolPageProps = {}) {
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | undefined>();
   const [projectName, setProjectName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -436,7 +437,13 @@ export default function UpscaleToolPage({ showIntro = true }: UpscaleToolPagePro
               </p>
               <div className="space-y-2">
                 <Button
-                  onClick={() => navigate("/tools/mockups")}
+                  onClick={() => {
+                    if (onNavigateToMockups) {
+                      onNavigateToMockups(); // Workflow mode: advance to next step
+                    } else {
+                      navigate("/tools/mockups"); // Standalone mode: navigate to mockups page
+                    }
+                  }}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                 >
                   Create Mockups

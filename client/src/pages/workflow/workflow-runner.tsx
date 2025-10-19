@@ -207,7 +207,12 @@ export default function WorkflowRunnerPage() {
       key: "upscale",
       title: "Upscale & assets",
       description: "Prepare your artwork and upload supporting files",
-      render: () => <UpscaleToolPage showIntro={false} />,
+      render: () => (
+        <UpscaleToolPage 
+          showIntro={false} 
+          onNavigateToMockups={() => setCurrentStep(2)} // Advance to mockups step
+        />
+      ),
     },
     {
       key: "mockups",
