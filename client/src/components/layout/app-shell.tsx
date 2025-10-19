@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles, Scissors, FolderOpen } from "lucide-react";
+import { LayoutDashboard, Grid, ImageUp, Package, Layers, FileText, Workflow, Bell, Menu, Coins, LogOut, Settings, Sparkles, Scissors, FolderOpen, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -289,6 +289,14 @@ export function AppShell({ children }: AppShellProps) {
                       <div className="flex w-full items-center gap-2">
                         <Settings className="h-4 w-4" />
                         Account settings
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer focus:bg-slate-800">
+                    <Link href="/contact">
+                      <div className="flex w-full items-center gap-2">
+                        <HelpCircle className="h-4 w-4" />
+                        Help & Support
                       </div>
                     </Link>
                   </DropdownMenuItem>
