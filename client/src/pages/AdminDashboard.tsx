@@ -63,16 +63,33 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
+      const token = localStorage.getItem("token");
+      console.log('🔍 Admin Dashboard - Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
+      
+      if (!token) {
+        console.error('❌ No token found in localStorage');
+        return;
+      }
+      
       // Load all data in parallel
       const [metricsRes, funnelRes, featuresRes] = await Promise.all([
         fetch("/api/admin/marketing/metrics", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }),
         fetch("/api/admin/marketing/funnel", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }),
         fetch("/api/admin/marketing/features", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         })
       ]);
 

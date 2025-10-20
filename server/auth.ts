@@ -200,10 +200,19 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
     return res.status(401).json({ error: 'Access token required' });
   }
 
+  console.log('🔐 authenticateToken - verifying token:', {
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+    endpoint: `${req.method} ${req.path}`
+  });
+  
   const decoded = AuthService.verifyToken(token);
   if (!decoded) {
+    console.error('❌ Token verification failed');
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
+  
+  console.log('✅ Token verified:', decoded.userId);
 
   try {
     const user = await storage.getUserById(decoded.userId);
