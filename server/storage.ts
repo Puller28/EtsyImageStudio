@@ -422,6 +422,8 @@ class MemStorage implements IStorage {
           subscriptionId: dbUser.subscription_id,
           subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : null,
           subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : null,
+          lastLogin: dbUser.last_login ? new Date(dbUser.last_login) : null,
+          isAdmin: dbUser.is_admin || false,
           createdAt: new Date(dbUser.created_at)
         };
         
@@ -468,6 +470,8 @@ class MemStorage implements IStorage {
           subscriptionId: dbUser.subscription_id,
           subscriptionStartDate: dbUser.subscription_start_date ? new Date(dbUser.subscription_start_date) : null,
           subscriptionEndDate: dbUser.subscription_end_date ? new Date(dbUser.subscription_end_date) : null,
+          lastLogin: dbUser.last_login ? new Date(dbUser.last_login) : null,
+          isAdmin: dbUser.is_admin || false,
           createdAt: new Date(dbUser.created_at)
         };
         
