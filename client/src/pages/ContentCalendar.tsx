@@ -162,10 +162,30 @@ export default function ContentCalendar() {
                     </p>
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      Edit
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.content);
+                        toast({
+                          title: "Copied!",
+                          description: "Content copied to clipboard"
+                        });
+                      }}
+                    >
+                      Copy
                     </Button>
-                    <Button size="sm" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        toast({
+                          title: "Coming Soon!",
+                          description: "Direct scheduling will be available soon. For now, copy and paste to your platform."
+                        });
+                      }}
+                    >
                       Schedule
                     </Button>
                   </div>

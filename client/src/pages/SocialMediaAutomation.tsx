@@ -179,11 +179,11 @@ export default function SocialMediaAutomation() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="instagram">Instagram</SelectItem>
-                        <SelectItem value="facebook">Facebook</SelectItem>
-                        <SelectItem value="twitter">Twitter/X</SelectItem>
-                        <SelectItem value="pinterest">Pinterest</SelectItem>
+                        <SelectItem value="twitter">Twitter</SelectItem>
                         <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="pinterest">Pinterest</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -34,13 +34,14 @@ const TARGET_KEYWORDS = [
 
 // Content themes and angles
 const CONTENT_THEMES = [
-  { theme: 'Tutorial', angle: 'How to', platforms: ['twitter', 'linkedin', 'facebook'] },
-  { theme: 'Tip', angle: 'Quick tip', platforms: ['twitter', 'linkedin'] },
-  { theme: 'Showcase', angle: 'Before/After', platforms: ['twitter', 'facebook', 'linkedin'] },
-  { theme: 'Feature', angle: 'Did you know', platforms: ['twitter', 'linkedin'] },
-  { theme: 'Success Story', angle: 'Case study', platforms: ['linkedin', 'facebook'] },
-  { theme: 'Question', angle: 'Engagement', platforms: ['twitter', 'facebook'] },
+  { theme: 'Tutorial', angle: 'How to', platforms: ['twitter', 'linkedin', 'facebook', 'pinterest', 'instagram'] },
+  { theme: 'Tip', angle: 'Quick tip', platforms: ['twitter', 'linkedin', 'pinterest', 'instagram'] },
+  { theme: 'Showcase', angle: 'Before/After', platforms: ['twitter', 'facebook', 'linkedin', 'pinterest', 'instagram'] },
+  { theme: 'Feature', angle: 'Did you know', platforms: ['twitter', 'linkedin', 'instagram'] },
+  { theme: 'Success Story', angle: 'Case study', platforms: ['linkedin', 'facebook', 'pinterest'] },
+  { theme: 'Question', angle: 'Engagement', platforms: ['twitter', 'facebook', 'instagram'] },
   { theme: 'Stat/Fact', angle: 'Industry insight', platforms: ['linkedin', 'twitter'] },
+  { theme: 'Inspiration', angle: 'Get inspired', platforms: ['pinterest', 'instagram'] },
 ];
 
 // Platform-specific best practices
@@ -65,6 +66,20 @@ const PLATFORM_SPECS = {
     hashtagCount: 2,
     callToAction: 'Get started',
     bestTimes: ['1pm', '3pm', '7pm']
+  },
+  pinterest: {
+    maxLength: 500,
+    tone: 'inspirational and visual',
+    hashtagCount: 5,
+    callToAction: 'Pin it now',
+    bestTimes: ['2pm', '8pm', '9pm']
+  },
+  instagram: {
+    maxLength: 2200,
+    tone: 'casual and visual',
+    hashtagCount: 10,
+    callToAction: 'Link in bio',
+    bestTimes: ['11am', '2pm', '7pm']
   }
 };
 
@@ -127,7 +142,7 @@ export class ContentCalendarService {
     keyword: string,
     theme: { theme: string; angle: string }
   ): Promise<string> {
-    const specs = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS];
+    const specs = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.twitter;
     
     const prompt = `Create a ${specs.tone} social media post for ${platform} about "${keyword}".
 
@@ -210,12 +225,11 @@ Generate ONLY the post content, no explanations.`;
    * Select platforms for a specific day (ensure variety)
    */
   private static selectPlatformsForDay(day: number): string[] {
-    const allPlatforms = ['twitter', 'linkedin', 'facebook'];
+    const allPlatforms = ['twitter', 'linkedin', 'facebook', 'pinterest', 'instagram'];
     
-    // Rotate platforms: Day 0,3,6 = Twitter, Day 1,4 = LinkedIn, Day 2,5 = Facebook
-    if (day % 3 === 0) return ['twitter'];
-    if (day % 3 === 1) return ['linkedin'];
-    return ['facebook'];
+    // Rotate through all platforms
+    // Day 0 = Twitter, Day 1 = LinkedIn, Day 2 = Facebook, Day 3 = Pinterest, Day 4 = Instagram, then repeat
+    return [allPlatforms[day % allPlatforms.length]];
   }
 
   /**
@@ -241,18 +255,18 @@ Generate ONLY the post content, no explanations.`;
    */
   private static generateHashtags(keyword: string, count: number): string {
     const hashtagMap: Record<string, string[]> = {
-      'AI image upscaler': ['#AIImageUpscaler', '#ImageEnhancement', '#AITools'],
-      'image upscaling tool': ['#ImageUpscaling', '#PhotoEnhancement', '#DigitalArt'],
-      'enhance image quality': ['#ImageQuality', '#PhotoEditing', '#DigitalPhotography'],
-      'AI photo enhancer': ['#AIPhotoEnhancer', '#PhotoEnhancement', '#AIPhotography'],
-      'upscale images online': ['#OnlineTools', '#ImageUpscaling', '#DigitalTools'],
-      'Etsy seller tools': ['#EtsySeller', '#EtsyTools', '#PrintOnDemand'],
-      'AI mockup generator': ['#MockupGenerator', '#ProductMockups', '#EtsyDesign'],
-      'AI background removal': ['#BackgroundRemoval', '#PhotoEditing', '#AITools'],
-      'Etsy SEO tools': ['#EtsySEO', '#EtsyMarketing', '#EtsySuccess']
+      'AI image upscaler': ['#AIImageUpscaler', '#ImageEnhancement', '#AITools', '#PhotoUpscaling', '#DigitalArt', '#AIArt', '#ImageQuality', '#PhotoEditor', '#DesignTools', '#CreativeTools'],
+      'image upscaling tool': ['#ImageUpscaling', '#PhotoEnhancement', '#DigitalArt', '#PhotoTools', '#ImageEditor', '#DesignSoftware', '#CreativeDesign', '#DigitalTools', '#PhotoQuality', '#ArtTools'],
+      'enhance image quality': ['#ImageQuality', '#PhotoEditing', '#DigitalPhotography', '#PhotoEnhancement', '#ImageEditor', '#Photography', '#DigitalArt', '#PhotoPerfection', '#QualityMatters', '#ProPhotography'],
+      'AI photo enhancer': ['#AIPhotoEnhancer', '#PhotoEnhancement', '#AIPhotography', '#PhotoAI', '#ImageAI', '#SmartPhoto', '#AIEditing', '#PhotoMagic', '#EnhancePhotos', '#AITools'],
+      'upscale images online': ['#OnlineTools', '#ImageUpscaling', '#DigitalTools', '#WebTools', '#OnlineEditor', '#CloudTools', '#WebDesign', '#DigitalCreation', '#OnlineDesign', '#WebApps'],
+      'Etsy seller tools': ['#EtsySeller', '#EtsyTools', '#PrintOnDemand', '#EtsyShop', '#EtsyBusiness', '#HandmadeShop', '#EtsySuccess', '#OnlineSelling', '#EtsyTips', '#ShopOwner'],
+      'AI mockup generator': ['#MockupGenerator', '#ProductMockups', '#EtsyDesign', '#MockupDesign', '#ProductPhotography', '#DesignMockup', '#BrandingTools', '#ProductDisplay', '#VisualDesign', '#MockupArt'],
+      'AI background removal': ['#BackgroundRemoval', '#PhotoEditing', '#AITools', '#RemoveBackground', '#PhotoCutout', '#ImageEditing', '#CleanBackground', '#ProductPhotography', '#WhiteBackground', '#PhotoTools'],
+      'Etsy SEO tools': ['#EtsySEO', '#EtsyMarketing', '#EtsySuccess', '#SEOTools', '#EtsyGrowth', '#OnlineMarketing', '#EtsyTips', '#ShopSEO', '#EtsyStrategy', '#DigitalMarketing']
     };
     
-    const hashtags = hashtagMap[keyword] || ['#ImageUpscaler', '#AITools', '#DigitalArt'];
+    const hashtags = hashtagMap[keyword] || ['#ImageUpscaler', '#AITools', '#DigitalArt', '#PhotoEnhancement', '#CreativeTools', '#DesignTools', '#AIArt', '#PhotoEditor', '#ImageQuality', '#DigitalDesign'];
     return hashtags.slice(0, count).join(' ');
   }
 
