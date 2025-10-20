@@ -42,7 +42,7 @@ interface FeatureUsage {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [, setLocation] = useLocation();
   const [metrics, setMetrics] = useState<MarketingMetrics | null>(null);
   const [funnel, setFunnel] = useState<ConversionFunnel[]>([]);
@@ -63,11 +63,10 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      const token = localStorage.getItem("token");
       console.log('🔍 Admin Dashboard - Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
       
       if (!token) {
-        console.error('❌ No token found in localStorage');
+        console.error('❌ No token found in auth store');
         return;
       }
       

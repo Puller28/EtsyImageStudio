@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Sparkles, Copy, Check, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface GeneratedPost {
   platform: string;
@@ -23,6 +24,7 @@ interface GeneratedPost {
 export default function SocialMediaAutomation() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState("instagram");
   const [topic, setTopic] = useState("");
@@ -37,7 +39,7 @@ export default function SocialMediaAutomation() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ platform })
       });
@@ -85,7 +87,7 @@ export default function SocialMediaAutomation() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           platform,

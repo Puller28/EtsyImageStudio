@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Sparkles, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ContentItem {
   id: string;
@@ -19,6 +20,7 @@ interface ContentItem {
 export default function ContentCalendar() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { token } = useAuth();
   const [calendar, setCalendar] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +31,7 @@ export default function ContentCalendar() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         }
       });
 
