@@ -42,6 +42,7 @@ async function main() {
   // Calculate cutoff date
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - INACTIVE_DAYS);
+  const cutoffDateStr = cutoffDate.toISOString();
 
   // Find inactive users
   console.log("📊 Finding inactive users...");
@@ -63,7 +64,7 @@ async function main() {
         // Users with 90+ credits (used less than 10 credits)
         sql`${users.credits} >= 90`,
         // OR users who signed up more than 30 days ago with 80+ credits
-        sql`${users.createdAt} < ${cutoffDate} AND ${users.credits} >= 80`
+        sql`${users.createdAt} < ${cutoffDateStr}::timestamp AND ${users.credits} >= 80`
       )
     )
     .orderBy(desc(users.createdAt));
