@@ -4222,8 +4222,7 @@ async function processProjectAsync(project: any) {
     try {
       const post = await db.select()
         .from(blogPosts)
-        .where(eq(blogPosts.slug, req.params.slug))
-        .where(eq(blogPosts.status, "published"))
+        .where(sql`${blogPosts.slug} = ${req.params.slug} AND ${blogPosts.status} = 'published'`)
         .limit(1);
       
       if (!post.length) {
