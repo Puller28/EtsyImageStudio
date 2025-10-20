@@ -3710,187 +3710,6 @@ else:
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
-}
-
-async function processProjectAsync(project: any) {
-  const startTime = Date.now();
-  
-  console.log(`🔧 processProjectAsync called for project: ${project.id}`);
-  
-  // Log memory at start of processing
-  const startMem = process.memoryUsage();
-  console.log(`📊 Memory at START: ${Math.round(startMem.heapUsed / 1024 / 1024)}MB / ${Math.round(startMem.heapTotal / 1024 / 1024)}MB (RSS: ${Math.round(startMem.rss / 1024 / 1024)}MB)`);
-  
-  console.log(`🔧 Project data:`, JSON.stringify(project, null, 2));
-  
-  try {
-    console.log('🔧 Starting real image processing for:', project.id);
-    
-    // Import processing services
-    const { SegmindService } = await import('./services/segmind');
-    const { resizeImageToFormats } = await import('./services/image-processor');
-    const { generateMockupsForCategory, getTemplatesForCategory } = await import('./services/mockup-templates');
-    
-    // Get original image buffer - handle both storage paths and base64
-    console.log('🔧 Fetching original image...');
-    let originalBuffer: Buffer;
-    
-    if (!project.originalImageUrl) {
-      throw new Error('No original image URL found');
-    }
-    
-    // Check if it's a storage path or base64
-    if (ProjectImageStorage.isStoragePath(project.originalImageUrl)) {
-      console.log('🔧 Fetching image from storage:', project.originalImageUrl);
-      originalBuffer = await projectImageStorage.getImageBuffer(project.originalImageUrl);
-      if (!originalBuffer) {
-        throw new Error('Failed to fetch image from storage');
-      }
-    } else if (project.originalImageUrl.startsWith('data:image/')) {
-      console.log('🔧 Parsing base64 image');
-      const base64Data = project.originalImageUrl.split(',')[1];
-      if (!base64Data) {
-        throw new Error('Invalid base64 image format');
-      }
-      originalBuffer = Buffer.from(base64Data, 'base64');
-    } else {
-      throw new Error('Invalid image URL format: ' + project.originalImageUrl.substring(0, 50));
-    }
-    
-    console.log(`✅ Original image loaded: ${originalBuffer.length} bytes`);
-    
-    // Log memory usage
-    const memUsage = process.memoryUsage();
-    console.log(`📊 Memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
-    
-    // Force garbage collection if available (requires --expose-gc flag)
-    if (global.gc) {
-      console.log('🗑️ Running garbage collection before upscaling...');
-      global.gc();
-    }
-    
-    // Step 1: Upscale image using Segmind or fallback
-    console.log('Step 1: Upscaling image...');
-    let upscaledBuffer: Buffer;
-    
-    try {
-      if (process.env.SEGMIND_API_KEY) {
-        const segmind = new SegmindService(process.env.SEGMIND_API_KEY);
-        const upscaleOption = project.upscaleOption || '2x';
-        const scale = upscaleOption === '4x' ? 4 : 2;
-        
-        // Convert buffer to base64 for Segmind API
-        const originalBase64 = originalBuffer.toString('base64');
-        let upscaledBase64 = await segmind.upscaleImage({
-          scale,
-          image: originalBase64
-        });
-        
-        upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
-        console.log('✅ Image upscaled successfully with Segmind');
-        
-        // Clear the base64 string to free memory
-        upscaledBase64 = '';
-        
-        // Log memory after upscaling
-        const memAfterUpscale = process.memoryUsage();
-        console.log(`📊 Memory after upscale: ${Math.round(memAfterUpscale.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterUpscale.heapTotal / 1024 / 1024)}MB`);
-        
-        // Force GC after upscaling
-        if (global.gc) {
-          console.log('🗑️ Running GC after upscaling...');
-          global.gc();
-          const memAfterGC = process.memoryUsage();
-          console.log(`📊 Memory after GC: ${Math.round(memAfterGC.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterGC.heapTotal / 1024 / 1024)}MB`);
-        }
-      } else {
-        console.log('⚠️ Segmind API key not found, using fallback upscaler');
-        throw new Error('No Segmind API key');
-      }
-    } catch (error) {
-      console.error('❌ Segmind upscaling failed, trying fallback:', error);
-      try {
-        const { fallbackUpscale } = await import('./services/image-upscaler-fallback');
-        const upscaleOption = project.upscaleOption || '2x';
-        const scale = upscaleOption === '4x' ? 4 : 2;
-        
-        upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
-        console.log('✅ Image upscaled successfully with fallback');
-      } catch (fallbackError) {
-        console.error('❌ Fallback upscaling also failed, using original:', fallbackError);
-        upscaledBuffer = originalBuffer; // Use original if all upscaling fails
-      }
-    }
-    
-    // Clear original buffer to free memory (no longer needed)
-    originalBuffer = Buffer.alloc(0);
-    
-    // Force GC before creating print formats
-    if (global.gc) {
-      console.log('🗑️ Running GC before print formats...');
-      global.gc();
-    }
-    
-    // Step 2: Create print format sizes
-    console.log('Step 2: Creating print formats...');
-    const resizedFormats = await resizeImageToFormats(upscaledBuffer);
-    
-    // Create resized images with proper structure for frontend
-    const resizedImages = Object.entries(resizedFormats).map(([format, buffer]) => ({
-      size: format,
-      url: `data:image/jpeg;base64,${buffer.toString('base64')}`
-    }));
-    
-    console.log('✅ Created', resizedImages.length, 'print formats');
-    
-    // Convert upscaled buffer to base64 for storage
-    const upscaledImageUrl = `data:image/jpeg;base64,${upscaledBuffer.toString('base64')}`;
-    
-    // Update project with processed assets - Direct database update
-    console.log('🔧 Updating project with processed results...');
-    console.log('🔧 Upscaled image size:', upscaledImageUrl.length);
-    console.log('🔧 Resized images count:', resizedImages.length);
-    
-    try {
-      // Update both memory storage and database directly to ensure consistency
-      await storage.updateProject(project.id, {
-        upscaledImageUrl,
-        resizedImages,
-        zipUrl: `/api/projects/${project.id}/download-zip`,
-        status: "completed"
-      });
-      
-      // Also update database directly to ensure persistence
-      console.log('🔧 Updating database directly...');
-      const dbUpdateResult = await db.update(projects)
-        .set({
-          upscaledImageUrl,
-          resizedImages,
-          zipUrl: `/api/projects/${project.id}/download-zip`,
-          status: "completed"
-        })
-        .where(eq(projects.id, project.id));
-      
-      console.log('🔧 Database update result:', dbUpdateResult);
-      console.log('✅ Project update successful (both memory and database)');
-    } catch (updateError) {
-      console.error('🔧❌ Failed to update project:', updateError);
-      throw updateError; // Re-throw to trigger the catch block
-    }
-
-    const processingTime = Date.now() - startTime;
-    console.log(`✅ Real processing completed successfully for project: ${project.id} in ${processingTime}ms`);
-
-  } catch (error) {
-    const processingTime = Date.now() - startTime;
-    console.error(`🔧❌ Processing failed for project ${project.id} after ${processingTime}ms:`, error);
-    console.error("🔧❌ Error details:", (error as Error).stack);
-    console.error("🔧❌ Error type:", typeof error);
-    console.error("🔧❌ Error message:", (error as Error).message);
-    await storage.updateProject(project.id, { status: "failed" });
-  }
 }
 
   // ==========================================
@@ -4235,4 +4054,185 @@ async function processProjectAsync(project: any) {
       res.status(500).json({ error: "Failed to get blog post" });
     }
   });
+
+  const httpServer = createServer(app);
+  return httpServer;
 }
+
+async function processProjectAsync(project: any) {
+  const startTime = Date.now();
+  
+  console.log(`🔧 processProjectAsync called for project: ${project.id}`);
+  
+  // Log memory at start of processing
+  const startMem = process.memoryUsage();
+  console.log(`📊 Memory at START: ${Math.round(startMem.heapUsed / 1024 / 1024)}MB / ${Math.round(startMem.heapTotal / 1024 / 1024)}MB (RSS: ${Math.round(startMem.rss / 1024 / 1024)}MB)`);
+  
+  console.log(`🔧 Project data:`, JSON.stringify(project, null, 2));
+  
+  try {
+    console.log('🔧 Starting real image processing for:', project.id);
+    
+    // Import processing services
+    const { SegmindService } = await import('./services/segmind');
+    const { resizeImageToFormats } = await import('./services/image-processor');
+    const { generateMockupsForCategory, getTemplatesForCategory } = await import('./services/mockup-templates');
+    
+    // Get original image buffer - handle both storage paths and base64
+    console.log('🔧 Fetching original image...');
+    let originalBuffer: Buffer;
+    
+    if (!project.originalImageUrl) {
+      throw new Error('No original image URL found');
+    }
+    
+    // Check if it's a storage path or base64
+    if (ProjectImageStorage.isStoragePath(project.originalImageUrl)) {
+      console.log('🔧 Fetching image from storage:', project.originalImageUrl);
+      originalBuffer = await projectImageStorage.getImageBuffer(project.originalImageUrl);
+      if (!originalBuffer) {
+        throw new Error('Failed to fetch image from storage');
+      }
+    } else if (project.originalImageUrl.startsWith('data:image/')) {
+      console.log('🔧 Parsing base64 image');
+      const base64Data = project.originalImageUrl.split(',')[1];
+      if (!base64Data) {
+        throw new Error('Invalid base64 image format');
+      }
+      originalBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      throw new Error('Invalid image URL format: ' + project.originalImageUrl.substring(0, 50));
+    }
+    
+    console.log(`✅ Original image loaded: ${originalBuffer.length} bytes`);
+    
+    // Log memory usage
+    const memUsage = process.memoryUsage();
+    console.log(`📊 Memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
+    
+    // Force garbage collection if available (requires --expose-gc flag)
+    if (global.gc) {
+      console.log('🗑️ Running garbage collection before upscaling...');
+      global.gc();
+    }
+    
+    // Step 1: Upscale image using Segmind or fallback
+    console.log('Step 1: Upscaling image...');
+    let upscaledBuffer: Buffer;
+    
+    try {
+      if (process.env.SEGMIND_API_KEY) {
+        const segmind = new SegmindService(process.env.SEGMIND_API_KEY);
+        const upscaleOption = project.upscaleOption || '2x';
+        const scale = upscaleOption === '4x' ? 4 : 2;
+        
+        // Convert buffer to base64 for Segmind API
+        const originalBase64 = originalBuffer.toString('base64');
+        let upscaledBase64 = await segmind.upscaleImage({
+          scale,
+          image: originalBase64
+        });
+        
+        upscaledBuffer = Buffer.from(upscaledBase64, 'base64');
+        console.log('✅ Image upscaled successfully with Segmind');
+        
+        // Clear the base64 string to free memory
+        upscaledBase64 = '';
+        
+        // Log memory after upscaling
+        const memAfterUpscale = process.memoryUsage();
+        console.log(`📊 Memory after upscale: ${Math.round(memAfterUpscale.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterUpscale.heapTotal / 1024 / 1024)}MB`);
+        
+        // Force GC after upscaling
+        if (global.gc) {
+          console.log('🗑️ Running GC after upscaling...');
+          global.gc();
+          const memAfterGC = process.memoryUsage();
+          console.log(`📊 Memory after GC: ${Math.round(memAfterGC.heapUsed / 1024 / 1024)}MB / ${Math.round(memAfterGC.heapTotal / 1024 / 1024)}MB`);
+        }
+      } else {
+        console.log('⚠️ Segmind API key not found, using fallback upscaler');
+        throw new Error('No Segmind API key');
+      }
+    } catch (error) {
+      console.error('❌ Segmind upscaling failed, trying fallback:', error);
+      try {
+        const { fallbackUpscale } = await import('./services/image-upscaler-fallback');
+        const upscaleOption = project.upscaleOption || '2x';
+        const scale = upscaleOption === '4x' ? 4 : 2;
+        
+        upscaledBuffer = await fallbackUpscale(originalBuffer, scale);
+        console.log('✅ Image upscaled successfully with fallback');
+      } catch (fallbackError) {
+        console.error('❌ Fallback upscaling also failed, using original:', fallbackError);
+        upscaledBuffer = originalBuffer; // Use original if all upscaling fails
+      }
+    }
+    
+    // Clear original buffer to free memory (no longer needed)
+    originalBuffer = Buffer.alloc(0);
+    
+    // Force GC before creating print formats
+    if (global.gc) {
+      console.log('🗑️ Running GC before print formats...');
+      global.gc();
+    }
+    
+    // Step 2: Create print format sizes
+    console.log('Step 2: Creating print formats...');
+    const resizedFormats = await resizeImageToFormats(upscaledBuffer);
+    
+    // Create resized images with proper structure for frontend
+    const resizedImages = Object.entries(resizedFormats).map(([format, buffer]) => ({
+      size: format,
+      url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+    }));
+    
+    console.log('✅ Created', resizedImages.length, 'print formats');
+    
+    // Convert upscaled buffer to base64 for storage
+    const upscaledImageUrl = `data:image/jpeg;base64,${upscaledBuffer.toString('base64')}`;
+    
+    // Update project with processed assets - Direct database update
+    console.log('🔧 Updating project with processed results...');
+    console.log('🔧 Upscaled image size:', upscaledImageUrl.length);
+    console.log('🔧 Resized images count:', resizedImages.length);
+    
+    try {
+      // Update both memory storage and database directly to ensure consistency
+      await storage.updateProject(project.id, {
+        upscaledImageUrl,
+        resizedImages,
+        zipUrl: `/api/projects/${project.id}/download-zip`,
+        status: "completed"
+      });
+      
+      // Also update database directly to ensure persistence
+      console.log('🔧 Updating database directly...');
+      const dbUpdateResult = await db.update(projects)
+        .set({
+          upscaledImageUrl,
+          resizedImages,
+          zipUrl: `/api/projects/${project.id}/download-zip`,
+          status: "completed"
+        })
+        .where(eq(projects.id, project.id));
+      
+      console.log('🔧 Database update result:', dbUpdateResult);
+      console.log('✅ Project update successful (both memory and database)');
+    } catch (updateError) {
+      console.error('🔧❌ Failed to update project:', updateError);
+      throw updateError; // Re-throw to trigger the catch block
+    }
+
+    const processingTime = Date.now() - startTime;
+    console.log(`✅ Real processing completed successfully for project: ${project.id} in ${processingTime}ms`);
+
+  } catch (error) {
+    const processingTime = Date.now() - startTime;
+    console.error(`🔧❌ Processing failed for project ${project.id} after ${processingTime}ms:`, error);
+    console.error("🔧❌ Error details:", (error as Error).stack);
+    console.error("🔧❌ Error type:", typeof error);
+    console.error("🔧❌ Error message:", (error as Error).message);
+    await storage.updateProject(project.id, { status: "failed" });
+  }
