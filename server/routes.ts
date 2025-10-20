@@ -3714,6 +3714,23 @@ else:
   // MARKETING & ANALYTICS ROUTES
   // ==========================================
 
+  // Debug endpoint to check auth status
+  app.get("/api/admin/check-auth", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      res.json({
+        authenticated: true,
+        userId: req.userId,
+        email: user?.email,
+        isAdmin: user?.isAdmin,
+        hasUser: !!user,
+        message: user?.isAdmin ? "Admin access granted" : "Not an admin - run migration and re-login"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check auth status" });
+    }
+  });
+
   // Admin middleware - check if user is admin
   const requireAdmin = async (req: AuthenticatedRequest, res: any, next: any) => {
     try {
@@ -3728,9 +3745,19 @@ else:
       });
       
       if (!user || !user.isAdmin) {
+        console.error('🚫 Admin access denied:', {
+          hasUser: !!user,
+          isAdmin: user?.isAdmin,
+          userId: req.userId,
+          userEmail: user?.email
+        });
         return res.status(403).json({ 
           error: "Admin access required",
-          debug: { hasUser: !!user, isAdmin: user?.isAdmin }
+          debug: { 
+            hasUser: !!user, 
+            isAdmin: user?.isAdmin,
+            message: "Please ensure you've run the admin migration and logged out/in"
+          }
         });
       }
       next();

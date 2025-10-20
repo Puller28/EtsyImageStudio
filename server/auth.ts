@@ -119,6 +119,8 @@ export class AuthService {
       subscriptionId: null,
       subscriptionStartDate: null,
       subscriptionEndDate: null,
+      lastLogin: null,
+      isAdmin: false,
     });
 
     const token = this.generateToken(user.id);
@@ -205,6 +207,14 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
 
   try {
     const user = await storage.getUserById(decoded.userId);
+    
+    console.log('🔐 authenticateToken:', {
+      userId: decoded.userId,
+      userFound: !!user,
+      isAdmin: user?.isAdmin,
+      email: user?.email
+    });
+    
     if (!user) {
       return res.status(403).json({ error: 'User not found' });
     }
@@ -213,6 +223,7 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
     req.user = user;
     next();
   } catch (error) {
+    console.error('🔐 authenticateToken error:', error);
     return res.status(500).json({ error: 'Authentication failed' });
   }
 };
