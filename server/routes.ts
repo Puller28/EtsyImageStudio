@@ -3897,8 +3897,21 @@ async function processProjectAsync(project: any) {
   // MARKETING & ANALYTICS ROUTES
   // ==========================================
 
+  // Admin middleware - check if user is admin
+  const requireAdmin = async (req: AuthenticatedRequest, res: any, next: any) => {
+    try {
+      const user = await storage.getUser(req.userId!);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to verify admin status" });
+    }
+  };
+
   // Get marketing dashboard metrics
-  app.get("/api/admin/marketing/metrics", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/admin/marketing/metrics", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const metrics = await AnalyticsService.getMarketingMetrics();
       res.json(metrics);
@@ -3909,7 +3922,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Get conversion funnel
-  app.get("/api/admin/marketing/funnel", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/admin/marketing/funnel", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const funnel = await AnalyticsService.getUserJourneyFunnel();
       res.json(funnel);
@@ -3920,7 +3933,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Get retention cohorts
-  app.get("/api/admin/marketing/retention", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/admin/marketing/retention", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const cohorts = await AnalyticsService.getRetentionCohorts();
       res.json(cohorts);
@@ -3931,7 +3944,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Get feature usage
-  app.get("/api/admin/marketing/features", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/admin/marketing/features", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const features = await AnalyticsService.getFeatureUsage();
       res.json(features);
@@ -3942,7 +3955,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Generate blog post
-  app.post("/api/admin/blog/generate", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/blog/generate", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { topic, keywords, tone, length, targetAudience } = req.body;
       
@@ -3962,7 +3975,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Generate blog ideas
-  app.post("/api/admin/blog/ideas", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/blog/ideas", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { topic, count } = req.body;
       const ideas = await BlogGeneratorService.generateBlogIdeas(topic, count || 10);
@@ -3974,7 +3987,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Improve existing blog post
-  app.post("/api/admin/blog/improve", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/blog/improve", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { content, keywords } = req.body;
       const result = await BlogGeneratorService.improveBlogPost(content, keywords);
@@ -3986,7 +3999,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Generate social media post
-  app.post("/api/admin/social/generate", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/social/generate", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { platform, topic, tone, includeHashtags, includeEmojis, callToAction, imageDescription } = req.body;
       
@@ -4008,7 +4021,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Generate weekly social media calendar
-  app.post("/api/admin/social/calendar", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/social/calendar", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { platforms, topics } = req.body;
       const calendar = await SocialMediaService.generateWeeklyCalendar(platforms, topics);
@@ -4020,7 +4033,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Generate post variations for A/B testing
-  app.post("/api/admin/social/variations", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/social/variations", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { platform, topic, count } = req.body;
       const variations = await SocialMediaService.generateVariations({ platform, topic }, count || 3);
@@ -4032,7 +4045,7 @@ async function processProjectAsync(project: any) {
   });
 
   // Analyze social media post
-  app.post("/api/admin/social/analyze", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/admin/social/analyze", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { content, platform, metrics } = req.body;
       const analysis = await SocialMediaService.analyzePost(content, platform, metrics);

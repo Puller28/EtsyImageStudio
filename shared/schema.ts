@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   subscriptionStartDate: timestamp("subscription_start_date"),
   subscriptionEndDate: timestamp("subscription_end_date"),
   lastLogin: timestamp("last_login"), // Track last login time for analytics
+  isAdmin: boolean("is_admin").default(false), // Admin access for marketing dashboard
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 

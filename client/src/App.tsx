@@ -38,6 +38,9 @@ import GenerateToolPage from "@/pages/tools/generate-tool";
 import BackgroundRemovalToolPage from "@/pages/tools/background-removal-tool";
 import WorkflowPage from "@/pages/workflow/workflow-hub";
 import WorkflowRunnerPage from "@/pages/workflow/workflow-runner";
+import AdminDashboard from "@/pages/AdminDashboard";
+import BlogGenerator from "@/pages/BlogGenerator";
+import SocialMediaAutomation from "@/pages/SocialMediaAutomation";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceProvider } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,6 +112,9 @@ function Router() {
               <Route path="/contact" component={ContactPage} />
               <Route path="/terms-of-service" component={TermsOfServicePage} />
               <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+              <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/blog-generator" component={BlogGenerator} />
+              <Route path="/admin/social-media" component={SocialMediaAutomation} />
               <Route component={NotFound} />
             </Switch>
           </AppShell>
