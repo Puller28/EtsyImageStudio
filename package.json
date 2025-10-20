@@ -21,7 +21,8 @@
     "db:push": "drizzle-kit push",
     "migrate:images": "tsx scripts/migrate-images-to-storage.ts",
     "upload:templates": "tsx scripts/upload-templates-to-supabase.ts",
-    "send-reengagement": "tsx scripts/send-reengagement-emails.ts"
+    "send-reengagement": "tsx scripts/send-reengagement-emails.ts",
+    "test-email": "tsx scripts/test-reengagement-email.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.17.0",
