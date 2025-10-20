@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Users, TrendingUp, DollarSign, FileText, Share2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { BarChart3, Users, TrendingUp, DollarSign, FileText, Share2, ArrowUpRight, ArrowDownRight, Calendar } from "lucide-react";
 
 interface MarketingMetrics {
   totalUsers: number;

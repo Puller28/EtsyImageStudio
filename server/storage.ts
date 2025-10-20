@@ -438,13 +438,9 @@ class MemStorage implements IStorage {
     return undefined;
   }
 
-  async getUserById(id: string): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (user) {
-      return user;
-    }
-
-    // Try to load from database
+  async getUserById(id: string, forceRefresh: boolean = false): Promise<User | undefined> {
+    // Always fetch from database to get latest data (especially for admin checks)
+    // This ensures isAdmin and other fields are always up-to-date
     try {
       const sql = createDbConnection();
 
@@ -475,12 +471,15 @@ class MemStorage implements IStorage {
           createdAt: new Date(dbUser.created_at)
         };
         
+        // Update cache
         this.users.set(user.id, user);
-        console.log(`🔄 Refreshed user ${id} from DB - Credits: ${user.credits}`);
+        console.log(`🔄 Loaded user ${id} from DB - isAdmin: ${user.isAdmin}`);
         return user;
       }
     } catch (error) {
-      console.warn(`⚠️ Database refresh failed for user ${id}:`, error);
+      console.warn(`⚠️ Database query failed for user ${id}:`, error);
+      // Fallback to cache if database fails
+      return this.users.get(id);
     }
 
     return undefined;

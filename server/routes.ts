@@ -3717,12 +3717,25 @@ else:
   // Admin middleware - check if user is admin
   const requireAdmin = async (req: AuthenticatedRequest, res: any, next: any) => {
     try {
+      // Get fresh user data from database (not from memory cache)
       const user = await storage.getUserById(req.userId!);
+      
+      console.log('🔐 Admin check:', {
+        userId: req.userId,
+        userFound: !!user,
+        isAdmin: user?.isAdmin,
+        userEmail: user?.email
+      });
+      
       if (!user || !user.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
+        return res.status(403).json({ 
+          error: "Admin access required",
+          debug: { hasUser: !!user, isAdmin: user?.isAdmin }
+        });
       }
       next();
     } catch (error) {
+      console.error('Admin middleware error:', error);
       res.status(500).json({ error: "Failed to verify admin status" });
     }
   };
