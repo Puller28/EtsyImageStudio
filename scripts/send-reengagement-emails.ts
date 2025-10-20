@@ -11,6 +11,12 @@
  *   --limit=N: Only send to first N users (for testing)
  */
 
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// Load environment variables from .env file
+config({ path: resolve(process.cwd(), ".env") });
+
 import { db } from "../server/db";
 import { users } from "@shared/schema";
 import { sendReEngagementEmail } from "../server/services/email-service";
