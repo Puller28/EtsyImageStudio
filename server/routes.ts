@@ -4234,3 +4234,4 @@ async function processProjectAsync(project: any) {
     console.error("🔧❌ Error message:", (error as Error).message);
     await storage.updateProject(project.id, { status: "failed" });
   }
+}
