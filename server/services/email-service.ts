@@ -183,3 +183,116 @@ export async function sendContactNotificationEmail(
     return { sent: false, error: errorMessage };
   }
 }
+
+export async function sendReEngagementEmail(
+  email: string,
+  userName: string,
+  bonusCredits: number = 50
+): Promise<{ sent: boolean; error?: string }> {
+  if (!sendGridReady) {
+    console.warn("SendGrid not configured. Skipping re-engagement email.");
+    return { sent: false, error: "sendgrid-not-configured" };
+  }
+
+  try {
+    await sgMail.send({
+      to: email,
+      from: CONTACT_FROM_EMAIL,
+      subject: "We listened: Major upgrades to Art Studio Pro 🎨",
+      text: `Hi ${userName},
+
+You signed up for Art Studio Pro a while back, but we noticed you haven't had a chance to try it yet.
+
+We get it - the first version wasn't perfect. But we've been listening.
+
+🎉 What's New:
+
+✅ Faster AI art generation (Google Imagen 3)
+✅ Professional mockup templates (10+ room settings)
+✅ One-click background removal (NEW!)
+✅ Better user interface & workflow
+✅ Improved image quality & upscaling
+
+🚀 Coming Very Soon:
+Direct Etsy integration - publish listings with one click!
+
+We'd love for you to give us another shot. Your early feedback helped shape these improvements.
+
+Try it now: https://imageupscaler.app/auth
+
+As an early supporter, you'll get:
+• ${bonusCredits} bonus credits (just for logging back in)
+• Early access to Etsy integration
+• Priority support
+
+Questions? Just reply to this email.
+
+Best,
+The Art Studio Pro Team
+
+P.S. We're registering with Etsy's API this week. You'll be first to know when it's live!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6366f1;">We listened: Major upgrades to Art Studio Pro 🎨</h2>
+          
+          <p>Hi ${userName},</p>
+          
+          <p>You signed up for Art Studio Pro a while back, but we noticed you haven't had a chance to try it yet.</p>
+          
+          <p>We get it - the first version wasn't perfect. But we've been listening.</p>
+          
+          <h3 style="color: #6366f1;">🎉 What's New:</h3>
+          <ul style="line-height: 1.8;">
+            <li>✅ Faster AI art generation (Google Imagen 3)</li>
+            <li>✅ Professional mockup templates (10+ room settings)</li>
+            <li>✅ One-click background removal (NEW!)</li>
+            <li>✅ Better user interface & workflow</li>
+            <li>✅ Improved image quality & upscaling</li>
+          </ul>
+          
+          <h3 style="color: #6366f1;">🚀 Coming Very Soon:</h3>
+          <p>Direct Etsy integration - publish listings with one click!</p>
+          
+          <p>We'd love for you to give us another shot. Your early feedback helped shape these improvements.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://imageupscaler.app/auth" 
+               style="background-color: #6366f1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              Try It Now
+            </a>
+          </div>
+          
+          <h3 style="color: #6366f1;">As an early supporter, you'll get:</h3>
+          <ul style="line-height: 1.8;">
+            <li>• ${bonusCredits} bonus credits (just for logging back in)</li>
+            <li>• Early access to Etsy integration</li>
+            <li>• Priority support</li>
+          </ul>
+          
+          <p>Questions? Just reply to this email.</p>
+          
+          <p>Best,<br>The Art Studio Pro Team</p>
+          
+          <p style="font-size: 12px; color: #666; margin-top: 30px;">
+            P.S. We're registering with Etsy's API this week. You'll be first to know when it's live!
+          </p>
+          
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+          
+          <p style="font-size: 11px; color: #999;">
+            You're receiving this because you signed up for Art Studio Pro. 
+            <a href="https://imageupscaler.app/settings" style="color: #6366f1;">Update preferences</a>
+          </p>
+        </div>
+      `,
+    });
+
+    console.log(`Re-engagement email sent to ${email}`);
+    return { sent: true };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "unknown error sending email";
+    console.error(`Failed to send re-engagement email to ${email}:`, error);
+    return { sent: false, error: errorMessage };
+  }
+}
