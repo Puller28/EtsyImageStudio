@@ -60,8 +60,11 @@ export async function sendPasswordResetEmail(
     
     await sgMail.send({
       to: email,
-      from: CONTACT_FROM_EMAIL,
-      subject: "Reset Your Password - Image Upscaler Pro",
+      from: {
+        email: CONTACT_FROM_EMAIL,
+        name: "Art Studio Pro Team"
+      },
+      subject: "Reset Your Password - Art Studio Pro",
       text: [
         `Hi ${userName},`,
         "",
@@ -144,7 +147,10 @@ export async function sendContactNotificationEmail(
 
     await sgMail.send({
       to: CONTACT_NOTIFICATION_EMAIL,
-      from: CONTACT_FROM_EMAIL,
+      from: {
+        email: CONTACT_FROM_EMAIL,
+        name: "Art Studio Pro Contact Form"
+      },
       subject: `[Contact Form] ${payload.subject}`,
       replyTo: payload.email,
       text: [
@@ -197,7 +203,10 @@ export async function sendReEngagementEmail(
   try {
     await sgMail.send({
       to: email,
-      from: CONTACT_FROM_EMAIL,
+      from: {
+        email: CONTACT_FROM_EMAIL,
+        name: "Art Studio Pro Team"
+      },
       subject: "We listened: Major upgrades to Art Studio Pro 🎨",
       text: `Hi ${userName},
 
