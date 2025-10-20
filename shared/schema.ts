@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   subscriptionId: text("subscription_id"), // Paystack subscription ID
   subscriptionStartDate: timestamp("subscription_start_date"),
   subscriptionEndDate: timestamp("subscription_end_date"),
+  lastLogin: timestamp("last_login"), // Track last login time for analytics
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 

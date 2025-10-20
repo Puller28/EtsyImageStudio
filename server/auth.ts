@@ -84,6 +84,9 @@ export class AuthService {
       return null; // Invalid password
     }
 
+    // Update last login timestamp
+    await storage.updateUserLastLogin(user.id);
+
     const token = this.generateToken(user.id);
     
     // Remove password from response

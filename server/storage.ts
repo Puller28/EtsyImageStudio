@@ -1609,6 +1609,33 @@ class MemStorage implements IStorage {
       throw new Error('Failed to update password');
     }
   }
+
+  async updateUserLastLogin(userId: string): Promise<void> {
+    const user = this.users.get(userId);
+    const now = new Date();
+    
+    if (user) {
+      user.lastLogin = now;
+      this.users.set(userId, user);
+    }
+
+    // Update in database
+    try {
+      const sql = createDbConnection();
+
+      await sql`
+        UPDATE public.users 
+        SET last_login = ${now.toISOString()}
+        WHERE id = ${userId}
+      `;
+      
+      await sql.end();
+      
+    } catch (dbError) {
+      // Don't throw error - this is non-critical tracking
+      console.error(`⚠️ Failed to update last_login in database:`, dbError);
+    }
+  }
 }
 
 export const storage = new MemStorage();
