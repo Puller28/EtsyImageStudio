@@ -21,6 +21,9 @@ import { AuthService, authenticateToken, optionalAuth, type AuthenticatedRequest
 import { comfyUIService } from "./services/comfyui-service";
 import { SEOService } from "./services/seo-service";
 import { ImageMigrationService } from "./services/image-migration-service";
+import { BlogGeneratorService } from "./services/blog-generator-service";
+import { SocialMediaService } from "./services/social-media-service";
+import { AnalyticsService } from "./services/analytics-service";
 import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -3888,4 +3891,155 @@ async function processProjectAsync(project: any) {
     console.error("🔧❌ Error message:", (error as Error).message);
     await storage.updateProject(project.id, { status: "failed" });
   }
+}
+
+  // ==========================================
+  // MARKETING & ANALYTICS ROUTES
+  // ==========================================
+
+  // Get marketing dashboard metrics
+  app.get("/api/admin/marketing/metrics", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const metrics = await AnalyticsService.getMarketingMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Failed to get marketing metrics:", error);
+      res.status(500).json({ error: "Failed to get marketing metrics" });
+    }
+  });
+
+  // Get conversion funnel
+  app.get("/api/admin/marketing/funnel", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const funnel = await AnalyticsService.getUserJourneyFunnel();
+      res.json(funnel);
+    } catch (error) {
+      console.error("Failed to get conversion funnel:", error);
+      res.status(500).json({ error: "Failed to get conversion funnel" });
+    }
+  });
+
+  // Get retention cohorts
+  app.get("/api/admin/marketing/retention", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const cohorts = await AnalyticsService.getRetentionCohorts();
+      res.json(cohorts);
+    } catch (error) {
+      console.error("Failed to get retention cohorts:", error);
+      res.status(500).json({ error: "Failed to get retention cohorts" });
+    }
+  });
+
+  // Get feature usage
+  app.get("/api/admin/marketing/features", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const features = await AnalyticsService.getFeatureUsage();
+      res.json(features);
+    } catch (error) {
+      console.error("Failed to get feature usage:", error);
+      res.status(500).json({ error: "Failed to get feature usage" });
+    }
+  });
+
+  // Generate blog post
+  app.post("/api/admin/blog/generate", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { topic, keywords, tone, length, targetAudience } = req.body;
+      
+      const blogPost = await BlogGeneratorService.generateBlogPost({
+        topic,
+        keywords,
+        tone,
+        length,
+        targetAudience,
+      });
+      
+      res.json(blogPost);
+    } catch (error) {
+      console.error("Failed to generate blog post:", error);
+      res.status(500).json({ error: "Failed to generate blog post" });
+    }
+  });
+
+  // Generate blog ideas
+  app.post("/api/admin/blog/ideas", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { topic, count } = req.body;
+      const ideas = await BlogGeneratorService.generateBlogIdeas(topic, count || 10);
+      res.json({ ideas });
+    } catch (error) {
+      console.error("Failed to generate blog ideas:", error);
+      res.status(500).json({ error: "Failed to generate blog ideas" });
+    }
+  });
+
+  // Improve existing blog post
+  app.post("/api/admin/blog/improve", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { content, keywords } = req.body;
+      const result = await BlogGeneratorService.improveBlogPost(content, keywords);
+      res.json(result);
+    } catch (error) {
+      console.error("Failed to improve blog post:", error);
+      res.status(500).json({ error: "Failed to improve blog post" });
+    }
+  });
+
+  // Generate social media post
+  app.post("/api/admin/social/generate", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { platform, topic, tone, includeHashtags, includeEmojis, callToAction, imageDescription } = req.body;
+      
+      const post = await SocialMediaService.generatePost({
+        platform,
+        topic,
+        tone,
+        includeHashtags,
+        includeEmojis,
+        callToAction,
+        imageDescription,
+      });
+      
+      res.json(post);
+    } catch (error) {
+      console.error("Failed to generate social post:", error);
+      res.status(500).json({ error: "Failed to generate social post" });
+    }
+  });
+
+  // Generate weekly social media calendar
+  app.post("/api/admin/social/calendar", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { platforms, topics } = req.body;
+      const calendar = await SocialMediaService.generateWeeklyCalendar(platforms, topics);
+      res.json(calendar);
+    } catch (error) {
+      console.error("Failed to generate social calendar:", error);
+      res.status(500).json({ error: "Failed to generate social calendar" });
+    }
+  });
+
+  // Generate post variations for A/B testing
+  app.post("/api/admin/social/variations", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { platform, topic, count } = req.body;
+      const variations = await SocialMediaService.generateVariations({ platform, topic }, count || 3);
+      res.json({ variations });
+    } catch (error) {
+      console.error("Failed to generate variations:", error);
+      res.status(500).json({ error: "Failed to generate variations" });
+    }
+  });
+
+  // Analyze social media post
+  app.post("/api/admin/social/analyze", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { content, platform, metrics } = req.body;
+      const analysis = await SocialMediaService.analyzePost(content, platform, metrics);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Failed to analyze post:", error);
+      res.status(500).json({ error: "Failed to analyze post" });
+    }
+  });
 }
