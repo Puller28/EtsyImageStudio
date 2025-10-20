@@ -40,6 +40,8 @@ import WorkflowPage from "@/pages/workflow/workflow-hub";
 import WorkflowRunnerPage from "@/pages/workflow/workflow-runner";
 import AdminDashboard from "@/pages/AdminDashboard";
 import BlogGenerator from "@/pages/BlogGenerator";
+import BlogManagement from "@/pages/BlogManagement";
+import BlogPostEdit from "@/pages/BlogPostEdit";
 import SocialMediaAutomation from "@/pages/SocialMediaAutomation";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceProvider } from "@/contexts/workspace-context";
@@ -114,6 +116,8 @@ function Router() {
               <Route path="/privacy-policy" component={PrivacyPolicyPage} />
               <Route path="/admin" component={AdminDashboard} />
               <Route path="/admin/blog-generator" component={BlogGenerator} />
+              <Route path="/admin/blog-posts" component={BlogManagement} />
+              <Route path="/admin/blog-posts/:id/edit" component={BlogPostEdit} />
               <Route path="/admin/social-media" component={SocialMediaAutomation} />
               <Route component={NotFound} />
             </Switch>
