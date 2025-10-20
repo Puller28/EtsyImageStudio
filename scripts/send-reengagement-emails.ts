@@ -46,20 +46,24 @@ async function main() {
   // Find inactive users
   console.log("📊 Finding inactive users...");
   
+  // Since we don't have lastLogin field, we'll target users with low credit usage
+  // Users who signed up but never really used the platform (still have most of their initial 100 credits)
   const baseQuery = db
     .select({
       id: users.id,
       email: users.email,
-      username: users.username,
+      name: users.name,
       credits: users.credits,
       createdAt: users.createdAt,
-      lastLogin: users.lastLogin,
+      subscriptionStatus: users.subscriptionStatus,
     })
     .from(users)
     .where(
       or(
-        isNull(users.lastLogin),
-        lt(users.lastLogin, cutoffDate)
+        // Users with 90+ credits (used less than 10 credits)
+        sql`${users.credits} >= 90`,
+        // OR users who signed up more than 30 days ago with 80+ credits
+        sql`${users.createdAt} < ${cutoffDate} AND ${users.credits} >= 80`
       )
     )
     .orderBy(desc(users.createdAt));
@@ -79,11 +83,11 @@ async function main() {
   console.log("👥 Users to contact:");
   console.log("-------------------");
   inactiveUsers.forEach((user, index) => {
-    const lastLoginStr = user.lastLogin 
-      ? new Date(user.lastLogin).toLocaleDateString()
-      : "Never";
-    console.log(`${index + 1}. ${user.username} (${user.email})`);
-    console.log(`   Last login: ${lastLoginStr} | Current credits: ${user.credits}`);
+    const signupDate = user.createdAt 
+      ? new Date(user.createdAt).toLocaleDateString()
+      : "Unknown";
+    console.log(`${index + 1}. ${user.name} (${user.email})`);
+    console.log(`   Signed up: ${signupDate} | Credits remaining: ${user.credits}/100 | Status: ${user.subscriptionStatus}`);
   });
   console.log("");
 
@@ -110,7 +114,7 @@ async function main() {
       // Send email
       const result = await sendReEngagementEmail(
         user.email,
-        user.username,
+        user.name,
         BONUS_CREDITS
       );
 
@@ -120,7 +124,6 @@ async function main() {
           .update(users)
           .set({
             credits: sql`${users.credits} + ${BONUS_CREDITS}`,
-            updatedAt: new Date(),
           })
           .where(sql`${users.id} = ${user.id}`);
 
