@@ -43,6 +43,7 @@ import BlogGenerator from "@/pages/BlogGenerator";
 import BlogManagement from "@/pages/BlogManagement";
 import BlogPostEdit from "@/pages/BlogPostEdit";
 import SocialMediaAutomation from "@/pages/SocialMediaAutomation";
+import ContentCalendar from "@/pages/ContentCalendar";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceProvider } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -119,6 +120,7 @@ function Router() {
               <Route path="/admin/blog-posts" component={BlogManagement} />
               <Route path="/admin/blog-posts/:id/edit" component={BlogPostEdit} />
               <Route path="/admin/social-media" component={SocialMediaAutomation} />
+              <Route path="/admin/content-calendar" component={ContentCalendar} />
               <Route component={NotFound} />
             </Switch>
           </AppShell>

@@ -3717,7 +3717,7 @@ else:
   // Admin middleware - check if user is admin
   const requireAdmin = async (req: AuthenticatedRequest, res: any, next: any) => {
     try {
-      const user = await storage.getUser(req.userId!);
+      const user = await storage.getUserById(req.userId!);
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Admin access required" });
       }
@@ -3815,7 +3815,55 @@ else:
     }
   });
 
-  // Generate social media post
+  // ==========================================
+  // CONTENT CALENDAR ROUTES
+  // ==========================================
+
+  // Generate weekly content calendar
+  app.post("/api/admin/content-calendar/generate", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { ContentCalendarService } = await import("./services/content-calendar-service");
+      const calendar = await ContentCalendarService.generateWeeklyCalendar();
+      res.json({ calendar });
+    } catch (error) {
+      console.error("Failed to generate content calendar:", error);
+      res.status(500).json({ error: "Failed to generate content calendar" });
+    }
+  });
+
+  // Get content suggestions for a platform
+  app.get("/api/admin/content-calendar/suggestions/:platform", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { ContentCalendarService } = await import("./services/content-calendar-service");
+      const { platform } = req.params;
+      const count = parseInt(req.query.count as string) || 5;
+      const suggestions = await ContentCalendarService.getContentSuggestions(platform, count);
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("Failed to get content suggestions:", error);
+      res.status(500).json({ error: "Failed to get content suggestions" });
+    }
+  });
+
+  // Generate smart post (one-click generation)
+  app.post("/api/admin/social/generate-smart", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { ContentCalendarService } = await import("./services/content-calendar-service");
+      const { platform } = req.body;
+      
+      if (!platform) {
+        return res.status(400).json({ error: "Platform is required" });
+      }
+      
+      const post = await ContentCalendarService.generateSmartPost(platform);
+      res.json(post);
+    } catch (error) {
+      console.error("Failed to generate smart post:", error);
+      res.status(500).json({ error: "Failed to generate smart post" });
+    }
+  });
+
+  // Generate social media post (legacy - with manual inputs)
   app.post("/api/admin/social/generate", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { platform, topic, tone, includeHashtags, includeEmojis, callToAction, imageDescription } = req.body;

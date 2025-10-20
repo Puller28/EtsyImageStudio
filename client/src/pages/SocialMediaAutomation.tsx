@@ -30,6 +30,45 @@ export default function SocialMediaAutomation() {
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const generateSmartPost = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/admin/social/generate-smart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ platform })
+      });
+
+      if (!response.ok) throw new Error("Failed to generate post");
+
+      const data = await response.json();
+      setGeneratedPost({
+        platform,
+        content: data.content,
+        hashtags: data.hashtags.split(' '),
+        characterCount: data.content.length,
+        optimalPostTime: "9:00 AM",
+        suggestions: [`Keyword: ${data.keyword}`, `Theme: ${data.theme}`]
+      });
+      
+      toast({
+        title: "Smart post generated!",
+        description: `Targeting: ${data.keyword}`
+      });
+    } catch (error) {
+      toast({
+        title: "Generation failed",
+        description: "Failed to generate post. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const generatePost = async () => {
     if (!topic.trim()) {
       toast({
@@ -173,23 +212,33 @@ export default function SocialMediaAutomation() {
                     </Select>
                   </div>
 
-                  <Button 
-                    className="w-full" 
-                    onClick={generatePost}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Post
-                      </>
-                    )}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      className="w-full" 
+                      onClick={generateSmartPost}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Smart Generate (AI Picks Topic)
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full" 
+                      onClick={generatePost}
+                      disabled={loading}
+                    >
+                      Generate with Custom Topic
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
