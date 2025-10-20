@@ -26,7 +26,7 @@ import { SocialMediaService } from "./services/social-media-service";
 import { AnalyticsService } from "./services/analytics-service";
 import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import sgMail from "@sendgrid/mail";
 
 const projectImageStorage = new ProjectImageStorage();
@@ -3709,8 +3709,6 @@ else:
       });
     }
   });
-
-}
 
   // ==========================================
   // MARKETING & ANALYTICS ROUTES
