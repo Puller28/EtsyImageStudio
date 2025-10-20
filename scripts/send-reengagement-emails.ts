@@ -20,7 +20,7 @@ config({ path: resolve(process.cwd(), ".env") });
 import { db } from "../server/db";
 import { users } from "@shared/schema";
 import { sendReEngagementEmail } from "../server/services/email-service";
-import { sql, lt, or, isNull } from "drizzle-orm";
+import { sql, lt, or, isNull, desc } from "drizzle-orm";
 
 const BONUS_CREDITS = 50;
 const INACTIVE_DAYS = 30; // Users who haven't logged in for 30+ days
@@ -46,7 +46,7 @@ async function main() {
   // Find inactive users
   console.log("📊 Finding inactive users...");
   
-  let query = db
+  const baseQuery = db
     .select({
       id: users.id,
       email: users.email,
@@ -62,13 +62,11 @@ async function main() {
         lt(users.lastLogin, cutoffDate)
       )
     )
-    .orderBy(users.createdAt);
+    .orderBy(desc(users.createdAt));
 
-  if (limit) {
-    query = query.limit(limit) as any;
-  }
-
-  const inactiveUsers = await query;
+  const inactiveUsers = limit 
+    ? await baseQuery.limit(limit)
+    : await baseQuery;
 
   console.log(`Found ${inactiveUsers.length} inactive users\n`);
 
