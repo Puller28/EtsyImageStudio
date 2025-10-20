@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { ProjectImageStorage } from "./objectStorage";
-import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, type Project, projects } from "@shared/schema";
+import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, insertBlogPostSchema, type Project, projects, blogPosts } from "@shared/schema";
 import { generateEtsyListing } from "./services/openai";
 import { segmindService } from "./services/segmind";
 import { aiArtGeneratorService } from "./services/ai-art-generator";
@@ -4053,6 +4053,187 @@ async function processProjectAsync(project: any) {
     } catch (error) {
       console.error("Failed to analyze post:", error);
       res.status(500).json({ error: "Failed to analyze post" });
+    }
+  });
+
+  // ==========================================
+  // BLOG POST MANAGEMENT ROUTES
+  // ==========================================
+
+  // Get all blog posts (admin)
+  app.get("/api/admin/blog/posts", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const posts = await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+      res.json(posts);
+    } catch (error) {
+      console.error("Failed to get blog posts:", error);
+      res.status(500).json({ error: "Failed to get blog posts" });
+    }
+  });
+
+  // Get single blog post (admin)
+  app.get("/api/admin/blog/posts/:id", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const post = await db.select().from(blogPosts).where(eq(blogPosts.id, req.params.id)).limit(1);
+      if (!post.length) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+      res.json(post[0]);
+    } catch (error) {
+      console.error("Failed to get blog post:", error);
+      res.status(500).json({ error: "Failed to get blog post" });
+    }
+  });
+
+  // Save blog post (draft)
+  app.post("/api/admin/blog/posts", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { title, slug, metaDescription, content, keywords, readingTime, seoScore } = req.body;
+      
+      const newPost = await db.insert(blogPosts).values({
+        title,
+        slug,
+        metaDescription,
+        content,
+        keywords: keywords || [],
+        authorId: req.userId!,
+        status: "draft",
+        readingTime: readingTime || 5,
+        seoScore: seoScore || 0,
+      }).returning();
+
+      res.json(newPost[0]);
+    } catch (error) {
+      console.error("Failed to save blog post:", error);
+      res.status(500).json({ error: "Failed to save blog post" });
+    }
+  });
+
+  // Update blog post
+  app.put("/api/admin/blog/posts/:id", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { title, slug, metaDescription, content, keywords, readingTime, seoScore } = req.body;
+      
+      const updated = await db.update(blogPosts)
+        .set({
+          title,
+          slug,
+          metaDescription,
+          content,
+          keywords: keywords || [],
+          readingTime: readingTime || 5,
+          seoScore: seoScore || 0,
+          updatedAt: new Date(),
+        })
+        .where(eq(blogPosts.id, req.params.id))
+        .returning();
+
+      if (!updated.length) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      res.json(updated[0]);
+    } catch (error) {
+      console.error("Failed to update blog post:", error);
+      res.status(500).json({ error: "Failed to update blog post" });
+    }
+  });
+
+  // Publish blog post
+  app.post("/api/admin/blog/posts/:id/publish", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const updated = await db.update(blogPosts)
+        .set({
+          status: "published",
+          publishedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(blogPosts.id, req.params.id))
+        .returning();
+
+      if (!updated.length) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      res.json(updated[0]);
+    } catch (error) {
+      console.error("Failed to publish blog post:", error);
+      res.status(500).json({ error: "Failed to publish blog post" });
+    }
+  });
+
+  // Unpublish blog post
+  app.post("/api/admin/blog/posts/:id/unpublish", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const updated = await db.update(blogPosts)
+        .set({
+          status: "draft",
+          updatedAt: new Date(),
+        })
+        .where(eq(blogPosts.id, req.params.id))
+        .returning();
+
+      if (!updated.length) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      res.json(updated[0]);
+    } catch (error) {
+      console.error("Failed to unpublish blog post:", error);
+      res.status(500).json({ error: "Failed to unpublish blog post" });
+    }
+  });
+
+  // Delete blog post
+  app.delete("/api/admin/blog/posts/:id", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      await db.delete(blogPosts).where(eq(blogPosts.id, req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete blog post:", error);
+      res.status(500).json({ error: "Failed to delete blog post" });
+    }
+  });
+
+  // Get published blog posts (public)
+  app.get("/api/blog/posts", async (req, res) => {
+    try {
+      const posts = await db.select({
+        id: blogPosts.id,
+        title: blogPosts.title,
+        slug: blogPosts.slug,
+        metaDescription: blogPosts.metaDescription,
+        readingTime: blogPosts.readingTime,
+        publishedAt: blogPosts.publishedAt,
+      })
+      .from(blogPosts)
+      .where(eq(blogPosts.status, "published"))
+      .orderBy(desc(blogPosts.publishedAt));
+      
+      res.json(posts);
+    } catch (error) {
+      console.error("Failed to get published posts:", error);
+      res.status(500).json({ error: "Failed to get published posts" });
+    }
+  });
+
+  // Get single published blog post by slug (public)
+  app.get("/api/blog/posts/:slug", async (req, res) => {
+    try {
+      const post = await db.select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, req.params.slug))
+        .where(eq(blogPosts.status, "published"))
+        .limit(1);
+      
+      if (!post.length) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+      
+      res.json(post[0]);
+    } catch (error) {
+      console.error("Failed to get blog post:", error);
+      res.status(500).json({ error: "Failed to get blog post" });
     }
   });
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ interface GeneratedBlogPost {
 }
 
 export default function BlogGenerator() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState("");
@@ -111,12 +111,103 @@ export default function BlogGenerator() {
     });
   };
 
+  const saveDraft = async () => {
+    if (!generatedPost) return;
+
+    try {
+      const response = await fetch("/api/admin/blog/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          title: generatedPost.title,
+          slug: generatedPost.slug,
+          metaDescription: generatedPost.metaDescription,
+          content: generatedPost.content,
+          keywords: generatedPost.keywords,
+          readingTime: generatedPost.readingTime,
+          seoScore: generatedPost.seoScore,
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to save draft");
+
+      toast({
+        title: "Draft saved!",
+        description: "Blog post saved as draft. You can publish it later."
+      });
+
+      // Navigate to blog management
+      setTimeout(() => setLocation("/admin/blog-posts"), 1500);
+    } catch (error) {
+      toast({
+        title: "Save failed",
+        description: "Failed to save blog post. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const publishNow = async () => {
+    if (!generatedPost) return;
+
+    try {
+      // First save as draft
+      const saveResponse = await fetch("/api/admin/blog/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          title: generatedPost.title,
+          slug: generatedPost.slug,
+          metaDescription: generatedPost.metaDescription,
+          content: generatedPost.content,
+          keywords: generatedPost.keywords,
+          readingTime: generatedPost.readingTime,
+          seoScore: generatedPost.seoScore,
+        })
+      });
+
+      if (!saveResponse.ok) throw new Error("Failed to save post");
+
+      const savedPost = await saveResponse.json();
+
+      // Then publish it
+      const publishResponse = await fetch(`/api/admin/blog/posts/${savedPost.id}/publish`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      if (!publishResponse.ok) throw new Error("Failed to publish post");
+
+      toast({
+        title: "Published!",
+        description: "Blog post is now live on your website."
+      });
+
+      // Navigate to blog management
+      setTimeout(() => setLocation("/admin/blog-posts"), 1500);
+    } catch (error) {
+      toast({
+        title: "Publish failed",
+        description: "Failed to publish blog post. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/admin")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -250,15 +341,25 @@ export default function BlogGenerator() {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button onClick={copyToClipboard} variant="outline" className="flex-1">
-                      {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                      {copied ? "Copied!" : "Copy"}
-                    </Button>
-                    <Button onClick={downloadMarkdown} variant="outline" className="flex-1">
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button onClick={copyToClipboard} variant="outline" className="flex-1">
+                        {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                        {copied ? "Copied!" : "Copy"}
+                      </Button>
+                      <Button onClick={downloadMarkdown} variant="outline" className="flex-1">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={saveDraft} variant="secondary" className="flex-1">
+                        Save Draft
+                      </Button>
+                      <Button onClick={publishNow} className="flex-1">
+                        Publish Now
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ) : (

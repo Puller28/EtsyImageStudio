@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, Link } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ interface FeatureUsage {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [metrics, setMetrics] = useState<MarketingMetrics | null>(null);
   const [funnel, setFunnel] = useState<ConversionFunnel[]>([]);
   const [features, setFeatures] = useState<FeatureUsage[]>([]);
@@ -52,12 +52,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Check if user is admin
     if (!user?.isAdmin) {
-      navigate("/");
+      setLocation("/");
       return;
     }
 
     loadData();
-  }, [user, navigate]);
+  }, [user, setLocation]);
 
   const loadData = async () => {
     try {
@@ -112,7 +112,7 @@ export default function AdminDashboard() {
             <h1 className="text-4xl font-bold text-gray-900">Marketing Dashboard</h1>
             <p className="text-gray-600 mt-2">Track performance and automate your marketing</p>
           </div>
-          <Button onClick={() => navigate("/")} variant="outline">
+          <Button onClick={() => setLocation("/")} variant="outline">
             Back to App
           </Button>
         </div>
@@ -304,7 +304,7 @@ export default function AdminDashboard() {
 
           <TabsContent value="tools" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/blog-generator")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin/blog-generator")}>
                 <CardHeader>
                   <FileText className="h-8 w-8 text-purple-600 mb-2" />
                   <CardTitle>Blog Generator</CardTitle>
@@ -317,7 +317,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/social-media")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin/social-media")}>
                 <CardHeader>
                   <Share2 className="h-8 w-8 text-pink-600 mb-2" />
                   <CardTitle>Social Media</CardTitle>
