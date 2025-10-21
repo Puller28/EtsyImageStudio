@@ -6,6 +6,8 @@ import { ArrowLeft, Calendar, Clock, CheckCircle, Sparkles, Star } from "lucide-
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
 import { SEOHead } from "@/components/seo-head";
+import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 // Related articles for internal linking to resolve orphan pages
 const relatedArticles = {
@@ -4483,13 +4485,72 @@ The seasonal sales boost can fund your entire year of art creation. Make Hallowe
   }
 };
 
+interface DBBlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  metaDescription: string;
+  content: string;
+  keywords: string[];
+  authorId: string;
+  status: string;
+  readingTime: number;
+  seoScore: number;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function BlogPostPage() {
   const params = useParams();
-  const slug = params.slug as keyof typeof blogPosts;
-  const post = blogPosts[slug];
+  const slug = params.slug;
+  const [dbPost, setDbPost] = useState<DBBlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  // Try to load from database first
+  useEffect(() => {
+    const loadPost = async () => {
+      try {
+        const response = await fetch(`/api/blog/posts/${slug}`);
+        if (response.ok) {
+          const data = await response.json();
+          setDbPost(data);
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to load blog post from database:", error);
+      }
+      
+      // If not in database, check static posts
+      const staticPost = blogPosts[slug as keyof typeof blogPosts];
+      if (!staticPost) {
+        setNotFound(true);
+      }
+      setLoading(false);
+    };
+    
+    loadPost();
+  }, [slug]);
+
+  // Get static post if no database post
+  const staticPost = !dbPost ? blogPosts[slug as keyof typeof blogPosts] : null;
   const related = relatedArticles[slug as keyof typeof relatedArticles] || [];
 
-  if (!post) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNavigation />
+        <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (notFound && !staticPost) {
     return (
       <div className="min-h-screen bg-background">
         <PublicNavigation />
@@ -4505,11 +4566,30 @@ export default function BlogPostPage() {
     );
   }
 
+  // Use database post if available, otherwise static post
+  const post = dbPost || staticPost;
+
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNavigation />
+        <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
+          <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
+          <p className="text-muted-foreground mb-6">Unable to load blog post.</p>
+          <Link href="/blog">
+            <Button>Back to Blog</Button>
+          </Link>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
         title={`${post.title} - Digital Art Blog | Image Upscaler Pro`}
-        description={post.title.length > 50 ? post.title.substring(0, 147) + "..." : post.title}
+        description={dbPost ? dbPost.metaDescription : (post.title.length > 50 ? post.title.substring(0, 147) + "..." : post.title)}
         path={`/blog/${slug}`}
       />
       <PublicNavigation />
@@ -4524,10 +4604,10 @@ export default function BlogPostPage() {
           
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <Badge variant="secondary">{post.category}</Badge>
+              <Badge variant="secondary">{dbPost ? (dbPost.keywords[0] || "Blog") : (staticPost?.category || "Blog")}</Badge>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                {new Date(post.date).toLocaleDateString('en-US', { 
+                {new Date(dbPost ? dbPost.publishedAt : (staticPost?.date || new Date().toISOString())).toLocaleDateString('en-US', { 
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric' 
@@ -4535,7 +4615,7 @@ export default function BlogPostPage() {
               </div>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                {post.readTime}
+                {dbPost ? `${dbPost.readingTime} min read` : (staticPost?.readTime || "5 min read")}
               </div>
             </div>
             
@@ -4543,13 +4623,34 @@ export default function BlogPostPage() {
               {post.title}
             </h1>
             
-            <p className="text-muted-foreground">By {post.author}</p>
+            <p className="text-muted-foreground">By {dbPost ? "ImageUpscaler Team" : (staticPost?.author || "ImageUpscaler Team")}</p>
           </div>
         </div>
 
         <article className="prose prose-lg max-w-none">
-          <div className="whitespace-pre-line text-foreground leading-relaxed">
-            {post.content.split('\n').map((line, index) => {
+          {dbPost ? (
+            // Render markdown for database posts
+            <ReactMarkdown
+              className="text-foreground"
+              components={{
+                h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100" {...props} />,
+                h2: ({node, ...props}) => <h2 className="text-2xl font-semibold mt-6 mb-3 text-gray-900 dark:text-gray-100" {...props} />,
+                h3: ({node, ...props}) => <h3 className="text-xl font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100" {...props} />,
+                p: ({node, ...props}) => <p className="mb-4 text-foreground leading-relaxed" {...props} />,
+                ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
+                ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />,
+                li: ({node, ...props}) => <li className="text-foreground" {...props} />,
+                a: ({node, ...props}) => <a className="text-primary hover:underline" {...props} />,
+                strong: ({node, ...props}) => <strong className="font-semibold text-foreground" {...props} />,
+                code: ({node, ...props}) => <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props} />,
+              }}
+            >
+              {dbPost.content}
+            </ReactMarkdown>
+          ) : (
+            // Render plain text for static posts
+            <div className="whitespace-pre-line text-foreground leading-relaxed">
+              {staticPost && staticPost.content.split('\n').map((line, index) => {
               // Handle headers
               if (line.startsWith('# ')) {
                 return <h1 key={index} className="text-3xl font-bold mt-8 mb-4 text-foreground">{line.substring(2)}</h1>;
@@ -4605,7 +4706,8 @@ export default function BlogPostPage() {
               // Empty lines
               return <div key={index} className="mb-2"></div>;
             })}
-          </div>
+            </div>
+          )}
         </article>
 
         {/* Related Articles - Dynamic Internal Linking */}
