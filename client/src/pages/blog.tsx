@@ -179,10 +179,10 @@ export default function BlogPage() {
                       })}
                     </div>
                   </div>
-                  <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                  <CardTitle className="text-xl text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
                     {post.title}
                   </CardTitle>
-                  <CardDescription className="text-base leading-relaxed">
+                  <CardDescription className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
                     {post.excerpt}
                   </CardDescription>
                 </CardHeader>
@@ -222,12 +222,12 @@ export default function BlogPage() {
                       {post.readTime}
                     </div>
                   </div>
-                  <CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors">
+                  <CardTitle className="text-lg leading-tight text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
                     {post.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                     {post.excerpt}
                   </p>
                   <div className="flex items-center justify-between">
@@ -258,11 +258,11 @@ export default function BlogPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                   <div className="flex-1">
                     <Link href={`/blog/${post.slug}`}>
-                      <h3 className="font-semibold hover:text-primary transition-colors cursor-pointer" data-testid={`link-article-${post.id}`}>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 hover:text-primary transition-colors cursor-pointer" data-testid={`link-article-${post.id}`}>
                         {post.title}
                       </h3>
                     </Link>
-                    <p className="text-sm text-muted-foreground mt-1">{post.excerpt}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{post.excerpt}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                       <Badge variant="outline" className="text-xs">{post.category}</Badge>
                       <span>{post.readTime}</span>
