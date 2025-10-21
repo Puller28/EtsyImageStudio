@@ -32,7 +32,8 @@ export interface GeneratedBlogPost {
 
 export class BlogGeneratorService {
   /**
-   * Generate a complete blog post using AI
+   * Generate a complete blog post using AI with iterative improvement
+   * Keeps improving until SEO score reaches 85+
    */
   static async generateBlogPost(request: BlogPostRequest): Promise<GeneratedBlogPost> {
     if (!openai) {
@@ -101,20 +102,63 @@ Return ONLY a JSON object with this structure:
       const readingTime = Math.ceil(wordCountActual / 200);
 
       // Calculate SEO score
-      const seoScore = this.calculateSEOScore(parsed, request.keywords || []);
+      let seoScore = this.calculateSEOScore(parsed, request.keywords || []);
+      let currentPost = parsed;
+      let iterations = 0;
+      const maxIterations = 3; // Prevent infinite loops
+      const targetScore = 85;
 
-      // Generate suggestions
-      const suggestions = this.generateSuggestions(parsed, seoScore);
+      console.log(`📊 Initial SEO score: ${seoScore}/100`);
+
+      // Iteratively improve until we reach target score
+      while (seoScore < targetScore && iterations < maxIterations) {
+        iterations++;
+        console.log(`🔄 Iteration ${iterations}: Improving content (current score: ${seoScore}/100)...`);
+
+        const suggestions = this.generateSuggestions(currentPost, seoScore);
+        
+        // Use AI to improve the content based on suggestions
+        const improvedPost = await this.improveBlogPost(
+          currentPost.content,
+          request.keywords || [],
+          suggestions
+        );
+
+        // Update the post with improvements
+        currentPost = {
+          title: improvedPost.title || currentPost.title,
+          metaDescription: improvedPost.metaDescription || currentPost.metaDescription,
+          content: improvedPost.content || currentPost.content,
+          keywords: improvedPost.keywords || currentPost.keywords
+        };
+
+        // Recalculate score
+        seoScore = this.calculateSEOScore(currentPost, request.keywords || []);
+        console.log(`✨ New SEO score: ${seoScore}/100`);
+      }
+
+      if (seoScore >= targetScore) {
+        console.log(`✅ Target SEO score achieved: ${seoScore}/100`);
+      } else {
+        console.log(`⚠️ Reached max iterations. Final score: ${seoScore}/100`);
+      }
+
+      // Recalculate reading time with final content
+      const finalWordCount = currentPost.content.split(/\s+/).length;
+      const finalReadingTime = Math.ceil(finalWordCount / 200);
+
+      // Generate final suggestions (should be minimal or empty)
+      const finalSuggestions = this.generateSuggestions(currentPost, seoScore);
 
       return {
-        title: parsed.title,
-        slug,
-        metaDescription: parsed.metaDescription,
-        content: parsed.content,
-        keywords: parsed.keywords || [],
-        readingTime,
+        title: currentPost.title,
+        slug: this.generateSlug(currentPost.title),
+        metaDescription: currentPost.metaDescription,
+        content: currentPost.content,
+        keywords: currentPost.keywords || [],
+        readingTime: finalReadingTime,
         seoScore,
-        suggestions,
+        suggestions: finalSuggestions,
       };
     } catch (error) {
       console.error("Error generating blog post:", error);
@@ -167,33 +211,44 @@ Return ONLY a JSON array of strings, like:
   }
 
   /**
-   * Improve existing blog post for SEO
+   * Improve existing blog post for SEO based on specific suggestions
    */
   static async improveBlogPost(
     content: string,
-    targetKeywords: string[]
-  ): Promise<{ improvedContent: string; suggestions: string[] }> {
+    targetKeywords: string[],
+    suggestions: string[]
+  ): Promise<{ title?: string; metaDescription?: string; content?: string; keywords?: string[] }> {
     if (!openai) {
       throw new Error("OpenAI API key not configured");
     }
 
-    const prompt = `Improve this blog post for SEO and readability:
+    const prompt = `Improve this blog post to address these SEO issues:
 
+CURRENT ISSUES:
+${suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+TARGET KEYWORDS: ${targetKeywords.join(", ")}
+
+CURRENT CONTENT:
 ${content}
 
-Target keywords: ${targetKeywords.join(", ")}
+INSTRUCTIONS:
+1. Fix the meta description to be exactly 150-160 characters
+2. Ensure title is under 60 characters
+3. Add more sections with H2/H3 headings
+4. Expand content to 1500-2000 words minimum
+5. Include target keywords naturally throughout
+6. Add FAQ section
+7. Add strong call-to-action at the end
+8. Include practical examples and tips
+9. Use lists and formatting for readability
 
-Tasks:
-1. Improve SEO optimization (keyword placement, headings, meta tags)
-2. Enhance readability (shorter paragraphs, bullet points, clear structure)
-3. Add internal linking opportunities (mark with [LINK: anchor text])
-4. Strengthen call-to-action
-5. Suggest improvements
-
-Return JSON:
+Return ONLY a JSON object with this structure:
 {
-  "improvedContent": "Improved markdown content",
-  "suggestions": ["Suggestion 1", "Suggestion 2", ...]
+  "title": "Improved SEO-optimized title (under 60 chars)",
+  "metaDescription": "Improved meta description (150-160 chars)",
+  "content": "Full improved markdown content",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
     try {
