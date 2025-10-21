@@ -24,6 +24,8 @@ import { ImageMigrationService } from "./services/image-migration-service";
 import { BlogGeneratorService } from "./services/blog-generator-service";
 import { SocialMediaService } from "./services/social-media-service";
 import { AnalyticsService } from "./services/analytics-service";
+import { createPinterestService } from "./services/pinterest-service";
+import { createPinterestImageGenerator } from "./services/pinterest-image-generator";
 import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -3868,6 +3870,110 @@ else:
   });
 
   // ==========================================
+  // PINTEREST AUTOMATION ROUTES
+  // ==========================================
+
+  // Generate Pinterest image
+  app.post("/api/pinterest/generate-image", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { title, subtitle, template, points } = req.body;
+      
+      const generator = createPinterestImageGenerator();
+      const imageBuffer = await generator.generateImage({
+        title,
+        subtitle,
+        template: template || 'blog-post',
+        points,
+        branding: true,
+      });
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Length', imageBuffer.length);
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error("Failed to generate Pinterest image:", error);
+      res.status(500).json({ error: "Failed to generate Pinterest image" });
+    }
+  });
+
+  // Auto-post blog to Pinterest
+  app.post("/api/pinterest/auto-post-blog", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { blogPostId } = req.body;
+
+      // Get blog post from database
+      const [blogPost] = await db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.id, blogPostId))
+        .limit(1);
+
+      if (!blogPost) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      const pinterest = createPinterestService();
+      if (!pinterest) {
+        return res.status(503).json({ error: "Pinterest not configured. Add PINTEREST_ACCESS_TOKEN to environment." });
+      }
+
+      const pins = await pinterest.autoPostBlogToPinterest({
+        title: blogPost.title,
+        slug: blogPost.slug,
+        metaDescription: blogPost.metaDescription,
+        keywords: blogPost.keywords as string[] || [],
+      });
+
+      res.json({
+        success: true,
+        pinsCreated: pins.length,
+        pins: pins.map(p => ({
+          id: p.id,
+          title: p.title,
+          link: p.link,
+        })),
+      });
+    } catch (error) {
+      console.error("Failed to auto-post to Pinterest:", error);
+      res.status(500).json({ error: "Failed to auto-post to Pinterest" });
+    }
+  });
+
+  // Get Pinterest boards
+  app.get("/api/pinterest/boards", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const pinterest = createPinterestService();
+      if (!pinterest) {
+        return res.status(503).json({ error: "Pinterest not configured" });
+      }
+
+      const boards = await pinterest.getBoards();
+      res.json({ boards });
+    } catch (error) {
+      console.error("Failed to get Pinterest boards:", error);
+      res.status(500).json({ error: "Failed to get Pinterest boards" });
+    }
+  });
+
+  // Create Pinterest board
+  app.post("/api/pinterest/boards", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { name, description } = req.body;
+
+      const pinterest = createPinterestService();
+      if (!pinterest) {
+        return res.status(503).json({ error: "Pinterest not configured" });
+      }
+
+      const board = await pinterest.createBoard(name, description);
+      res.json({ board });
+    } catch (error) {
+      console.error("Failed to create Pinterest board:", error);
+      res.status(500).json({ error: "Failed to create Pinterest board" });
+    }
+  });
+
+  // ==========================================
   // CONTENT CALENDAR ROUTES
   // ==========================================
 
@@ -4072,7 +4178,24 @@ else:
         return res.status(404).json({ error: "Blog post not found" });
       }
 
-      res.json(updated[0]);
+      const publishedPost = updated[0];
+
+      // Auto-post to Pinterest in background (don't wait for it)
+      const pinterest = createPinterestService();
+      if (pinterest) {
+        pinterest.autoPostBlogToPinterest({
+          title: publishedPost.title,
+          slug: publishedPost.slug,
+          metaDescription: publishedPost.metaDescription,
+          keywords: publishedPost.keywords as string[] || [],
+        }).then(pins => {
+          console.log(`✅ Auto-posted to Pinterest: ${pins.length} pins created for "${publishedPost.title}"`);
+        }).catch(error => {
+          console.error(`❌ Pinterest auto-post failed for "${publishedPost.title}":`, error.message);
+        });
+      }
+
+      res.json(publishedPost);
     } catch (error) {
       console.error("Failed to publish blog post:", error);
       res.status(500).json({ error: "Failed to publish blog post" });
