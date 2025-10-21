@@ -187,10 +187,16 @@ export default function BlogManagement() {
               <p className="text-gray-600">Manage your blog content</p>
             </div>
           </div>
-          <Button onClick={() => setLocation("/admin/blog-generator")}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Post
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => window.open("/blog", "_blank")}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Blog
+            </Button>
+            <Button onClick={() => setLocation("/admin/blog-generator")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Post
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}

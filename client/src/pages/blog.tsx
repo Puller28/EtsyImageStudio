@@ -6,29 +6,76 @@ import { ArrowLeft, Calendar, Clock, ArrowRight, Sparkles, TrendingUp, Users, Za
 import { Footer } from "@/components/footer";
 import { PublicNavigation } from "@/components/navigation-public";
 import { SEOHead } from "@/components/seo-head";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { BLOG_POSTS } from "@shared/blog-data";
 
-const allBlogPosts = BLOG_POSTS;
+interface DBBlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  author: string;
+  publishedAt: string;
+  readingTime: number;
+  tags: string[];
+}
 
 export default function BlogPage() {
-  // Filter posts to only show published ones (current date or earlier)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Start of today
-  
-  const blogPosts = allBlogPosts.filter(post => {
-    const postDate = new Date(post.date);
-    postDate.setHours(0, 0, 0, 0); // Start of post date
-    return postDate <= today; // Only show posts from today or earlier
-  });
-
-  const featuredPosts = blogPosts.filter(post => post.featured);
-  const regularPosts = blogPosts.filter(post => !post.featured);
+  const [dbPosts, setDbPosts] = useState<DBBlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
   const { toast } = useToast();
+
+  // Load posts from database
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const response = await fetch("/api/blog/posts");
+        if (response.ok) {
+          const data = await response.json();
+          setDbPosts(data);
+        }
+      } catch (error) {
+        console.error("Failed to load blog posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPosts();
+  }, []);
+
+  // Combine static posts with database posts
+  const staticPosts = BLOG_POSTS.filter(post => {
+    const postDate = new Date(post.date);
+    postDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return postDate <= today;
+  });
+
+  // Convert DB posts to match static post format
+  const dynamicPosts = dbPosts.map(post => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || "Read more about this topic...",
+    category: post.tags[0] || "Blog",
+    date: post.publishedAt,
+    author: post.author || "ImageUpscaler Team",
+    readTime: `${post.readingTime} min read`,
+    featured: false
+  }));
+
+  // Combine and sort by date
+  const allBlogPosts = [...dynamicPosts, ...staticPosts].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  const featuredPosts = allBlogPosts.filter(post => post.featured);
+  const regularPosts = allBlogPosts.filter(post => !post.featured);
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +242,7 @@ export default function BlogPage() {
         <section className="mb-16">
           <h2 className="text-2xl font-bold mb-8">All Articles</h2>
           <div className="space-y-4">
-            {blogPosts.map((post) => (
+            {allBlogPosts.map((post) => (
               <div key={post.id} className="border-l-4 border-primary/20 pl-4 hover:border-primary/50 transition-colors">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                   <div className="flex-1">

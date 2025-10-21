@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Sparkles, Copy, Download, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, Copy, Download, Check, List, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -208,13 +208,25 @@ export default function BlogGenerator() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/admin")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">AI Blog Generator</h1>
-            <p className="text-gray-600">Create SEO-optimized blog posts in seconds</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/admin")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">AI Blog Generator</h1>
+              <p className="text-gray-600">Create SEO-optimized blog posts in seconds</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setLocation("/admin/blog-posts")}>
+              <List className="h-4 w-4 mr-2" />
+              Manage Posts
+            </Button>
+            <Button variant="outline" onClick={() => window.open("/blog", "_blank")}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Blog
+            </Button>
           </div>
         </div>
 
