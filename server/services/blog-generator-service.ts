@@ -44,33 +44,52 @@ export class BlogGeneratorService {
     const tone = request.tone || "professional";
     const audience = request.targetAudience || "Etsy sellers and print-on-demand entrepreneurs";
 
-    const prompt = `You are an expert content writer specializing in SEO-optimized blog posts for SaaS products.
+    const prompt = `You are an expert content writer specializing in SEO-optimized blog posts for ImageUpscaler.app - a SaaS tool for Etsy sellers.
 
-Write a comprehensive blog post about: "${request.topic}"
+Write a comprehensive, PRODUCTION-READY blog post about: "${request.topic}"
 
-Requirements:
+CRITICAL REQUIREMENTS - FOLLOW EXACTLY:
 - Target audience: ${audience}
 - Tone: ${tone}
 - Length: Approximately ${wordCount} words
-- Include: Introduction, main sections with H2/H3 headings, conclusion, call-to-action
 - Format: Markdown
-- SEO keywords to include: ${request.keywords?.join(", ") || "AI art, Etsy mockups, print-on-demand"}
-- Make it actionable and valuable
-- Include examples and practical tips
-- Add a compelling call-to-action at the end
 
-Structure:
+CONTENT RULES:
+1. NO placeholder links like [subscribe to our newsletter](#) or [link](#)
+2. NO fake image URLs like https://example.com/image.jpg
+3. NO "Additional Resources" section with fake links
+4. Use REAL internal links to actual pages:
+   - Main tool: https://imageupscaler.app
+   - Pricing: https://imageupscaler.app/pricing
+   - Features: https://imageupscaler.app (mention specific features)
+5. For newsletter signup, use: "Sign up at https://imageupscaler.app to get started"
+6. Include SEO keywords naturally: ${request.keywords?.join(", ") || "AI art, Etsy mockups, print-on-demand"}
+
+STRUCTURE:
 1. Catchy title (60 characters or less)
 2. Meta description (150-160 characters)
-3. Introduction (hook the reader)
-4. Main content (3-5 sections with H2 headings)
-5. Conclusion with CTA
+3. Introduction (hook the reader, explain the problem)
+4. Main content (4-6 sections with H2/H3 headings)
+5. FAQ section (4-5 common questions)
+6. Conclusion with strong CTA
+
+CALL-TO-ACTION REQUIREMENTS:
+- End with: "Ready to upscale your images? Try ImageUpscaler.app free today - no credit card required. Get started at https://imageupscaler.app"
+- Make it specific to the blog topic
+- Include benefit statement
+
+DO NOT INCLUDE:
+- Placeholder links
+- Fake image URLs
+- "Additional Resources" section
+- External tool recommendations (only mention ImageUpscaler.app)
+- Newsletter subscription links
 
 Return ONLY a JSON object with this structure:
 {
   "title": "SEO-optimized title",
   "metaDescription": "Compelling meta description",
-  "content": "Full markdown content with headings and formatting",
+  "content": "Full markdown content with REAL links only",
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
@@ -150,11 +169,14 @@ Return ONLY a JSON object with this structure:
       // Generate final suggestions (should be minimal or empty)
       const finalSuggestions = this.generateSuggestions(currentPost, seoScore);
 
+      // Post-process content to ensure production-readiness
+      const productionReadyContent = this.makeProductionReady(currentPost.content);
+
       return {
         title: currentPost.title,
         slug: this.generateSlug(currentPost.title),
         metaDescription: currentPost.metaDescription,
-        content: currentPost.content,
+        content: productionReadyContent,
         keywords: currentPost.keywords || [],
         readingTime: finalReadingTime,
         seoScore,
@@ -222,7 +244,7 @@ Return ONLY a JSON array of strings, like:
       throw new Error("OpenAI API key not configured");
     }
 
-    const prompt = `Improve this blog post to address these SEO issues:
+    const prompt = `Improve this blog post to address these SEO issues while keeping it PRODUCTION-READY:
 
 CURRENT ISSUES:
 ${suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
@@ -232,22 +254,30 @@ TARGET KEYWORDS: ${targetKeywords.join(", ")}
 CURRENT CONTENT:
 ${content}
 
-INSTRUCTIONS:
+IMPROVEMENT INSTRUCTIONS:
 1. Fix the meta description to be exactly 150-160 characters
 2. Ensure title is under 60 characters
 3. Add more sections with H2/H3 headings
 4. Expand content to 1500-2000 words minimum
 5. Include target keywords naturally throughout
-6. Add FAQ section
+6. Add FAQ section (4-5 questions)
 7. Add strong call-to-action at the end
 8. Include practical examples and tips
 9. Use lists and formatting for readability
+
+CRITICAL - MAINTAIN PRODUCTION STANDARDS:
+- NO placeholder links like [link](#) or [subscribe](#)
+- NO fake image URLs like https://example.com/
+- Use ONLY real links: https://imageupscaler.app or https://imageupscaler.app/pricing
+- End with: "Try ImageUpscaler.app free today at https://imageupscaler.app"
+- NO "Additional Resources" section with fake links
+- NO external tool recommendations
 
 Return ONLY a JSON object with this structure:
 {
   "title": "Improved SEO-optimized title (under 60 chars)",
   "metaDescription": "Improved meta description (150-160 chars)",
-  "content": "Full improved markdown content",
+  "content": "Full improved markdown content with REAL links only",
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
@@ -277,6 +307,29 @@ Return ONLY a JSON object with this structure:
   }
 
   // Helper methods
+
+  /**
+   * Post-process content to ensure it's 100% production-ready
+   */
+  private static makeProductionReady(content: string): string {
+    let processed = content;
+
+    // Remove any remaining placeholder links
+    processed = processed.replace(/\[([^\]]+)\]\(#\)/g, '$1');
+    
+    // Remove fake image URLs
+    processed = processed.replace(/!\[([^\]]*)\]\(https?:\/\/example\.com[^\)]*\)/g, '');
+    
+    // Remove "Additional Resources" section if it exists
+    processed = processed.replace(/##\s*Additional Resources[\s\S]*?(?=##|$)/gi, '');
+    
+    // Ensure proper CTA format
+    if (!processed.includes('https://imageupscaler.app')) {
+      processed += '\n\n## Get Started Today\n\nReady to transform your images? Try ImageUpscaler.app free today - no credit card required. [Get started now](https://imageupscaler.app)\n';
+    }
+
+    return processed.trim();
+  }
 
   private static getWordCount(length: string): number {
     switch (length) {
