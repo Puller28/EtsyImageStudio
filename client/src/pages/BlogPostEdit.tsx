@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BlogPost {
   id: string;
@@ -25,6 +26,7 @@ export default function BlogPostEdit() {
   const [, params] = useRoute("/admin/blog-posts/:id/edit");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -39,7 +41,7 @@ export default function BlogPostEdit() {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/blog/posts/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Failed to load post");
@@ -67,7 +69,7 @@ export default function BlogPostEdit() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           title: post.title,
@@ -110,7 +112,7 @@ export default function BlogPostEdit() {
       if (post.status === "draft") {
         const response = await fetch(`/api/admin/blog/posts/${post.id}/publish`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error("Failed to publish");

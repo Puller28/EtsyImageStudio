@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Sparkles, Copy, Download, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface GeneratedBlogPost {
   title: string;
@@ -24,6 +25,7 @@ interface GeneratedBlogPost {
 export default function BlogGenerator() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState("");
   const [keywords, setKeywords] = useState("");
@@ -48,7 +50,7 @@ export default function BlogGenerator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           topic,
@@ -119,7 +121,7 @@ export default function BlogGenerator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           title: generatedPost.title,
@@ -159,7 +161,7 @@ export default function BlogGenerator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           title: generatedPost.title,
@@ -180,7 +182,7 @@ export default function BlogGenerator() {
       const publishResponse = await fetch(`/api/admin/blog/posts/${savedPost.id}/publish`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${token}`
         }
       });
 

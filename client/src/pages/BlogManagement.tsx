@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Edit, Trash2, Eye, EyeOff, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ interface BlogPost {
 export default function BlogManagement() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { token } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function BlogManagement() {
     try {
       setLoading(true);
       const response = await fetch("/api/admin/blog/posts", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Failed to load posts");
@@ -65,7 +67,7 @@ export default function BlogManagement() {
     try {
       const response = await fetch(`/api/admin/blog/posts/${id}/publish`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Failed to publish");
@@ -89,7 +91,7 @@ export default function BlogManagement() {
     try {
       const response = await fetch(`/api/admin/blog/posts/${id}/unpublish`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Failed to unpublish");
@@ -115,7 +117,7 @@ export default function BlogManagement() {
     try {
       const response = await fetch(`/api/admin/blog/posts/${deleteId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Failed to delete");
