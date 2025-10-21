@@ -67,7 +67,7 @@ Add to your `.env` file:
 ```bash
 # Pinterest API Configuration
 PINTEREST_ACCESS_TOKEN=pina_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-PINTEREST_BOARD_ID=123456789012345678  # Your default board ID
+PINTEREST_BOARD_ID=988610624392612434  # Your default board ID
 ```
 
 ### Step 4: Install Dependencies
