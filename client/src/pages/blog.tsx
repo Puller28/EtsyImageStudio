@@ -15,11 +15,11 @@ interface DBBlogPost {
   id: string;
   title: string;
   slug: string;
-  excerpt: string;
-  author: string;
+  metaDescription: string;
+  content: string;
+  keywords: string[];
   publishedAt: string;
   readingTime: number;
-  tags: string[];
 }
 
 export default function BlogPage() {
@@ -57,17 +57,28 @@ export default function BlogPage() {
   });
 
   // Convert DB posts to match static post format
-  const dynamicPosts = dbPosts.map(post => ({
-    id: post.id,
-    title: post.title,
-    slug: post.slug,
-    excerpt: post.excerpt || "Read more about this topic...",
-    category: post.tags[0] || "Blog",
-    date: post.publishedAt,
-    author: post.author || "ImageUpscaler Team",
-    readTime: `${post.readingTime} min read`,
-    featured: false
-  }));
+  const dynamicPosts = dbPosts.map(post => {
+    // Extract excerpt from meta description or first 150 chars of content
+    const excerpt = post.metaDescription || 
+      post.content.replace(/[#*`]/g, '').substring(0, 150) + '...';
+    
+    // Use first keyword as category
+    const category = (post.keywords && post.keywords.length > 0) 
+      ? post.keywords[0] 
+      : "Blog";
+    
+    return {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt,
+      category,
+      date: post.publishedAt,
+      author: "ImageUpscaler Team",
+      readTime: `${post.readingTime} min read`,
+      featured: false
+    };
+  });
 
   // Combine and sort by date
   const allBlogPosts = [...dynamicPosts, ...staticPosts].sort((a, b) => 
