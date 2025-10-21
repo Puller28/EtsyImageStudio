@@ -154,7 +154,7 @@ export default function BlogPage() {
               <Sparkles className="h-4 w-4 mr-2" />
               Digital Art Insights
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold">AI Art & Etsy Success Blog</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">AI Art & Etsy Success Blog</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Expert guides, tutorials, and strategies for growing your digital art business with AI-powered tools and Etsy optimization.
             </p>
@@ -163,7 +163,7 @@ export default function BlogPage() {
 
         {/* Featured Posts */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-8">Featured Articles</h2>
+          <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-gray-100">Featured Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {featuredPosts.map((post) => (
               <Card key={post.id} className="border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
@@ -210,7 +210,7 @@ export default function BlogPage() {
 
         {/* Recent Posts */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-8">Recent Articles</h2>
+          <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-gray-100">Recent Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {regularPosts.map((post) => (
               <Card key={post.id} className="hover:shadow-lg transition-shadow duration-300 group">
@@ -251,7 +251,7 @@ export default function BlogPage() {
 
         {/* All Articles Archive */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-8">All Articles</h2>
+          <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-gray-100">All Articles</h2>
           <div className="space-y-4">
             {allBlogPosts.map((post) => (
               <div key={post.id} className="border-l-4 border-primary/20 pl-4 hover:border-primary/50 transition-colors">
@@ -282,7 +282,7 @@ export default function BlogPage() {
 
         {/* Categories */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-8">Browse by Category</h2>
+          <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-gray-100">Browse by Category</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Link href="/blog/ai-art-etsy-success-2025">
               <Card className="text-center hover:shadow-md transition-shadow cursor-pointer group">
@@ -330,7 +330,7 @@ export default function BlogPage() {
         <section className="mb-16">
           <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
             <CardContent className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-4">Stay Updated with Digital Art Trends</h2>
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Stay Updated with Digital Art Trends</h2>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                 Get weekly insights on AI art generation, Etsy strategies, and digital marketing tips delivered straight to your inbox.
               </p>
@@ -359,7 +359,7 @@ export default function BlogPage() {
         {/* SEO Internal Links Section - Prevents Orphan Pages */}
         <section className="mb-16">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-4">Complete Digital Art Guide Library</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Complete Digital Art Guide Library</h2>
             <p className="text-muted-foreground">Explore our comprehensive collection of digital art guides and tutorials</p>
           </div>
           
