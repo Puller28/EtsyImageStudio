@@ -124,10 +124,10 @@ Return ONLY a JSON object with this structure:
       let seoScore = this.calculateSEOScore(parsed, request.keywords || []);
       let currentPost = parsed;
       let iterations = 0;
-      const maxIterations = 3; // Prevent infinite loops
+      const maxIterations = 5; // Increased to ensure we reach 85+
       const targetScore = 85;
 
-      console.log(`📊 Initial SEO score: ${seoScore}/100`);
+      console.log(`📊 Initial SEO score: ${seoScore}/100 (target: ${targetScore})`);
 
       // Iteratively improve until we reach target score
       while (seoScore < targetScore && iterations < maxIterations) {
@@ -166,8 +166,10 @@ Return ONLY a JSON object with this structure:
       const finalWordCount = currentPost.content.split(/\s+/).length;
       const finalReadingTime = Math.ceil(finalWordCount / 200);
 
-      // Generate final suggestions (should be minimal or empty)
-      const finalSuggestions = this.generateSuggestions(currentPost, seoScore);
+      // Only generate suggestions if SEO score is below target
+      const finalSuggestions = seoScore < targetScore 
+        ? this.generateSuggestions(currentPost, seoScore)
+        : [];
 
       // Post-process content to ensure production-readiness
       const productionReadyContent = this.makeProductionReady(currentPost.content);
