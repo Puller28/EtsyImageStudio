@@ -4630,9 +4630,9 @@ export default function BlogPostPage() {
         <article className="prose prose-lg max-w-none">
           {dbPost ? (
             // Render markdown for database posts
-            <ReactMarkdown
-              className="text-foreground"
-              components={{
+            <div className="text-foreground">
+              <ReactMarkdown
+                components={{
                 h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100" {...props} />,
                 h2: ({node, ...props}) => <h2 className="text-2xl font-semibold mt-6 mb-3 text-gray-900 dark:text-gray-100" {...props} />,
                 h3: ({node, ...props}) => <h3 className="text-xl font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100" {...props} />,
@@ -4644,9 +4644,10 @@ export default function BlogPostPage() {
                 strong: ({node, ...props}) => <strong className="font-semibold text-foreground" {...props} />,
                 code: ({node, ...props}) => <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props} />,
               }}
-            >
-              {dbPost.content}
-            </ReactMarkdown>
+              >
+                {dbPost.content}
+              </ReactMarkdown>
+            </div>
           ) : (
             // Render plain text for static posts
             <div className="whitespace-pre-line text-foreground leading-relaxed">
