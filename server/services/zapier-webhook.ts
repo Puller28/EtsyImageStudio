@@ -41,6 +41,69 @@ function generatePinDescriptions(metaDescription: string, keywords: string[]): s
 }
 
 /**
+ * Pinterest Board Mapping
+ * Maps keywords to specific Pinterest board IDs
+ */
+const PINTEREST_BOARDS = {
+  // Image Upscaling Guide - for content about image quality, upscaling, enhancement
+  imageUpscaling: {
+    id: process.env.PINTEREST_BOARD_IMAGE_UPSCALING || '988610624392612434',
+    keywords: ['upscale', 'image quality', 'enhance', 'resolution', 'quality', 'pixel', 'blur']
+  },
+  // Digital Art Business - for content about selling digital art, business tips
+  digitalArt: {
+    id: process.env.PINTEREST_BOARD_DIGITAL_ART || '988610624392612434',
+    keywords: ['digital art', 'business', 'selling', 'marketplace', 'revenue', 'profit']
+  },
+  // AI Tools for Sellers - for content about AI, automation, tools
+  aiTools: {
+    id: process.env.PINTEREST_BOARD_AI_TOOLS || '988610624392612434',
+    keywords: ['ai', 'artificial intelligence', 'automation', 'tool', 'generator', 'chatgpt']
+  },
+  // Print on Demand - for content about printing, POD, printables
+  printOnDemand: {
+    id: process.env.PINTEREST_BOARD_PRINT_ON_DEMAND || '988610624392612434',
+    keywords: ['print', 'pod', 'printable', 'poster', 'canvas', 'wall art', 'download']
+  },
+  // Etsy SEO Tips - for content about Etsy, SEO, optimization
+  etsySeo: {
+    id: process.env.PINTEREST_BOARD_ETSY_SEO || '988610624392612434',
+    keywords: ['etsy', 'seo', 'optimization', 'ranking', 'search', 'tags', 'listing']
+  },
+  // Default fallback
+  default: {
+    id: process.env.PINTEREST_BOARD_ID || '988610624392612434',
+    keywords: []
+  }
+};
+
+/**
+ * Determine the best Pinterest board based on blog keywords
+ */
+function selectPinterestBoard(keywords: string[], title: string): string {
+  const allText = [...keywords, title].join(' ').toLowerCase();
+  
+  // Check each board's keywords
+  for (const [boardName, board] of Object.entries(PINTEREST_BOARDS)) {
+    if (boardName === 'default') continue;
+    
+    // Check if any of the board's keywords match
+    const hasMatch = board.keywords.some(keyword => 
+      allText.includes(keyword.toLowerCase())
+    );
+    
+    if (hasMatch) {
+      console.log(`📌 Selected Pinterest board: ${boardName} (matched keywords)`);
+      return board.id;
+    }
+  }
+  
+  // Fallback to default board
+  console.log(`📌 Using default Pinterest board (no keyword match)`);
+  return PINTEREST_BOARDS.default.id;
+}
+
+/**
  * Send blog post data to Zapier webhook for Pinterest posting
  */
 export async function sendToZapier(blogPost: BlogPostData): Promise<void> {
@@ -86,6 +149,9 @@ export async function sendToZapier(blogPost: BlogPostData): Promise<void> {
     
     console.log(`✅ Generated ${pinVariations.length} Pinterest images`);
 
+    // Select the best Pinterest board based on keywords
+    const selectedBoardId = selectPinterestBoard(blogPost.keywords, blogPost.title);
+
     // Prepare data for Zapier
     const zapierData = {
       blogPost: {
@@ -99,7 +165,7 @@ export async function sendToZapier(blogPost: BlogPostData): Promise<void> {
         title: pin.title,
         description: pin.description,
         link: blogPost.url,
-        boardId: process.env.PINTEREST_BOARD_ID || '',
+        boardId: selectedBoardId,
       })),
       timestamp: new Date().toISOString(),
     };
