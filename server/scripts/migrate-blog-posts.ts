@@ -8,7 +8,7 @@
  */
 
 import { db } from '../db';
-import { blogPosts } from '@db/schema';
+import { blogPosts } from '../db/schema';
 import { BLOG_POSTS } from '../../shared/blog-data';
 import { eq } from 'drizzle-orm';
 
