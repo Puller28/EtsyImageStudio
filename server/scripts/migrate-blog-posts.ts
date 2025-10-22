@@ -8,7 +8,7 @@
  */
 
 import { db } from '../db.js';
-import { blogPosts } from '../../shared/schema.js';
+import { blogPosts, users } from '../../shared/schema.js';
 import { BLOG_POSTS } from '../../shared/blog-data.js';
 import { eq } from 'drizzle-orm';
 
@@ -87,6 +87,20 @@ function parseReadingTime(readTime: string): number {
 async function migrateBlogPosts() {
   console.log('🚀 Starting blog post migration...\n');
   
+  // Get the first admin user to use as author
+  const adminUsers = await db.select()
+    .from(users)
+    .where(eq(users.role, 'admin'))
+    .limit(1);
+  
+  if (adminUsers.length === 0) {
+    console.error('❌ No admin user found. Please create an admin user first.');
+    process.exit(1);
+  }
+  
+  const authorId = adminUsers[0].id;
+  console.log(`👤 Using admin user as author: ${adminUsers[0].email}\n`);
+  
   let imported = 0;
   let skipped = 0;
   let errors = 0;
@@ -117,6 +131,7 @@ async function migrateBlogPosts() {
         metaDescription: post.excerpt,
         content: content,
         keywords: keywords,
+        authorId: authorId,
         readingTime: readingTime,
         seoScore: 85, // Default SEO score
         status: 'published',
