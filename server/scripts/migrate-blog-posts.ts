@@ -7,9 +7,9 @@
  * Run with: npm run migrate-blog-posts
  */
 
-import { db } from '../db';
-import { blogPosts } from '../db/schema';
-import { BLOG_POSTS } from '../../shared/blog-data';
+import { db } from '../db.js';
+import { blogPosts } from '../../shared/schema.js';
+import { BLOG_POSTS } from '../../shared/blog-data.js';
 import { eq } from 'drizzle-orm';
 
 // Generate full blog content from excerpt
