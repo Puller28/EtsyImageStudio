@@ -90,7 +90,7 @@ async function migrateBlogPosts() {
   // Get the first admin user to use as author
   const adminUsers = await db.select()
     .from(users)
-    .where(eq(users.role, 'admin'))
+    .where(eq(users.isAdmin, true))
     .limit(1);
   
   if (adminUsers.length === 0) {
