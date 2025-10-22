@@ -4180,18 +4180,20 @@ else:
 
       const publishedPost = updated[0];
 
-      // Auto-post to Pinterest in background (don't wait for it)
-      const pinterest = createPinterestService();
-      if (pinterest) {
-        pinterest.autoPostBlogToPinterest({
+      // Auto-post to Pinterest via Zapier webhook (don't wait for it)
+      const { createZapierService } = await import('./services/zapier-webhook');
+      const zapier = createZapierService();
+      if (zapier) {
+        zapier.sendBlogPostToPinterest({
           title: publishedPost.title,
           slug: publishedPost.slug,
           metaDescription: publishedPost.metaDescription,
           keywords: publishedPost.keywords as string[] || [],
-        }).then(pins => {
-          console.log(`✅ Auto-posted to Pinterest: ${pins.length} pins created for "${publishedPost.title}"`);
+          url: `https://imageupscaler.app/blog/${publishedPost.slug}`,
+        }).then(() => {
+          console.log(`✅ Sent to Zapier for Pinterest posting: "${publishedPost.title}"`);
         }).catch(error => {
-          console.error(`❌ Pinterest auto-post failed for "${publishedPost.title}":`, error.message);
+          console.error(`❌ Zapier webhook failed for "${publishedPost.title}":`, error.message);
         });
       }
 
