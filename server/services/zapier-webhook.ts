@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
-import { createPinterestImageService } from './pinterest-image-generator';
+import { PinterestImageGenerator } from './pinterest-image-generator';
+import { ProjectImageStorage } from '../objectStorage';
 
 interface BlogPostData {
   title: string;
@@ -17,6 +18,29 @@ interface PinterestImageData {
 }
 
 /**
+ * Generate pin title variations
+ */
+function generatePinTitles(baseTitle: string): string[] {
+  return [
+    baseTitle,
+    `Ultimate Guide: ${baseTitle}`,
+    `${baseTitle} - Complete Guide`,
+  ];
+}
+
+/**
+ * Generate pin descriptions
+ */
+function generatePinDescriptions(metaDescription: string, keywords: string[]): string[] {
+  const keywordText = keywords.slice(0, 3).join(', ');
+  return [
+    metaDescription,
+    `${metaDescription} Learn more about ${keywordText}.`,
+    `Discover everything about ${keywordText}. ${metaDescription}`,
+  ];
+}
+
+/**
  * Send blog post data to Zapier webhook for Pinterest posting
  */
 export async function sendToZapier(blogPost: BlogPostData): Promise<void> {
@@ -31,16 +55,36 @@ export async function sendToZapier(blogPost: BlogPostData): Promise<void> {
     console.log(`📤 Preparing Pinterest images for Zapier: "${blogPost.title}"`);
     
     // Generate 3 Pinterest pin images
-    const imageService = createPinterestImageService();
-    if (!imageService) {
-      throw new Error('Pinterest image service not available');
+    const imageGenerator = new PinterestImageGenerator();
+    const imageStorage = new ProjectImageStorage();
+    const pinTitles = generatePinTitles(blogPost.title);
+    const pinDescriptions = generatePinDescriptions(blogPost.metaDescription, blogPost.keywords);
+    
+    const pinVariations: PinterestImageData[] = [];
+    
+    for (let i = 0; i < 3; i++) {
+      // Generate image
+      const imageBuffer = await imageGenerator.generateImage({
+        title: pinTitles[i],
+        subtitle: blogPost.metaDescription.substring(0, 100),
+        template: 'blog-post',
+        branding: true,
+      });
+      
+      // Upload to Supabase and get public URL
+      const fileName = `pin-${i + 1}-${Date.now()}.png`;
+      const { publicUrl } = await imageStorage.uploadAssetBuffer(imageBuffer, `blog-${blogPost.slug}`, fileName, 'image/png');
+      const imageUrl = `https://imageupscaler.app${publicUrl}`;
+      
+      pinVariations.push({
+        imageUrl,
+        title: pinTitles[i],
+        description: pinDescriptions[i],
+        link: blogPost.url,
+      });
     }
-
-    const pinVariations = await imageService.generatePinImages({
-      title: blogPost.title,
-      subtitle: blogPost.metaDescription,
-      keywords: blogPost.keywords,
-    });
+    
+    console.log(`✅ Generated ${pinVariations.length} Pinterest images`);
 
     // Prepare data for Zapier
     const zapierData = {
