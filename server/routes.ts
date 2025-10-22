@@ -4226,6 +4226,52 @@ else:
     }
   });
 
+  // Generate Pinterest pins for existing blog post
+  app.post("/api/admin/blog/posts/:id/generate-pinterest-pins", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      // Get the blog post
+      const post = await db.select()
+        .from(blogPosts)
+        .where(eq(blogPosts.id, req.params.id))
+        .limit(1);
+
+      if (!post.length) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      const blogPost = post[0];
+
+      // Send to Make.com webhook for Pinterest posting
+      const { createZapierService } = await import('./services/zapier-webhook');
+      const zapier = createZapierService();
+      
+      if (!zapier) {
+        return res.status(400).json({ 
+          error: "Pinterest integration not configured. Please set ZAPIER_WEBHOOK_URL environment variable." 
+        });
+      }
+
+      await zapier.sendBlogPostToPinterest({
+        title: blogPost.title,
+        slug: blogPost.slug,
+        metaDescription: blogPost.metaDescription || "",
+        keywords: blogPost.keywords as string[] || [],
+        url: `https://imageupscaler.app/blog/${blogPost.slug}`,
+      });
+
+      console.log(`✅ Generated Pinterest pins for existing post: "${blogPost.title}"`);
+
+      res.json({ 
+        success: true, 
+        pinsCreated: 3,
+        message: "Pinterest pins sent to Make.com for posting"
+      });
+    } catch (error) {
+      console.error("Failed to generate Pinterest pins:", error);
+      res.status(500).json({ error: "Failed to generate Pinterest pins" });
+    }
+  });
+
   // Delete blog post
   app.delete("/api/admin/blog/posts/:id", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {

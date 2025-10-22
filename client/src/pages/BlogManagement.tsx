@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Edit, Trash2, Eye, EyeOff, Plus } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye, EyeOff, Plus, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -36,6 +36,7 @@ export default function BlogManagement() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [generatingPins, setGeneratingPins] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -135,6 +136,33 @@ export default function BlogManagement() {
         description: "Failed to delete post. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const generatePinterestPins = async (postId: string) => {
+    try {
+      setGeneratingPins(postId);
+      const response = await fetch(`/api/admin/blog/posts/${postId}/generate-pinterest-pins`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) throw new Error("Failed to generate pins");
+
+      const result = await response.json();
+
+      toast({
+        title: "Pinterest Pins Generated!",
+        description: `${result.pinsCreated || 3} pins have been sent to Make.com for posting.`
+      });
+    } catch (error) {
+      toast({
+        title: "Pin generation failed",
+        description: "Failed to generate Pinterest pins. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingPins(null);
     }
   };
 
@@ -285,8 +313,18 @@ export default function BlogManagement() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setLocation(`/admin/blog-posts/${post.id}/edit`)}
+                            title="Edit"
                           >
                             <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => generatePinterestPins(post.id)}
+                            disabled={generatingPins === post.id}
+                            title="Generate Pinterest Pins"
+                          >
+                            <Share2 className={`h-4 w-4 text-pink-600 ${generatingPins === post.id ? 'animate-spin' : ''}`} />
                           </Button>
                           {post.status === "published" ? (
                             <Button
@@ -311,6 +349,7 @@ export default function BlogManagement() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setDeleteId(post.id)}
+                            title="Delete"
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
