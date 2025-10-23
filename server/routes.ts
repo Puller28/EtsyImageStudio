@@ -2880,6 +2880,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new template with automatic corner detection from mask
+  app.post("/api/templates/create", authenticateToken, upload.fields([
+    { name: 'background', maxCount: 1 },
+    { name: 'mask', maxCount: 1 }
+  ]), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { room, templateId, name, description, tags, blendMode, blendOpacity, featherPx, padInsetPx, overwrite } = req.body;
+      
+      if (!room) {
+        return res.status(400).json({ error: 'Room is required' });
+      }
+      
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files.background || !files.mask) {
+        return res.status(400).json({ error: 'Background and mask images are required' });
+      }
+      
+      const bgFile = files.background[0];
+      const maskFile = files.mask[0];
+      
+      // Generate template ID if not provided
+      const finalTemplateId = templateId?.trim() || `template_${Date.now()}`;
+      
+      // Check if template exists and overwrite is not enabled
+      const templatesDir = process.env.NODE_ENV === 'production'
+        ? path.join(process.cwd(), 'dist', 'templates')
+        : path.join(process.cwd(), 'templates');
+      
+      const templatePath = path.join(templatesDir, room, finalTemplateId);
+      
+      if (fs.existsSync(templatePath) && overwrite !== 'true') {
+        return res.status(400).json({ error: 'Template already exists. Enable overwrite to replace it.' });
+      }
+      
+      // Create template directory
+      fs.mkdirSync(templatePath, { recursive: true });
+      
+      // Save background image
+      const bgExtension = bgFile.originalname.split('.').pop() || 'jpg';
+      const bgFilename = `background.${bgExtension}`;
+      const bgPath = path.join(templatePath, bgFilename);
+      fs.writeFileSync(bgPath, bgFile.buffer);
+      
+      // Load and process mask to detect corners using Python script
+      const maskPath = path.join(templatePath, 'temp_mask.png');
+      fs.writeFileSync(maskPath, maskFile.buffer);
+      
+      // Use Python to detect corners from the mask
+      const pythonScript = `
+import sys
+import json
+import cv2
+import numpy as np
+from PIL import Image
+
+def detect_corners_from_mask(mask_path, bg_width, bg_height):
+    """Detect the 4 corners of the white region in the mask"""
+    try:
+        # Load mask
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        if mask is None:
+            return None, "Failed to load mask image"
+        
+        # Resize mask to match background dimensions
+        mask = cv2.resize(mask, (bg_width, bg_height), interpolation=cv2.INTER_NEAREST)
+        
+        # Threshold to get binary mask
+        _, binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
+        
+        # Find contours
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours:
+            return None, "No contours found in mask"
+        
+        # Get the largest contour
+        largest_contour = max(contours, key=cv2.contourArea)
+        
+        # Approximate the contour to a polygon
+        epsilon = 0.02 * cv2.arcLength(largest_contour, True)
+        approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+        
+        # If we don't have exactly 4 points, use bounding rectangle
+        if len(approx) != 4:
+            x, y, w, h = cv2.boundingRect(largest_contour)
+            corners = [
+                [x, y],           # Top-left
+                [x + w, y],       # Top-right
+                [x + w, y + h],   # Bottom-right
+                [x, y + h]        # Bottom-left
+            ]
+        else:
+            # Sort corners: TL, TR, BR, BL
+            pts = approx.reshape(4, 2)
+            # Sort by y-coordinate
+            sorted_by_y = pts[np.argsort(pts[:, 1])]
+            # Top two points
+            top_pts = sorted_by_y[:2]
+            # Sort top points by x
+            top_sorted = top_pts[np.argsort(top_pts[:, 0])]
+            tl, tr = top_sorted
+            # Bottom two points
+            bottom_pts = sorted_by_y[2:]
+            # Sort bottom points by x
+            bottom_sorted = bottom_pts[np.argsort(bottom_pts[:, 0])]
+            bl, br = bottom_sorted
+            corners = [tl.tolist(), tr.tolist(), br.tolist(), bl.tolist()]
+        
+        return corners, None
+    except Exception as e:
+        return None, str(e)
+
+if __name__ == "__main__":
+    mask_path = sys.argv[1]
+    bg_width = int(sys.argv[2])
+    bg_height = int(sys.argv[3])
+    
+    corners, error = detect_corners_from_mask(mask_path, bg_width, bg_height)
+    
+    if error:
+        print(json.dumps({"error": error}))
+        sys.exit(1)
+    else:
+        print(json.dumps({"corners": corners}))
+        sys.exit(0)
+`;
+      
+      // Write Python script to temp file
+      const scriptPath = path.join(templatePath, 'detect_corners.py');
+      fs.writeFileSync(scriptPath, pythonScript);
+      
+      // Get background dimensions
+      const sharp = (await import('sharp')).default;
+      const bgMetadata = await sharp(bgFile.buffer).metadata();
+      const bgWidth = bgMetadata.width || 1024;
+      const bgHeight = bgMetadata.height || 1024;
+      
+      // Run Python script to detect corners
+      const pythonExec = resolvePythonExecutable();
+      const cornerDetection = await new Promise<{ corners?: number[][], error?: string }>((resolve) => {
+        const python = spawn(pythonExec.command, [...pythonExec.args, scriptPath, maskPath, bgWidth.toString(), bgHeight.toString()]);
+        
+        let output = '';
+        let errorOutput = '';
+        
+        python.stdout.on('data', (data) => {
+          output += data.toString();
+        });
+        
+        python.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+        });
+        
+        python.on('close', (code) => {
+          if (code !== 0) {
+            console.error('Python corner detection failed:', errorOutput);
+            resolve({ error: errorOutput || 'Corner detection failed' });
+          } else {
+            try {
+              const result = JSON.parse(output.trim());
+              resolve(result);
+            } catch (e) {
+              resolve({ error: 'Failed to parse corner detection output' });
+            }
+          }
+        });
+      });
+      
+      // Clean up temp files
+      try {
+        fs.unlinkSync(maskPath);
+        fs.unlinkSync(scriptPath);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      
+      if (cornerDetection.error || !cornerDetection.corners) {
+        // Fallback to default corners if detection fails
+        console.warn('Corner detection failed, using default corners:', cornerDetection.error);
+        cornerDetection.corners = [
+          [Math.round(bgWidth * 0.2), Math.round(bgHeight * 0.2)],
+          [Math.round(bgWidth * 0.8), Math.round(bgHeight * 0.2)],
+          [Math.round(bgWidth * 0.8), Math.round(bgHeight * 0.8)],
+          [Math.round(bgWidth * 0.2), Math.round(bgHeight * 0.8)]
+        ];
+      }
+      
+      // Create manifest
+      const manifest = {
+        name: name?.trim() || `${room.replace(/_/g, ' ')} ${finalTemplateId}`,
+        description: description?.trim() || '',
+        tags: tags?.trim().split(',').map((t: string) => t.trim()).filter(Boolean) || [],
+        width: bgWidth,
+        height: bgHeight,
+        background: bgFilename,
+        corners: cornerDetection.corners,
+        blend: {
+          mode: blendMode || 'normal',
+          opacity: parseFloat(blendOpacity || '1.0')
+        },
+        feather_px: parseFloat(featherPx || '1'),
+        pad_inset_px: parseInt(padInsetPx || '0', 10)
+      };
+      
+      // Save manifest
+      const manifestPath = path.join(templatePath, 'manifest.json');
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+      
+      console.log(`✅ Created new template: ${room}/${finalTemplateId}`);
+      
+      res.json({
+        success: true,
+        room,
+        templateId: finalTemplateId,
+        manifest,
+        preview_url: `/api/templates/preview/${room}/${finalTemplateId}`
+      });
+      
+    } catch (error) {
+      console.error('Template creation error:', error);
+      res.status(500).json({ error: 'Failed to create template', details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   // Admin endpoint to upload new templates to Supabase Storage
   app.post("/api/admin/templates/upload", authenticateToken, upload.fields([
     { name: 'background', maxCount: 1 },
