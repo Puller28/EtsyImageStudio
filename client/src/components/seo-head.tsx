@@ -34,43 +34,67 @@ const getPageSEO = (path: string) => {
   const seoData: Record<string, { title: string; description: string }> = {
     '/': {
       title: "Art Studio for Etsy - AI-Powered Digital Art Tools",
-      description: "Professional AI image upscaling up to 4x, stunning mockups, print-ready formats, and automated Etsy listings. The ultimate platform for digital artists."
+      description: "Professional AI image upscaling up to 4x, stunning mockups, print-ready formats, and automated Etsy listings. The ultimate platform for digital artists and online sellers."
     },
     '/home': {
       title: "AI Image Upscaler Pro - Professional Digital Art Tools for Etsy Sellers", 
-      description: "Transform your digital art with AI upscaling, mockup generation, and automated Etsy SEO. Professional tools for artists and online sellers."
+      description: "Transform your digital art with AI upscaling, mockup generation, and automated Etsy SEO. Professional tools for artists and online sellers to boost sales."
     },
     '/features': {
       title: "Features - AI Image Upscaler Pro | Digital Art Processing Tools",
-      description: "Discover AI image upscaling, mockup generation, print resizing, and Etsy SEO automation. Complete digital art workflow solutions."
+      description: "Discover AI image upscaling up to 4x resolution, professional mockup generation, print resizing, and Etsy SEO automation. Complete digital art workflow solutions."
     },
     '/pricing': {
       title: "Pricing Plans - Affordable AI Image Processing | Image Upscaler Pro",
-      description: "Choose the perfect plan for your digital art business. Professional AI upscaling, mockups, and Etsy tools starting from free."
+      description: "Choose the perfect plan for your digital art business. Professional AI upscaling, mockups, and Etsy tools starting from free. Flexible credit packages available."
     },
     '/about-us': {
       title: "About Us - Image Upscaler Pro | Digital Art Technology Team",
-      description: "Meet the team behind Image Upscaler Pro. Learn about our mission to empower digital artists with professional AI tools."
+      description: "Meet the team behind Image Upscaler Pro. Learn about our mission to empower digital artists and Etsy sellers with professional AI tools and automation."
     },
     '/contact': {
       title: "Contact Us - Get Support | Image Upscaler Pro",
-      description: "Need help with AI image upscaling or digital art tools? Contact our support team for assistance with your creative workflow."
+      description: "Need help with AI image upscaling or digital art tools? Contact our support team for assistance with your creative workflow, technical issues, or sales questions."
     },
     '/terms-of-service': {
       title: "Terms of Service - Image Upscaler Pro | Legal Information",
-      description: "Read our terms of service for Image Upscaler Pro. Understand your rights and obligations when using our AI digital art tools."
+      description: "Read our terms of service for Image Upscaler Pro. Understand your rights and obligations when using our AI digital art tools, mockup generation, and Etsy automation."
     },
     '/privacy-policy': {
       title: "Privacy Policy - How We Protect Your Data | Image Upscaler Pro", 
-      description: "Learn how Image Upscaler Pro protects your privacy and handles your data. Transparent policies for digital artists."
+      description: "Learn how Image Upscaler Pro protects your privacy and handles your data. Transparent policies for digital artists and Etsy sellers. GDPR compliant."
     },
     '/auth': {
       title: "Login & Register - Start Creating | Image Upscaler Pro",
-      description: "Join Image Upscaler Pro today. Access AI image upscaling, mockup generation, and professional digital art tools."
+      description: "Join Image Upscaler Pro today. Access AI image upscaling, mockup generation, and professional digital art tools. Free account with 100 credits included."
     },
     '/blog': {
       title: "Blog - Digital Art Tips & Tutorials | Image Upscaler Pro",
-      description: "Expert tips on digital art, AI image processing, Etsy selling strategies, and creative workflow optimization."
+      description: "Expert tips on digital art, AI image processing, Etsy selling strategies, and creative workflow optimization. Learn from successful digital artists and sellers."
+    },
+    '/dashboard': {
+      title: "Dashboard - Manage Your Digital Art Projects | Image Upscaler Pro",
+      description: "View and manage all your digital art projects in one place. Track upscaling progress, mockups, and Etsy listings. Access your complete creative workflow dashboard."
+    },
+    '/projects': {
+      title: "My Projects - Digital Art Gallery | Image Upscaler Pro",
+      description: "Browse your complete digital art portfolio. Access upscaled images, professional mockups, and print-ready files for your Etsy shop. Download and manage all projects."
+    },
+    '/buy-credits': {
+      title: "Buy Credits - Affordable Image Processing | Image Upscaler Pro",
+      description: "Purchase credits for AI image upscaling and mockup generation. Flexible pricing for digital artists and Etsy sellers. Pay only for what you need, no subscriptions required."
+    },
+    '/settings': {
+      title: "Account Settings - Manage Your Profile | Image Upscaler Pro",
+      description: "Update your account settings, manage subscriptions, and configure preferences for your digital art workflow. Control notifications, billing, and profile information."
+    },
+    '/forgot-password': {
+      title: "Reset Password - Account Recovery | Image Upscaler Pro",
+      description: "Forgot your password? Reset it securely and regain access to your digital art projects and tools. Quick and secure password recovery process."
+    },
+    '/reset-password': {
+      title: "Create New Password - Account Security | Image Upscaler Pro",
+      description: "Set a new password for your Image Upscaler Pro account. Secure access to your digital art tools, projects, and Etsy automation features."
     }
   };
   
