@@ -40,7 +40,15 @@ let _supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase;
   
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  // Try multiple sources for URL
+  let supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  
+  // If no URL but we have SUPABASE_PROJECT_ASSETS_URL, derive it
+  if (!supabaseUrl && process.env.SUPABASE_PROJECT_ASSETS_URL) {
+    supabaseUrl = process.env.SUPABASE_PROJECT_ASSETS_URL.replace(/\/storage\/v1$/, '');
+    console.log('📌 Derived Supabase URL from SUPABASE_PROJECT_ASSETS_URL:', supabaseUrl);
+  }
+  
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !supabaseServiceKey) {
@@ -51,12 +59,14 @@ function getSupabase(): SupabaseClient {
       availableKeys,
       SUPABASE_URL: process.env.SUPABASE_URL?.substring(0, 30),
       VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL?.substring(0, 30),
+      SUPABASE_PROJECT_ASSETS_URL: process.env.SUPABASE_PROJECT_ASSETS_URL?.substring(0, 50),
       SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY?.substring(0, 20),
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20)
     });
     throw new Error(`Supabase credentials not configured. Available: ${availableKeys.join(', ')}`);
   }
   
+  console.log('✅ Initializing Supabase client with URL:', supabaseUrl);
   _supabase = createClient(supabaseUrl, supabaseServiceKey);
   return _supabase;
 }
