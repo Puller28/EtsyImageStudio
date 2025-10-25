@@ -170,18 +170,40 @@ export class PSDMockupService {
       console.log('✅ PSD composited without smart object layer');
       
       // 8. Now composite in the correct order:
-      // Base (background + frame) -> Artwork (in the middle)
+      // Base (background + frame) -> White rectangle (where smart object was) -> Artwork
+      
+      console.log('🎨 Creating white background for artwork area...');
+      
+      // Create a white rectangle the size of the smart object area
+      const whiteRect = await sharp({
+        create: {
+          width: layerWidth,
+          height: layerHeight,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 }
+        }
+      })
+        .png()
+        .toBuffer();
       
       console.log('🎨 Compositing artwork into the frame...');
       
-      // Composite artwork on top of base using frame position
+      // Composite: base -> white rectangle -> artwork
       let finalImage = await sharp(baseImageBuffer)
-        .composite([{
-          input: resizedArtwork,
-          left: layerLeft,
-          top: layerTop,
-          blend: 'over' // Place artwork on top of background, but frame is already there
-        }])
+        .composite([
+          {
+            input: whiteRect,
+            left: layerLeft,
+            top: layerTop,
+            blend: 'over'
+          },
+          {
+            input: resizedArtwork,
+            left: layerLeft,
+            top: layerTop,
+            blend: 'over'
+          }
+        ])
         .png()
         .toBuffer();
       
