@@ -43,7 +43,8 @@
     "inspect:failed": "tsx scripts/inspect-failed-mockups.ts",
     "analyze:needs-work": "tsx scripts/analyze-needs-work.ts",
     "process:good-mockups": "tsx scripts/process-good-mockups.ts",
-    "upload:good-mockups": "tsx scripts/upload-good-mockups.ts"
+    "upload:good-mockups": "tsx scripts/upload-good-mockups.ts",
+    "rename:psd-templates": "tsx scripts/rename-psd-templates.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.17.0",

@@ -331,6 +331,14 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
 
   const templatesByRoom: TemplatesByRoom = (templatesData as any)?.rooms || {};
   const selectedCount = selectedTemplates.length;
+  
+  // Flatten all templates into a single array
+  const allTemplates = Object.values(templatesByRoom)
+    .flat()
+    .filter(template => template.manifest_present && template.bg_present)
+    .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+  
+  const totalTemplates = allTemplates.length;
 
   return (
     <div className="space-y-6">
@@ -338,8 +346,8 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
         <CardHeader>
           <CardTitle>Choose Your Mockup Templates</CardTitle>
           <CardDescription>
-            Select up to {MAX_TEMPLATES} templates where you'd like to showcase your artwork.
-            Explore every room style first, then upload and generate when you're ready.
+            Select up to {MAX_TEMPLATES} templates from our collection of {totalTemplates} professional mockups.
+            Browse all options, then upload and generate when you're ready.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -393,7 +401,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
             </p>
           )}
 
-          {Object.keys(templatesByRoom).length === 0 ? (
+          {allTemplates.length === 0 ? (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -401,16 +409,8 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(templatesByRoom).map(([roomName, templates]) => (
-                <div key={roomName} className="space-y-3">
-                  <h3 className="text-lg font-semibold capitalize">
-                    {roomName.replace('_', ' ')} Templates
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {templates
-                      .filter(template => template.manifest_present && template.bg_present)
-                      .map((template) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {allTemplates.map((template) => {
                         const isSelected = selectedTemplates.some(t => 
                           t.room === template.room && t.id === template.id
                         );
@@ -459,7 +459,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
                                       </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                      {roomName.replace('_', ' ')} - Ready to use
+                                      {template.room.replace('_', ' ')} - Ready to use
                                     </p>
                                   </div>
                                 </div>
@@ -468,9 +468,6 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
                           </Card>
                         );
                       })}
-                  </div>
-                </div>
-              ))}
             </div>
           )}
         </CardContent>
