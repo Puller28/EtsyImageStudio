@@ -49,8 +49,17 @@ export class PSDMockupService {
       const psd = Psd.parse(arrayBuffer);
       
       console.log('✅ PSD parsed successfully');
-      console.log('📊 PSD dimensions:', psd.width, 'x', psd.height);
-      console.log('📚 Total layers:', this.countLayers(psd));
+      console.log(`📊 PSD dimensions: ${psd.width} x ${psd.height}`);
+      console.log(`📚 Total layers: ${psd.children?.length || 0}\n`);
+      
+      // Memory optimization: If PSD is larger than 2400px, we'll scale down the final output
+      const needsScaling = psd.width > 2400 || psd.height > 2400;
+      const targetMaxDimension = 1920;
+      const scaleFactor = needsScaling ? Math.min(targetMaxDimension / psd.width, targetMaxDimension / psd.height) : 1;
+      
+      if (needsScaling) {
+        console.log(`⚠️ Large PSD detected (${psd.width}x${psd.height}), will scale output by ${(scaleFactor * 100).toFixed(0)}%`);
+      }
       
       // 2. List all layers for debugging
       console.log('\n🔍 Layer structure:');
@@ -166,7 +175,7 @@ export class PSDMockupService {
       console.log('🎨 Compositing artwork into the frame...');
       
       // Composite artwork on top of base using frame position
-      const finalImage = await sharp(baseImageBuffer)
+      let finalImage = await sharp(baseImageBuffer)
         .composite([{
           input: resizedArtwork,
           left: layerLeft,
@@ -175,6 +184,25 @@ export class PSDMockupService {
         }])
         .png()
         .toBuffer();
+      
+      // Apply scaling if needed to reduce memory usage
+      if (needsScaling) {
+        const newWidth = Math.round(psd.width * scaleFactor);
+        const newHeight = Math.round(psd.height * scaleFactor);
+        console.log(`📏 Scaling output from ${psd.width}x${psd.height} to ${newWidth}x${newHeight}`);
+        finalImage = await sharp(finalImage)
+          .resize(newWidth, newHeight, { 
+            fit: 'inside',
+            withoutEnlargement: true 
+          })
+          .jpeg({ quality: 92 })
+          .toBuffer();
+      } else {
+        // Convert to JPEG even if not scaling to reduce file size
+        finalImage = await sharp(finalImage)
+          .jpeg({ quality: 92 })
+          .toBuffer();
+      }
       
       console.log('✅ Mockup generated successfully!');
       
