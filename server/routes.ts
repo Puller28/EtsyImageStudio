@@ -3392,12 +3392,70 @@ if __name__ == "__main__":
         return res.status(400).json({ error: "No templates selected" });
       }
 
+      // Separate PSD templates from perspective templates
+      const psdTemplates = selectedTemplates.filter((t: any) => t.type === 'psd' || t.id.startsWith('y-'));
+      const perspectiveTemplates = selectedTemplates.filter((t: any) => t.type === 'perspective' || !t.id.startsWith('y-'));
+      
+      console.log(`📊 Template breakdown: ${psdTemplates.length} PSD, ${perspectiveTemplates.length} perspective`);
+
       // Template limit is now checked above based on user plan
 
       const templateApiPort = process.env.TEMPLATE_API_PORT || 8003;
       const mockups: Array<{ template: { room: string; id: string; name: string }; image_data: string }> = [];
 
-      console.log(`🚀 Batch processing ${selectedTemplates.length} mockups sequentially (memory optimized)...`);
+      // Process PSD templates first (if any)
+      if (psdTemplates.length > 0) {
+        console.log(`🎨 Processing ${psdTemplates.length} PSD templates...`);
+        const { psdMockupService } = await import('./services/psd-mockup-service.js');
+        
+        for (const template of psdTemplates) {
+          try {
+            console.log(`🖼️  Generating PSD mockup: ${template.name || template.id}`);
+            
+            // 1. Get template details from database
+            const { data: templateData, error: templateError } = await getSupabase()
+              .from('psd_templates')
+              .select('*')
+              .eq('id', template.id)
+              .single();
+            
+            if (templateError || !templateData) {
+              throw new Error(`Template ${template.id} not found in database`);
+            }
+            
+            // 2. Download PSD file
+            const psdResponse = await fetch(templateData.psd_url);
+            if (!psdResponse.ok) {
+              throw new Error('Failed to download PSD');
+            }
+            const psdBuffer = Buffer.from(await psdResponse.arrayBuffer());
+            
+            // 3. Generate mockup
+            const mockupBuffer = await psdMockupService.generateMockup(
+              psdBuffer,
+              req.file.buffer,
+              templateData.smart_object_layer
+            );
+            
+            // 4. Convert to base64
+            const base64 = mockupBuffer.toString('base64');
+            
+            mockups.push({
+              template: {
+                room: template.room || 'other',
+                id: template.id,
+                name: template.name || template.id
+              },
+              image_data: `data:image/png;base64,${base64}`
+            });
+            console.log(`✅ PSD mockup generated: ${template.name || template.id}`);
+          } catch (error: any) {
+            console.error(`❌ Failed PSD mockup ${template.id}:`, error.message);
+          }
+        }
+      }
+
+      console.log(`🚀 Batch processing ${perspectiveTemplates.length} perspective mockups sequentially (memory optimized)...`);
       const startTime = Date.now();
 
       // Debug: Check if templates directory exists
@@ -3421,31 +3479,33 @@ if __name__ == "__main__":
         }
       }
 
-      // Create temporary file for artwork (only once!)
-      const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
-      fs.writeFileSync(tempArtworkPath, req.file.buffer);
+      // Only process perspective templates if there are any
+      if (perspectiveTemplates.length > 0) {
+        // Create temporary file for artwork (only once!)
+        const tempArtworkPath = path.join(process.cwd(), `temp_artwork_${Date.now()}.jpg`);
+        fs.writeFileSync(tempArtworkPath, req.file.buffer);
 
-      try {
-        // Use batch Python script to process all templates at once (memory optimized!)
-        const batchResult = await new Promise<any>((resolve, reject) => {
-          const pythonExec = resolvePythonExecutable();
-          // In production, script is in dist/server/scripts, in dev it's in server/scripts
-          const scriptPath = process.env.NODE_ENV === 'production'
-            ? path.join(process.cwd(), 'dist', 'server', 'scripts', 'batch_mockup.py')
-            : path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
-          
-          // Set TEMPLATES_PATH to point to dist/templates
-          const templatesPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
-          const env = { ...process.env, TEMPLATES_PATH: templatesPath };
-          
-          console.log(`🔍 Setting TEMPLATES_PATH for Python: ${templatesPath}`);
-          
-          const python = spawn(pythonExec.command, [
-            ...pythonExec.args,
-            scriptPath,
-            tempArtworkPath,
-            JSON.stringify(selectedTemplates)
-          ], { env });
+        try {
+          // Use batch Python script to process all templates at once (memory optimized!)
+          const batchResult = await new Promise<any>((resolve, reject) => {
+            const pythonExec = resolvePythonExecutable();
+            // In production, script is in dist/server/scripts, in dev it's in server/scripts
+            const scriptPath = process.env.NODE_ENV === 'production'
+              ? path.join(process.cwd(), 'dist', 'server', 'scripts', 'batch_mockup.py')
+              : path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
+            
+            // Set TEMPLATES_PATH to point to dist/templates
+            const templatesPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
+            const env = { ...process.env, TEMPLATES_PATH: templatesPath };
+            
+            console.log(`🔍 Setting TEMPLATES_PATH for Python: ${templatesPath}`);
+            
+            const python = spawn(pythonExec.command, [
+              ...pythonExec.args,
+              scriptPath,
+              tempArtworkPath,
+              JSON.stringify(perspectiveTemplates)
+            ], { env });
 
           python.on('error', (spawnError) => {
             reject(new Error(`Failed to start Python process: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`));
@@ -3496,14 +3556,14 @@ if __name__ == "__main__":
         }
 
         const elapsed = Date.now() - startTime;
-        console.log(`⚡ Batch processing completed in ${elapsed}ms (${mockups.length}/${selectedTemplates.length} successful)`);
+        console.log(`⚡ Batch processing completed in ${elapsed}ms (${mockups.length}/${perspectiveTemplates.length} successful)`);
 
-      } catch (batchError: any) {
-        console.error('❌ Batch processing error:', batchError.message);
-        
-        // Fallback to old sequential method if batch fails
-        console.log('⚠️ Falling back to sequential processing...');
-        for (const template of selectedTemplates) {
+        } catch (batchError: any) {
+          console.error('❌ Batch processing error:', batchError.message);
+          
+          // Fallback to old sequential method if batch fails
+          console.log('⚠️ Falling back to sequential processing...');
+          for (const template of perspectiveTemplates) {
         try {
           console.log(`🎨 Generating mockup for ${template.room}/${template.id}`);
           
