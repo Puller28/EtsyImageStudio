@@ -44,7 +44,17 @@ function getSupabase(): SupabaseClient {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Supabase credentials not configured');
+    const availableKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE'));
+    console.error('❌ Supabase credentials missing:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseServiceKey,
+      availableKeys,
+      SUPABASE_URL: process.env.SUPABASE_URL?.substring(0, 30),
+      VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL?.substring(0, 30),
+      SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY?.substring(0, 20),
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20)
+    });
+    throw new Error(`Supabase credentials not configured. Available: ${availableKeys.join(', ')}`);
   }
   
   _supabase = createClient(supabaseUrl, supabaseServiceKey);
