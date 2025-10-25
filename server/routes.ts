@@ -3405,12 +3405,13 @@ if __name__ == "__main__":
 
       // Process PSD templates first (if any)
       if (psdTemplates.length > 0) {
-        console.log(`🎨 Processing ${psdTemplates.length} PSD templates...`);
+        console.log(`🎨 Processing ${psdTemplates.length} PSD templates (memory optimized)...`);
         const { psdMockupService } = await import('./services/psd-mockup-service.js');
         
-        for (const template of psdTemplates) {
+        for (let i = 0; i < psdTemplates.length; i++) {
+          const template = psdTemplates[i];
           try {
-            console.log(`🖼️  Generating PSD mockup: ${template.name || template.id}`);
+            console.log(`🖼️  Generating PSD mockup ${i + 1}/${psdTemplates.length}: ${template.name || template.id}`);
             
             // 1. Get template details from database
             const { data: templateData, error: templateError } = await getSupabase()
@@ -3449,6 +3450,12 @@ if __name__ == "__main__":
               image_data: `data:image/png;base64,${base64}`
             });
             console.log(`✅ PSD mockup generated: ${template.name || template.id}`);
+            
+            // Force garbage collection after each PSD to free memory
+            if (global.gc && i < psdTemplates.length - 1) {
+              global.gc();
+              console.log(`🧹 Memory cleaned after mockup ${i + 1}`);
+            }
           } catch (error: any) {
             console.error(`❌ Failed PSD mockup ${template.id}:`, error.message);
           }
