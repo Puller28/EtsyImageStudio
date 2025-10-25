@@ -3803,14 +3803,15 @@ else:
           console.error(`Error generating template ${template.room}/${template.id}:`, templateError);
         }
       }
-      } finally {
-        // Clean up temp file
-        try {
-          fs.unlinkSync(tempArtworkPath);
-        } catch (e) {
-          // Ignore cleanup errors
+        } finally {
+          // Clean up temp file
+          try {
+            fs.unlinkSync(tempArtworkPath);
+          } catch (e) {
+            // Ignore cleanup errors
+          }
         }
-      }
+      } // Close if (perspectiveTemplates.length > 0)
 
       if (mockups.length === 0) {
         return res.status(500).json({ error: "Failed to generate any mockups" });
