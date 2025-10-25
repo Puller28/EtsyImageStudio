@@ -1,12 +1,25 @@
 import { Router } from 'express';
 import { psdMockupService } from '../services/psd-mockup-service';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const router = Router();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazy initialization
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+  
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase credentials not configured');
+  }
+  
+  _supabase = createClient(supabaseUrl, supabaseServiceKey);
+  return _supabase;
+}
 
 /**
  * GET /api/psd-templates
@@ -16,7 +29,7 @@ router.get('/templates', async (req, res) => {
   try {
     const { category } = req.query;
     
-    let query = supabase
+    let query = getSupabase()
       .from('psd_templates')
       .select('*')
       .eq('is_active', true)
@@ -46,7 +59,7 @@ router.get('/templates', async (req, res) => {
  */
 router.get('/templates/categories', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('psd_templates')
       .select('category')
       .eq('is_active', true);
@@ -80,7 +93,7 @@ router.post('/generate', async (req, res) => {
     }
     
     // 1. Get template from database
-    const { data: template, error: templateError } = await supabase
+    const { data: template, error: templateError } = await getSupabase()
       .from('psd_templates')
       .select('*')
       .eq('id', templateId)
@@ -119,7 +132,7 @@ router.post('/generate', async (req, res) => {
     const outputPath = `generated-mockups/${templateId}-${timestamp}.png`;
     
     console.log('📤 Uploading result...');
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await getSupabase().storage
       .from('mockup-templates')
       .upload(outputPath, mockupBuffer, {
         contentType: 'image/png',
@@ -131,7 +144,7 @@ router.post('/generate', async (req, res) => {
     }
     
     // 6. Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = getSupabase().storage
       .from('mockup-templates')
       .getPublicUrl(outputPath);
     
