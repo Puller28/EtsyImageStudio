@@ -26,6 +26,7 @@ import { SocialMediaService } from "./services/social-media-service";
 import { AnalyticsService } from "./services/analytics-service";
 import { createPinterestService } from "./services/pinterest-service";
 import { createPinterestImageGenerator } from "./services/pinterest-image-generator";
+import psdMockupRoutes from "./routes/psd-mockup.routes";
 import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -821,6 +822,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to remove background' });
     }
   });
+
+  // Register PSD mockup routes
+  app.use('/api/psd-mockup', psdMockupRoutes);
 
   // Deduct credits from user account with transaction tracking
   app.post("/api/deduct-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
@@ -2800,7 +2804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available templates - served from local dist/templates folder
   app.get("/api/templates", async (req, res) => {
     try {
-      console.log('🔍 Template discovery from local dist/templates folder...');
+      console.log('🔍 Template discovery from local dist/templates folder and Supabase...');
       
       // In production, templates are in dist/templates, in dev they're in templates
       const templatesDir = process.env.NODE_ENV === 'production'
@@ -2809,67 +2813,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`📂 Looking for templates in: ${templatesDir}`);
       
-      if (!fs.existsSync(templatesDir)) {
-        console.error(`❌ Templates directory not found: ${templatesDir}`);
-        return res.status(500).json({ error: 'Templates directory not found' });
-      }
-
       const templatesData = {
         template_root: templatesDir,
-        exists: true,
+        exists: fs.existsSync(templatesDir),
         rooms: {} as Record<string, any[]>
       };
 
-      const roomDirs = fs.readdirSync(templatesDir, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name);
-
-      for (const roomName of roomDirs) {
-        templatesData.rooms[roomName] = [];
-        const roomPath = path.join(templatesDir, roomName);
-        
-        const templateDirs = fs.readdirSync(roomPath, { withFileTypes: true })
+      // 1. Load perspective templates from local filesystem
+      if (fs.existsSync(templatesDir)) {
+        const roomDirs = fs.readdirSync(templatesDir, { withFileTypes: true })
           .filter(dirent => dirent.isDirectory())
           .map(dirent => dirent.name);
 
-        for (const templateId of templateDirs) {
-          try {
-            const templatePath = path.join(roomPath, templateId);
-            const manifestPath = path.join(templatePath, 'manifest.json');
-            
-            if (!fs.existsSync(manifestPath)) {
-              console.warn(`⚠️ No manifest.json for ${roomName}/${templateId}`);
+        for (const roomName of roomDirs) {
+          templatesData.rooms[roomName] = [];
+          const roomPath = path.join(templatesDir, roomName);
+          
+          const templateDirs = fs.readdirSync(roomPath, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+
+          for (const templateId of templateDirs) {
+            try {
+              const templatePath = path.join(roomPath, templateId);
+              const manifestPath = path.join(templatePath, 'manifest.json');
+              
+              if (!fs.existsSync(manifestPath)) {
+                console.warn(`⚠️ No manifest.json for ${roomName}/${templateId}`);
+                continue;
+              }
+
+              const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+              const bgPath = path.join(templatePath, manifest.background);
+              
+              const templateInfo = {
+                id: templateId,
+                room: roomName,
+                name: manifest.name || `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
+                manifest_present: true,
+                bg_present: fs.existsSync(bgPath),
+                preview_url: `/api/templates/preview/${roomName}/${templateId}`,
+                corners: manifest.corners || [[100, 100], [400, 100], [400, 400], [100, 400]],
+                width: manifest.width || 1024,
+                height: manifest.height || 1024,
+                type: 'perspective' // Mark as perspective template
+              };
+
+              templatesData.rooms[roomName].push(templateInfo);
+
+            } catch (error) {
+              console.error(`Error processing template ${roomName}/${templateId}:`, error);
               continue;
             }
-
-            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-            const bgPath = path.join(templatePath, manifest.background);
-            
-            const templateInfo = {
-              id: templateId,
-              room: roomName,
-              name: manifest.name || `${roomName.replace('_', ' ')} ${templateId.replace('_', ' ')}`,
-              manifest_present: true,
-              bg_present: fs.existsSync(bgPath),
-              preview_url: `/api/templates/preview/${roomName}/${templateId}`,
-              corners: manifest.corners || [[100, 100], [400, 100], [400, 400], [100, 400]],
-              width: manifest.width || 1024,
-              height: manifest.height || 1024
-            };
-
-            templatesData.rooms[roomName].push(templateInfo);
-
-          } catch (error) {
-            console.error(`Error processing template ${roomName}/${templateId}:`, error);
-            continue;
           }
-        }
 
-        // Sort templates within each room by id
-        templatesData.rooms[roomName].sort((a, b) => a.id.localeCompare(b.id));
+          // Sort templates within each room by id
+          templatesData.rooms[roomName].sort((a, b) => a.id.localeCompare(b.id));
+        }
       }
 
-      console.log(`📂 Discovered ${Object.keys(templatesData.rooms).length} room categories with templates:`, 
+      // 2. Load PSD templates from Supabase
+      try {
+        const { data: psdTemplates, error: psdError } = await db
+          .from('psd_templates')
+          .select('*')
+          .eq('is_active', true);
+
+        if (psdError) {
+          console.error('❌ Error fetching PSD templates:', psdError);
+        } else if (psdTemplates && psdTemplates.length > 0) {
+          console.log(`📦 Found ${psdTemplates.length} PSD templates in Supabase`);
+          
+          // Add PSD templates to the appropriate room categories
+          for (const psdTemplate of psdTemplates) {
+            const roomName = psdTemplate.category || 'other';
+            
+            // Initialize room if it doesn't exist
+            if (!templatesData.rooms[roomName]) {
+              templatesData.rooms[roomName] = [];
+            }
+            
+            // Add PSD template
+            templatesData.rooms[roomName].push({
+              id: psdTemplate.id,
+              room: roomName,
+              name: psdTemplate.name,
+              manifest_present: true,
+              bg_present: true,
+              preview_url: psdTemplate.thumbnail_url,
+              width: psdTemplate.width,
+              height: psdTemplate.height,
+              type: 'psd', // Mark as PSD template
+              psd_url: psdTemplate.psd_url,
+              smart_object_layer: psdTemplate.smart_object_layer,
+              artwork_bounds: psdTemplate.artwork_bounds
+            });
+          }
+          
+          // Re-sort all rooms after adding PSD templates
+          for (const roomName in templatesData.rooms) {
+            templatesData.rooms[roomName].sort((a, b) => a.name.localeCompare(b.name));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading PSD templates:', error);
+        // Continue even if PSD templates fail to load
+      }
+
+      const totalTemplates = Object.values(templatesData.rooms).reduce((sum, templates) => sum + templates.length, 0);
+      console.log(`📂 Discovered ${Object.keys(templatesData.rooms).length} room categories with ${totalTemplates} total templates:`, 
         Object.entries(templatesData.rooms).map(([room, templates]) => `${room}: ${templates.length}`).join(', '));
 
       res.json(templatesData);

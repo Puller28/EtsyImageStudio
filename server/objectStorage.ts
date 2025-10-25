@@ -2,23 +2,38 @@ import { Response } from "express";
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
 
-const storageBaseUrl = (() => {
+// Lazy initialization - only evaluate when first accessed
+let _storageBaseUrl: string | null = null;
+let _serviceKey: string | null = null;
+
+function getStorageBaseUrl(): string {
+  if (_storageBaseUrl) return _storageBaseUrl;
+  
   const explicitUrl = process.env.SUPABASE_PROJECT_ASSETS_URL?.replace(/\/+$/, "");
-  if (explicitUrl) return explicitUrl;
+  if (explicitUrl) {
+    _storageBaseUrl = explicitUrl;
+    return _storageBaseUrl;
+  }
 
   const projectUrl = process.env.SUPABASE_URL?.replace(/\/+$/, "");
-  if (projectUrl) return `${projectUrl}/storage/v1`;
+  if (projectUrl) {
+    _storageBaseUrl = `${projectUrl}/storage/v1`;
+    return _storageBaseUrl;
+  }
 
   throw new Error("SUPABASE_PROJECT_ASSETS_URL or SUPABASE_URL must be configured");
-})();
+}
 
-const serviceKey = (() => {
+function getServiceKey(): string {
+  if (_serviceKey) return _serviceKey;
+  
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!key) {
     throw new Error("SUPABASE_SERVICE_KEY is required for object storage");
   }
-  return key;
-})();
+  _serviceKey = key;
+  return _serviceKey;
+}
 
 function encodePath(path: string): string {
   return path
@@ -28,10 +43,10 @@ function encodePath(path: string): string {
 }
 
 async function uploadToSupabase(bucket: string, objectName: string, buffer: Buffer, contentType: string) {
-  const uploadUrl = `${storageBaseUrl}/object/${encodeURIComponent(bucket)}/${encodePath(objectName)}`;
+  const uploadUrl = `${getStorageBaseUrl()}/object/${encodeURIComponent(bucket)}/${encodePath(objectName)}`;
   const uploadHeaders: Record<string, string> = {
-    Authorization: `Bearer ${serviceKey}`,
-    apikey: serviceKey,
+    Authorization: `Bearer ${getServiceKey()}`,
+    apikey: getServiceKey(),
     "Content-Type": contentType,
     "Content-Length": buffer.length.toString(),
     "x-upsert": "true",
@@ -51,10 +66,10 @@ async function uploadToSupabase(bucket: string, objectName: string, buffer: Buff
 }
 
 async function downloadFromSupabase(bucket: string, objectName: string) {
-  const downloadUrl = `${storageBaseUrl}/object/authenticated/${encodeURIComponent(bucket)}/${encodePath(objectName)}`;
+  const downloadUrl = `${getStorageBaseUrl()}/object/authenticated/${encodeURIComponent(bucket)}/${encodePath(objectName)}`;
   const downloadHeaders: Record<string, string> = {
-    Authorization: `Bearer ${serviceKey}`,
-    apikey: serviceKey,
+    Authorization: `Bearer ${getServiceKey()}`,
+    apikey: getServiceKey(),
   };
 
   const response = await fetch(downloadUrl, {
@@ -65,10 +80,10 @@ async function downloadFromSupabase(bucket: string, objectName: string) {
 }
 
 async function deleteFromSupabase(bucket: string, objectName: string) {
-  const deleteUrl = `${storageBaseUrl}/object/${encodeURIComponent(bucket)}/${encodePath(objectName)}`;
+  const deleteUrl = `${getStorageBaseUrl()}/object/${encodeURIComponent(bucket)}/${encodePath(objectName)}`;
   const deleteHeaders: Record<string, string> = {
-    Authorization: `Bearer ${serviceKey}`,
-    apikey: serviceKey,
+    Authorization: `Bearer ${getServiceKey()}`,
+    apikey: getServiceKey(),
   };
 
   const response = await fetch(deleteUrl, {
