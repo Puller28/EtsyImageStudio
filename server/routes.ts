@@ -31,8 +31,25 @@ import { spawn, spawnSync } from "child_process";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
 import sgMail from "@sendgrid/mail";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const projectImageStorage = new ProjectImageStorage();
+
+// Lazy Supabase client initialization
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+  
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase credentials not configured');
+  }
+  
+  _supabase = createClient(supabaseUrl, supabaseServiceKey);
+  return _supabase;
+}
 
 // Initialize SendGrid with API key from environment
 if (process.env.SENDGRID_API_KEY) {
@@ -2874,7 +2891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 2. Load PSD templates from Supabase
       try {
-        const { data: psdTemplates, error: psdError } = await db
+        const { data: psdTemplates, error: psdError } = await getSupabase()
           .from('psd_templates')
           .select('*')
           .eq('is_active', true);
