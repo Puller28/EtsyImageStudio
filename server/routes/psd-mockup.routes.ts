@@ -126,13 +126,25 @@ router.post('/generate', async (req, res) => {
     }
     const artworkBuffer = Buffer.from(await artworkResponse.arrayBuffer());
     
-    // 4. Generate mockup
+    // 4. Generate mockup - use ag-psd for "Change Poster" templates
     console.log('🎨 Generating mockup...');
-    const mockupBuffer = await psdMockupService.generateMockup(
-      psdBuffer,
-      artworkBuffer,
-      template.smart_object_layer
-    );
+    const useAgPsd = template.smart_object_layer === 'Change Poster';
+    
+    let mockupBuffer;
+    if (useAgPsd) {
+      const { agPsdMockupService } = await import('../services/agpsd-mockup-service.js');
+      mockupBuffer = await agPsdMockupService.generateMockup(
+        psdBuffer,
+        artworkBuffer,
+        template.smart_object_layer
+      );
+    } else {
+      mockupBuffer = await psdMockupService.generateMockup(
+        psdBuffer,
+        artworkBuffer,
+        template.smart_object_layer
+      );
+    }
     
     // 5. Upload result to Supabase Storage
     const timestamp = Date.now();

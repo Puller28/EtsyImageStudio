@@ -3407,12 +3407,13 @@ if __name__ == "__main__":
       if (psdTemplates.length > 0) {
         console.log(`🎨 Processing ${psdTemplates.length} PSD templates (memory optimized)...`);
         const { psdMockupService } = await import('./services/psd-mockup-service.js');
+        const { agPsdMockupService } = await import('./services/agpsd-mockup-service.js');
         
         for (let i = 0; i < psdTemplates.length; i++) {
           const template = psdTemplates[i];
+          console.log(`\n📄 Processing PSD template ${i + 1}/${psdTemplates.length}: ${template.id}`);
+          
           try {
-            console.log(`🖼️  Generating PSD mockup ${i + 1}/${psdTemplates.length}: ${template.name || template.id}`);
-            
             // 1. Get template details from database
             const { data: templateData, error: templateError } = await getSupabase()
               .from('psd_templates')
@@ -3421,7 +3422,8 @@ if __name__ == "__main__":
               .single();
             
             if (templateError || !templateData) {
-              throw new Error(`Template ${template.id} not found in database`);
+              console.error(`❌ Template ${template.id} not found in database`);
+              continue;
             }
             
             // 2. Download PSD file
@@ -3431,12 +3433,19 @@ if __name__ == "__main__":
             }
             const psdBuffer = Buffer.from(await psdResponse.arrayBuffer());
             
-            // 3. Generate mockup
-            const mockupBuffer = await psdMockupService.generateMockup(
-              psdBuffer,
-              req.file.buffer,
-              templateData.smart_object_layer
-            );
+            // 3. Generate mockup - use ag-psd for "Change Poster" templates
+            const useAgPsd = templateData.smart_object_layer === 'Change Poster';
+            const mockupBuffer = useAgPsd 
+              ? await agPsdMockupService.generateMockup(
+                  psdBuffer,
+                  req.file.buffer,
+                  templateData.smart_object_layer
+                )
+              : await psdMockupService.generateMockup(
+                  psdBuffer,
+                  req.file.buffer,
+                  templateData.smart_object_layer
+                );
             
             // 4. Convert to base64
             const base64 = mockupBuffer.toString('base64');
