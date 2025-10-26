@@ -64,12 +64,12 @@ export class AgPsdMockupService {
       console.log(`📍 Calculated position: (${Math.round(left)}, ${Math.round(top)})`);
       console.log(`📏 Calculated size: ${width} x ${height}`);
 
-      // 5. Resize artwork to fit the smart object area
-      console.log('🖼️ Resizing artwork to fit smart object...');
+      // 5. Resize artwork to fill the smart object area completely
+      console.log('🖼️ Resizing artwork to fill smart object...');
       const resizedArtwork = await sharp(artworkBuffer)
         .resize(width, height, {
-          fit: 'contain',
-          background: { r: 255, g: 255, b: 255, alpha: 0 }
+          fit: 'cover',  // Fill entire area, crop if needed to maintain aspect
+          position: 'center'
         })
         .png()
         .toBuffer();
@@ -92,29 +92,10 @@ export class AgPsdMockupService {
       const baseImageBuffer = canvas.toBuffer('image/png');
       console.log('✅ Base image rendered');
 
-      // 7. Create white background for artwork area
-      console.log('🎨 Creating white background for artwork area...');
-      const whiteRect = await sharp({
-        create: {
-          width: width,
-          height: height,
-          channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 }
-        }
-      })
-        .png()
-        .toBuffer();
-
-      // 8. Composite: base -> white rectangle -> artwork
+      // 7. Composite artwork directly onto base (no white background needed)
       console.log('🎨 Compositing final mockup...');
       let finalImage = await sharp(baseImageBuffer)
         .composite([
-          {
-            input: whiteRect,
-            left: Math.round(left),
-            top: Math.round(top),
-            blend: 'over'
-          },
           {
             input: resizedArtwork,
             left: Math.round(left),
