@@ -3393,8 +3393,16 @@ if __name__ == "__main__":
       }
 
       // Separate PSD templates from perspective templates
-      const psdTemplates = selectedTemplates.filter((t: any) => t.type === 'psd' || t.id.startsWith('y-'));
-      const perspectiveTemplates = selectedTemplates.filter((t: any) => t.type === 'perspective' || !t.id.startsWith('y-'));
+      // PSD templates: type='psd', starts with 'y-', OR starts with 'frame-' (new ag-psd templates)
+      const psdTemplates = selectedTemplates.filter((t: any) => 
+        t.type === 'psd' || 
+        t.id.startsWith('y-') || 
+        t.id.startsWith('frame-') ||
+        t.room === 'frame'
+      );
+      const perspectiveTemplates = selectedTemplates.filter((t: any) => 
+        !psdTemplates.some((p: any) => p.id === t.id)
+      );
       
       console.log(`📊 Template breakdown: ${psdTemplates.length} PSD, ${perspectiveTemplates.length} perspective`);
 
