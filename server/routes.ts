@@ -863,52 +863,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register PSD mockup routes
   app.use('/api/psd-mockup', psdMockupRoutes);
 
-  // Deduct credits from user account with transaction tracking
-  app.post("/api/deduct-credits", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  // Admin: Get all PSD templates
+  app.get("/api/admin/psd-templates", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { credits, description = "Credit deduction" } = req.body;
-      
-      if (!credits || credits <= 0) {
-        return res.status(400).json({ error: "Invalid credits amount" });
-      }
-      
+      // Check if user is admin
       const user = await storage.getUserById(req.userId!);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
       }
-      
-      if (user.credits < credits) {
-        return res.status(400).json({ 
-          error: `Insufficient credits. Required: ${credits}, Available: ${user.credits}` 
-        });
+
+      const { data: templates, error } = await getSupabase()
+        .from('psd_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
       }
-      
-      // Use transaction-aware method for credit deduction
-      const result = await storage.updateUserCreditsWithTransaction(
-        req.userId!, 
-        -credits, 
-        "deduction", 
-        description
-      );
-      
-      if (!result) {
-        return res.status(400).json({ error: "Failed to deduct credits" });
-      }
-      
-      // Get updated user to return new balance
-      const updatedUser = await storage.getUserById(req.userId!);
-      const newBalance = updatedUser?.credits || 0;
-      
-      console.log(`💳 Deducted ${credits} credits. User ${req.userId} new balance: ${newBalance}`);
-      
-      res.json({ 
-        success: true, 
-        creditsDeducted: credits,
-        newBalance: newBalance 
-      });
+
+      res.json({ templates });
     } catch (error) {
-      console.error("Error deducting credits:", error);
-      res.status(500).json({ error: "Failed to deduct credits" });
+      console.error('Error fetching templates:', error);
+      res.status(500).json({ error: 'Failed to fetch templates' });
+    }
+  });
+
+  // Admin: Toggle template active status
+  app.patch("/api/admin/psd-templates/:id/toggle", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { id } = req.params;
+      const { is_active } = req.body;
+
+      const { error } = await getSupabase()
+        .from('psd_templates')
+        .update({ is_active, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating template:', error);
+      res.status(500).json({ error: 'Failed to update template' });
+    }
+  });
+
+  // Admin: Delete template
+  app.delete("/api/admin/psd-templates/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { id } = req.params;
+
+      // Get template details first
+      const { data: template } = await getSupabase()
+        .from('psd_templates')
+        .select('psd_url, thumbnail_url')
+        .eq('id', id)
+        .single();
+
+      // Delete from database
+      const { error: dbError } = await getSupabase()
+        .from('psd_templates')
+        .delete()
+        .eq('id', id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Try to delete storage files
+      if (template) {
+        try {
+          const psdPath = template.psd_url?.split('/mockup-templates/')[1];
+          if (psdPath) {
+            await getSupabase().storage.from('mockup-templates').remove([psdPath]);
+          }
+          
+          const previewPath = `previews/${id}.jpg`;
+          await getSupabase().storage.from('mockup-templates').remove([previewPath]);
+        } catch (storageError) {
+          console.error('Error deleting storage files:', storageError);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      res.status(500).json({ error: 'Failed to delete template' });
     }
   });
 
@@ -4906,103 +4958,3 @@ async function processProjectAsync(project: any) {
   }
 }
 
-// Admin: Get all PSD templates
-app.get("/api/admin/psd-templates", authenticateToken, async (req: AuthenticatedRequest, res) => {
-  try {
-    // Check if user is admin
-    const user = await storage.getUserById(req.userId!);
-    if (!user?.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { data: templates, error } = await getSupabase()
-      .from('psd_templates')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    res.json({ templates });
-  } catch (error) {
-    console.error('Error fetching templates:', error);
-    res.status(500).json({ error: 'Failed to fetch templates' });
-  }
-});
-
-// Admin: Toggle template active status
-app.patch("/api/admin/psd-templates/:id/toggle", authenticateToken, async (req: AuthenticatedRequest, res) => {
-  try {
-    const user = await storage.getUserById(req.userId!);
-    if (!user?.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { id } = req.params;
-    const { is_active } = req.body;
-
-    const { error } = await getSupabase()
-      .from('psd_templates')
-      .update({ is_active, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      throw error;
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error updating template:', error);
-    res.status(500).json({ error: 'Failed to update template' });
-  }
-});
-
-// Admin: Delete template
-app.delete("/api/admin/psd-templates/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
-  try {
-    const user = await storage.getUserById(req.userId!);
-    if (!user?.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { id } = req.params;
-
-    // Get template details first
-    const { data: template } = await getSupabase()
-      .from('psd_templates')
-      .select('psd_url, thumbnail_url')
-      .eq('id', id)
-      .single();
-
-    // Delete from database
-    const { error: dbError } = await getSupabase()
-      .from('psd_templates')
-      .delete()
-      .eq('id', id);
-
-    if (dbError) {
-      throw dbError;
-    }
-
-    // Try to delete storage files
-    if (template) {
-      try {
-        const psdPath = template.psd_url.split('/mockup-templates/')[1];
-        if (psdPath) {
-          await getSupabase().storage.from('mockup-templates').remove([psdPath]);
-        }
-        
-        const previewPath = `previews/${id}.jpg`;
-        await getSupabase().storage.from('mockup-templates').remove([previewPath]);
-      } catch (storageError) {
-        console.error('Error deleting storage files:', storageError);
-      }
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting template:', error);
-    res.status(500).json({ error: 'Failed to delete template' });
-  }
-});
