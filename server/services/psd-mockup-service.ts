@@ -157,7 +157,7 @@ export class PSDMockupService {
       const baseWithoutArtwork = await psd.composite();
       
       // Convert to buffer
-      const baseImageBuffer = await sharp(Buffer.from(baseWithoutArtwork), {
+      const baseImageBuffer = await sharp(Buffer.from(baseWithoutArtwork.buffer), {
         raw: {
           width: psd.width,
           height: psd.height,
@@ -170,42 +170,58 @@ export class PSDMockupService {
       console.log('✅ PSD composited without smart object layer');
       
       // 8. Now composite in the correct order:
-      // Base (background + frame) -> White rectangle (where smart object was) -> Artwork
-      
-      console.log('🎨 Creating white background for artwork area...');
-      
-      // Create a white rectangle the size of the smart object area
-      const whiteRect = await sharp({
-        create: {
-          width: layerWidth,
-          height: layerHeight,
-          channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 }
-        }
-      })
-        .png()
-        .toBuffer();
+      // Base (background) -> Artwork -> Frame
       
       console.log('🎨 Compositing artwork into the frame...');
       
-      // Composite: base -> white rectangle -> artwork
-      let finalImage = await sharp(baseImageBuffer)
-        .composite([
-          {
-            input: whiteRect,
-            left: layerLeft,
-            top: layerTop,
-            blend: 'over'
-          },
-          {
-            input: resizedArtwork,
-            left: layerLeft,
-            top: layerTop,
-            blend: 'over'
-          }
-        ])
+      // Composite: base -> artwork -> frame (if frame exists)
+      const compositeSteps: any[] = [
+        {
+          input: resizedArtwork,
+          left: layerLeft,
+          top: layerTop,
+          blend: 'over'
+        }
+      ];
+      
+      // If we have a frame layer, we need to render it separately
+      let finalImage = baseImageBuffer;
+      
+      // First composite the artwork onto the base
+      finalImage = await sharp(baseImageBuffer)
+        .composite(compositeSteps)
         .png()
         .toBuffer();
+        
+      // If we have a frame layer, composite it on top of everything
+      if (frameLayer) {
+        console.log('🖼️  Adding frame on top of artwork');
+        // Create a new PSD with only the frame layer visible
+        frameLayer.visible = true;
+        smartLayer.visible = false;
+        
+        const frameOnly = await psd.composite();
+        const frameBuffer = await sharp(Buffer.from(frameOnly.buffer), {
+          raw: {
+            width: psd.width,
+            height: psd.height,
+            channels: 4
+          }
+        })
+          .png()
+          .toBuffer();
+          
+        // Composite the frame on top of the final image
+        finalImage = await sharp(finalImage)
+          .composite([{
+            input: frameBuffer,
+            blend: 'over',
+            left: 0,
+            top: 0
+          }])
+          .png()
+          .toBuffer();
+      }
       
       // Apply scaling if needed to reduce memory usage
       if (needsScaling) {

@@ -409,7 +409,7 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
               {allTemplates.map((template) => {
                         const isSelected = selectedTemplates.some(t => 
                           t.room === template.room && t.id === template.id
@@ -418,51 +418,44 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
                         return (
                           <Card 
                             key={`${template.room}-${template.id}`}
-                            className={`cursor-pointer transition-all ${
-                              isSelected ? 'ring-2 ring-primary' : 'hover:shadow-md'
+                            className={`group flex h-full cursor-pointer flex-col overflow-hidden transition-all ${
+                              isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:shadow-lg'
                             }`}
                             onClick={() => handleTemplateToggle(template, !isSelected)}
                           >
-                            <CardContent className="p-4">
-                              <div className="space-y-3">
-                                {/* Template Preview Image */}
-                                <div className="relative aspect-[3/4] w-full bg-gray-100 rounded-md overflow-hidden">
-                                  <img 
-                                    src={template.preview_url || `/api/templates/preview/${template.room}/${template.id}`}
-                                    alt={template.name || template.id}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      // Fallback to placeholder
-                                      e.currentTarget.src = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"><rect width="200" height="300" fill="#f3f4f6"/><text x="100" y="150" text-anchor="middle" font-family="Arial" font-size="14" fill="#6b7280">${template.name || template.id}</text></svg>`)}`;
-                                    }}
-                                  />
-                                  {isSelected && (
-                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                      <div className="bg-primary text-primary-foreground rounded-full p-2">
-                                        <ImageIcon className="h-4 w-4" />
-                                      </div>
+                            <CardContent className="flex h-full flex-col p-0">
+                              <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
+                                <img 
+                                  src={template.preview_url || `/api/templates/preview/${template.room}/${template.id}`}
+                                  alt={template.name || template.id}
+                                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                  onError={(e) => {
+                                    e.currentTarget.src = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"><rect width="400" height="500" fill="#f3f4f6"/><text x="200" y="250" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${template.name || template.id}</text></svg>`)}`;
+                                  }}
+                                />
+                                {isSelected && (
+                                  <div className="absolute inset-0 bg-primary/25 backdrop-blur-sm">
+                                    <div className="absolute right-3 top-3 rounded-full bg-primary p-2 text-primary-foreground shadow-lg">
+                                      <ImageIcon className="h-4 w-4" />
                                     </div>
-                                  )}
-                                </div>
-                                
-                                {/* Template Info */}
-                                <div className="flex items-start space-x-3">
-                                  <Checkbox 
-                                    checked={isSelected}
-                                    onCheckedChange={() => {}} // Handled by card click
-                                    className="mt-1"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center space-x-2">
-                                      <span className="font-medium text-sm">
-                                        {template.name || template.id}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {template.room.replace('_', ' ')} - Ready to use
-                                    </p>
                                   </div>
+                                )}
+                              </div>
+
+                              <div className="flex items-start justify-between gap-3 px-4 py-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold leading-tight truncate" title={template.name || template.id}>
+                                    {template.name || template.id}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate capitalize">
+                                    {template.room.replace(/_/g, ' ')}
+                                  </p>
                                 </div>
+                                <Checkbox 
+                                  checked={isSelected}
+                                  onCheckedChange={() => {}} // Handled by card click
+                                  className="mt-1 h-5 w-5"
+                                />
                               </div>
                             </CardContent>
                           </Card>

@@ -7,6 +7,7 @@ import { Readable } from "stream";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { storage } from "./storage";
 import { ProjectImageStorage } from "./objectStorage";
 import { insertProjectSchema, insertUserSchema, insertContactMessageSchema, insertNewsletterSubscriberSchema, insertBlogPostSchema, type Project, projects, blogPosts } from "@shared/schema";
@@ -34,6 +35,21 @@ import sgMail from "@sendgrid/mail";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const projectImageStorage = new ProjectImageStorage();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distTemplatesRoot = path.resolve(__dirname, "templates");
+const workspaceTemplatesRoot = path.resolve(__dirname, "../templates");
+
+function getTemplatesRoot() {
+  if (fs.existsSync(distTemplatesRoot)) {
+    return distTemplatesRoot;
+  }
+  if (fs.existsSync(workspaceTemplatesRoot)) {
+    return workspaceTemplatesRoot;
+  }
+  return distTemplatesRoot;
+}
 
 // Lazy Supabase client initialization
 let _supabase: SupabaseClient | null = null;
@@ -2966,7 +2982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { data: psdTemplates, error: psdError } = await getSupabase()
           .from('psd_templates')
           .select('*')
-          .eq('is_active', true);
+          .or('is_active.eq.true,is_active.is.null');
 
         if (psdError) {
           console.error('❌ Error fetching PSD templates:', psdError);
@@ -3314,8 +3330,7 @@ if __name__ == "__main__":
     try {
       const { room, templateId } = req.params;
       
-      // Templates are in dist/templates (same directory as the bundled code)
-      const templatesRoot = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
+      const templatesRoot = getTemplatesRoot();
       const templateDir = path.join(templatesRoot, room, templateId);
       
       // Check if template directory exists
@@ -3499,7 +3514,9 @@ if __name__ == "__main__":
               ? await agPsdMockupService.generateMockup(
                   psdBuffer,
                   req.file.buffer,
-                  templateData.smart_object_layer
+                  Array.isArray(templateData.smart_object_layer)
+                    ? templateData.smart_object_layer
+                    : [templateData.smart_object_layer]
                 )
               : await psdMockupService.generateMockup(
                   psdBuffer,
@@ -3570,8 +3587,8 @@ if __name__ == "__main__":
               ? path.join(process.cwd(), 'dist', 'server', 'scripts', 'batch_mockup.py')
               : path.join(process.cwd(), 'server', 'scripts', 'batch_mockup.py');
             
-            // Set TEMPLATES_PATH to point to dist/templates
-            const templatesPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'templates');
+            // Set TEMPLATES_PATH to the active templates root (dev/prod)
+            const templatesPath = getTemplatesRoot();
             const env = { ...process.env, TEMPLATES_PATH: templatesPath };
             
             console.log(`🔍 Setting TEMPLATES_PATH for Python: ${templatesPath}`);
@@ -4957,4 +4974,6 @@ async function processProjectAsync(project: any) {
     await storage.updateProject(project.id, { status: "failed" });
   }
 }
+
+
 

@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Users, TrendingUp, DollarSign, FileText, Share2, ArrowUpRight, ArrowDownRight, Calendar } from "lucide-react";
+import { BarChart3, Users, TrendingUp, DollarSign, FileText, Share2, ArrowUpRight, ArrowDownRight, Calendar, Layers } from "lucide-react";
 
 interface MarketingMetrics {
   totalUsers: number;
@@ -320,6 +320,19 @@ export default function AdminDashboard() {
 
           <TabsContent value="tools" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin/templates")}>
+                <CardHeader>
+                  <Layers className="h-8 w-8 text-indigo-600 mb-2" />
+                  <CardTitle>PSD Templates</CardTitle>
+                  <CardDescription>Enable, disable, or remove mockup templates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full">
+                    Manage Templates
+                  </Button>
+                </CardContent>
+              </Card>
+
               <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin/blog-generator")}>
                 <CardHeader>
                   <FileText className="h-8 w-8 text-purple-600 mb-2" />

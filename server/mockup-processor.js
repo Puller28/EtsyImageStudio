@@ -1,8 +1,12 @@
 // Direct port of your template API logic to Node.js using opencv4nodejs
-const cv = require('opencv4nodejs');
-const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
+import cv from 'opencv4nodejs';
+import sharp from 'sharp';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class MockupProcessor {
   constructor(templateRoot = './templates') {
@@ -237,4 +241,5 @@ class MockupProcessor {
   }
 }
 
-module.exports = MockupProcessor;
+export { MockupProcessor };
+export default MockupProcessor;

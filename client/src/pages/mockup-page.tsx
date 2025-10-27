@@ -310,44 +310,18 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
             <MockupResults mockups={generatedMockups} onReset={handleReset} inWorkflow={inWorkflow} />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold tracking-tight">
-                Pick your mockup rooms, then upload your artwork
+                Upload your artwork to begin
               </h1>
               <p className="text-muted-foreground max-w-2xl">
-                Browse every mockup style before committing to an upload. Select the rooms you love, add your artwork,
-                and generate polished previews in one go.
+                Start by uploading your artwork, then choose from our collection of mockup templates to create stunning previews.
               </p>
             </div>
             
-            {/* Orientation Warning */}
-            {imageOrientation && (
-              <Alert className="border-amber-600 bg-amber-50 dark:bg-amber-900/20">
-                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
-                <AlertDescription className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                  {imageOrientation === 'landscape' && (
-                    <span>
-                      <strong className="text-amber-900 dark:text-amber-400">Landscape image detected.</strong> Your artwork will look best in horizontal/landscape mockup templates. 
-                      Portrait templates may crop or distort your image.
-                    </span>
-                  )}
-                  {imageOrientation === 'portrait' && (
-                    <span>
-                      <strong className="text-amber-900 dark:text-amber-400">Portrait image detected.</strong> Your artwork will look best in vertical/portrait mockup templates. 
-                      Landscape templates may crop or distort your image.
-                    </span>
-                  )}
-                  {imageOrientation === 'square' && (
-                    <span>
-                      <strong className="text-amber-900 dark:text-amber-400">Square image detected.</strong> Your artwork will work well with most mockup templates.
-                    </span>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+            {/* Artwork Upload Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <ImageUpload
                 onImageUpload={handleFileUpload}
                 uploadedImage={
@@ -367,12 +341,49 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
                 }}
                 onOpenProjectPicker={() => setProjectPickerOpen(true)}
               />
-              <TemplateSelector 
-                uploadedFile={uploadedFile} 
-                onMockupsGenerated={handleMockupsGenerated}
-                sourceProjectId={sourceProjectId}
-              />
             </div>
+            
+            {/* Orientation Warning */}
+            {imageOrientation && (
+              <Alert className="border-amber-600 bg-amber-50 dark:bg-amber-900/20">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                <AlertDescription className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                  {imageOrientation === 'landscape' && (
+                    <span>
+                      <strong className="text-amber-900 dark:text-amber-400">Landscape image detected.</strong> Your artwork will look best in horizontal/landscape mockup templates. 
+                    </span>
+                  )}
+                  {imageOrientation === 'portrait' && (
+                    <span>
+                      <strong className="text-amber-900 dark:text-amber-400">Portrait image detected.</strong> Your artwork will look best in vertical/portrait mockup templates.
+                    </span>
+                  )}
+                  {imageOrientation === 'square' && (
+                    <span>
+                      <strong className="text-amber-900 dark:text-amber-400">Square image detected.</strong> Your artwork will work well with most mockup templates.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Template Selection Section */}
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold">Choose Your Mockup Templates</h2>
+                <p className="text-muted-foreground text-sm">
+                  Select up to 10 templates to showcase your artwork in different settings.
+                </p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                <TemplateSelector 
+                  uploadedFile={uploadedFile} 
+                  onMockupsGenerated={handleMockupsGenerated}
+                  sourceProjectId={sourceProjectId}
+                />
+              </div>
+            </div>
+            
             {hasUploadedImage && (
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Next step:</span>
@@ -381,7 +392,6 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
             )}
           </div>
         )}
-      </div>
 
       <Dialog open={isProjectPickerOpen} onOpenChange={setProjectPickerOpen}>
         <DialogContent className="max-w-3xl">
@@ -459,6 +469,7 @@ export function MockupPage({ showChrome = true, inWorkflow = false, onMockupsCom
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </main>
   );
 

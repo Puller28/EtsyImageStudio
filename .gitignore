@@ -14,3 +14,20 @@ fastapi*.log
 
 # Temporary files
 *.tmp
+
+# PSD assets and generated previews (keep out of repo)
+psd-mockups/
+psd-mockups-previews/
+psd-mockups-processed/
+good-mockups-processed/
+test-outputs/
+test-outputs-selected/
+test-outputs-compatible/
+test-outputs-new-psds/
+test-outputs-specific-frames/
+assets/
+templates/
+alignment-fixes/
+test-output-mockup.png
+test_artwork.jpg
+test-mockup.psd

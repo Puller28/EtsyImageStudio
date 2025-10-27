@@ -44,6 +44,7 @@ import BlogManagement from "@/pages/BlogManagement";
 import BlogPostEdit from "@/pages/BlogPostEdit";
 import SocialMediaAutomation from "@/pages/SocialMediaAutomation";
 import ContentCalendar from "@/pages/ContentCalendar";
+import AdminTemplates from "@/pages/AdminTemplates";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceProvider } from "@/contexts/workspace-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -116,6 +117,7 @@ function Router() {
               <Route path="/terms-of-service" component={TermsOfServicePage} />
               <Route path="/privacy-policy" component={PrivacyPolicyPage} />
               <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/templates" component={AdminTemplates} />
               <Route path="/admin/blog-generator" component={BlogGenerator} />
               <Route path="/admin/blog-posts" component={BlogManagement} />
               <Route path="/admin/blog-posts/:id/edit" component={BlogPostEdit} />
@@ -181,7 +183,6 @@ function App() {
 }
 
 export default App;
-
 
 
 

@@ -12,6 +12,7 @@ interface User {
   subscriptionId?: string;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
+  isAdmin?: boolean;
 }
 
 interface AuthState {

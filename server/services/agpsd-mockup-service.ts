@@ -14,7 +14,7 @@ export class AgPsdMockupService {
   async generateMockup(
     psdPathOrBuffer: string | Buffer,
     artworkBuffer: Buffer,
-    smartObjectLayerName: string = 'Change Poster'
+    smartObjectLayerNames: string[] = ['Change Poster', 'Add design here', 'Add Design Here']
   ): Promise<Buffer> {
     try {
       // 1. Read PSD file
@@ -33,15 +33,25 @@ export class AgPsdMockupService {
       console.log(`📊 PSD dimensions: ${psd.width} x ${psd.height}`);
       console.log(`📚 Total layers: ${psd.children?.length || 0}\n`);
 
-      // 2. Find smart object layer
-      console.log(`🔍 Searching for layer: "${smartObjectLayerName}"`);
-      const smartLayer = this.findLayerByName(psd, smartObjectLayerName);
+      // 2. Find smart object layer by trying each possible name
+      console.log(`🔍 Searching for smart object layers: ${smartObjectLayerNames.join(', ')}`);
+      let smartLayer = null;
+      let foundLayerName = '';
+      
+      for (const layerName of smartObjectLayerNames) {
+        const layer = this.findLayerByName(psd, layerName);
+        if (layer) {
+          smartLayer = layer;
+          foundLayerName = layerName;
+          break;
+        }
+      }
       
       if (!smartLayer) {
-        throw new Error(`Smart object layer "${smartObjectLayerName}" not found`);
+        throw new Error(`No smart object layer found. Tried: ${smartObjectLayerNames.join(', ')}`);
       }
-
-      console.log(`✅ Found smart object layer: ${smartLayer.name}`);
+      
+      console.log(`✅ Found smart object layer: ${foundLayerName}`);
 
       // 3. Extract smart object transform data
       if (!smartLayer.placedLayer) {
