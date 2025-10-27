@@ -51,6 +51,59 @@ function getTemplatesRoot() {
   return distTemplatesRoot;
 }
 
+function loadPerspectiveTemplatesForAdmin() {
+  const templatesRoot = getTemplatesRoot();
+  const templates: Array<Record<string, any>> = [];
+
+  if (!fs.existsSync(templatesRoot)) {
+    return templates;
+  }
+
+  const roomDirs = fs.readdirSync(templatesRoot, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => dirent.name);
+
+  for (const roomName of roomDirs) {
+    const roomPath = path.join(templatesRoot, roomName);
+    const templateDirs = fs.readdirSync(roomPath, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name);
+
+    for (const templateId of templateDirs) {
+      try {
+        const templatePath = path.join(roomPath, templateId);
+        const manifestPath = path.join(templatePath, "manifest.json");
+        if (!fs.existsSync(manifestPath)) {
+          continue;
+        }
+
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+        const stat = fs.statSync(templatePath);
+
+        templates.push({
+          id: templateId,
+          name: manifest.name || `${roomName.replace(/_/g, " ")} ${templateId.replace(/_/g, " ")}`,
+          category: manifest.category || roomName,
+          room: roomName,
+          thumbnail_url: `/api/templates/preview/${roomName}/${templateId}`,
+          is_active: manifest.is_active !== false,
+          width: manifest.width,
+          height: manifest.height,
+          created_at: manifest.created_at || stat.birthtime?.toISOString?.(),
+          type: "perspective",
+          supportsToggle: false,
+          supportsDelete: false,
+          source: "filesystem"
+        });
+      } catch (error) {
+        console.error(`Error loading perspective template ${roomName}/${templateId}:`, error);
+      }
+    }
+  }
+
+  return templates;
+}
+
 // Lazy Supabase client initialization
 let _supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
@@ -888,7 +941,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const { data: templates, error } = await getSupabase()
+      const perspectiveTemplates = loadPerspectiveTemplatesForAdmin();
+
+      const { data: psdRows, error } = await getSupabase()
         .from('psd_templates')
         .select('*')
         .order('created_at', { ascending: false });
@@ -897,7 +952,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw error;
       }
 
-      res.json({ templates });
+      const psdTemplates = (psdRows || []).map((template: any) => ({
+        ...template,
+        name: template.name || template.id,
+        category: template.category || template.room || 'psd',
+        room: template.category || template.room || 'psd',
+        thumbnail_url: template.thumbnail_url,
+        is_active: template.is_active !== false,
+        type: 'psd',
+        supportsToggle: true,
+        supportsDelete: true,
+        source: 'supabase'
+      }));
+
+      const templates = [...perspectiveTemplates, ...psdTemplates].sort((a, b) =>
+        (a.type === b.type ? (a.name || '').localeCompare(b.name || '') : a.type.localeCompare(b.type))
+      );
+
+      res.json({
+        templates,
+        summary: {
+          total: templates.length,
+          perspective: perspectiveTemplates.length,
+          psd: psdTemplates.length
+        }
+      });
     } catch (error) {
       console.error('Error fetching templates:', error);
       res.status(500).json({ error: 'Failed to fetch templates' });
@@ -914,6 +993,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { id } = req.params;
       const { is_active } = req.body;
+
+      const { data: existingTemplate } = await getSupabase()
+        .from('psd_templates')
+        .select('id')
+        .eq('id', id)
+        .single();
+
+      if (!existingTemplate) {
+        return res.status(400).json({ error: 'Only PSD templates can be toggled from this view.' });
+      }
 
       const { error } = await getSupabase()
         .from('psd_templates')
@@ -941,13 +1030,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { id } = req.params;
 
-      // Get template details first
-      const { data: template } = await getSupabase()
+      const { data: existingTemplate } = await getSupabase()
         .from('psd_templates')
         .select('psd_url, thumbnail_url')
         .eq('id', id)
         .single();
 
+      if (!existingTemplate) {
+        return res.status(400).json({ error: 'Only PSD templates can be deleted from this view.' });
+      }
+
+      // Get template details first
       // Delete from database
       const { error: dbError } = await getSupabase()
         .from('psd_templates')
@@ -959,9 +1052,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Try to delete storage files
-      if (template) {
+      if (existingTemplate) {
         try {
-          const psdPath = template.psd_url?.split('/mockup-templates/')[1];
+          const psdPath = existingTemplate.psd_url?.split('/mockup-templates/')[1];
           if (psdPath) {
             await getSupabase().storage.from('mockup-templates').remove([psdPath]);
           }
