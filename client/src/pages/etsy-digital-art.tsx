@@ -115,11 +115,76 @@ const workflowSteps = [
   },
 ];
 
-const heroTiles = [
-  { title: "Mockup 1", caption: "Living room" },
-  { title: "Mockup 2", caption: "Minimal wall" },
-  { title: "Mockup 3", caption: "Bedroom" },
-  { title: "Mockup 4", caption: "Scandinavian" },
+const heroMockups = [
+  {
+    title: "Modern Frame",
+    caption: "Living room scene",
+    image: "https://kkdzbtopouozsniuzghf.supabase.co/storage/v1/object/public/mockup-templates/previews/frame-05.jpg",
+  },
+  {
+    title: "Gallery Wall",
+    caption: "Minimal wall",
+    image: "https://kkdzbtopouozsniuzghf.supabase.co/storage/v1/object/public/mockup-templates/previews/frame-06.jpg",
+  },
+  {
+    title: "Bedroom Set",
+    caption: "Cozy neutral",
+    image: "https://kkdzbtopouozsniuzghf.supabase.co/storage/v1/object/public/mockup-templates/previews/frame-03.jpg",
+  },
+  {
+    title: "Studio Desk",
+    caption: "Artist workspace",
+    image: "https://kkdzbtopouozsniuzghf.supabase.co/storage/v1/object/public/mockup-templates/previews/frame-04.jpg",
+  },
+];
+
+const landingPricingPlans = [
+  {
+    name: "Free",
+    price: "Free",
+    subtitle: "100 credits included",
+    badge: "",
+    features: [
+      "100 credits per month",
+      "AI art generation",
+      "Image upscaling (2x only)",
+      "Print format resizing",
+      "Basic Etsy listing generation",
+      "Limited mockup generation (5 sets max)",
+      "Basic AI tools",
+    ],
+    buttonText: "Get Started Free",
+    buttonVariant: "outline" as const,
+  },
+  {
+    name: "Pro",
+    price: "$19.95",
+    subtitle: "300 credits included",
+    badge: "Most Popular",
+    features: [
+      "300 credits per month",
+      "All Free plan features",
+      "Unlimited mockup generation",
+      "Image upscaling (2x and 4x)",
+      "Complete Etsy listing with tags",
+    ],
+    buttonText: "Go Pro",
+  },
+  {
+    name: "Business",
+    price: "$49",
+    subtitle: "800 credits included",
+    badge: "",
+    features: [
+      "800 credits per month",
+      "All Pro plan features",
+      "Unlimited mockup generation",
+      "Commercial usage rights",
+      "Bulk processing capabilities",
+      "Best value per credit",
+    ],
+    buttonText: "Scale Business",
+  },
 ];
 
 export default function EtsyDigitalArtPage() {
@@ -158,11 +223,20 @@ function HeroSection({ onStartFree, onUpload }: { onStartFree: () => void; onUpl
           </p>
         </div>
         <div className="flex flex-wrap gap-4">
-          <Button size="lg" className="bg-indigo-500 hover:bg-indigo-400" onClick={onStartFree}>
+          <Button
+            size="lg"
+            className="bg-white text-slate-900 hover:bg-white/90 shadow-xl shadow-indigo-500/30"
+            onClick={onStartFree}
+          >
             👉 Start Free (No Card Required)
           </Button>
-          <Button size="lg" variant="outline" className="border-slate-600 text-white" onClick={onUpload}>
-            👉 Upload Your First Artwork
+          <Button
+            size="lg"
+            variant="outline"
+            className="border-white/70 text-white hover:bg-white/10 bg-white/5"
+            onClick={onUpload}
+          >
+            � Upload Your First Artwork
           </Button>
         </div>
         <div className="text-sm text-slate-400">
@@ -182,23 +256,26 @@ function HeroSection({ onStartFree, onUpload }: { onStartFree: () => void; onUpl
 
 function MockupGrid() {
   return (
-    <div className="relative rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-black p-6 border border-white/5 shadow-2xl">
+    <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 border border-white/5 shadow-2xl">
       <div className="grid grid-cols-2 gap-4">
-        {heroTiles.map((tile) => (
-          <div
-            key={tile.title}
-            className="aspect-[3/4] rounded-2xl bg-slate-800/60 border border-white/5 backdrop-blur flex flex-col items-center justify-center text-center text-xs text-slate-300"
+        {heroMockups.map((mockup) => (
+          <figure
+            key={mockup.title}
+            className="group aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 bg-slate-900"
           >
-            <span className="text-sm font-semibold text-white">{tile.title}</span>
-            <p className="text-[11px] text-slate-400">{tile.caption}</p>
-          </div>
+            <img src={mockup.image} alt={mockup.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+            <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-xs text-white">
+              <p className="text-sm font-semibold">{mockup.title}</p>
+              <p className="text-[11px] text-white/80">{mockup.caption}</p>
+            </figcaption>
+          </figure>
         ))}
       </div>
-      <div className="absolute -left-6 top-1/2 -translate-y-1/2 bg-white text-slate-900 rounded-2xl shadow-xl px-4 py-3 w-44">
+      <div className="absolute -left-6 top-1/2 -translate-y-1/2 rounded-2xl bg-white text-slate-900 shadow-xl px-4 py-3 w-44">
         <p className="text-xs font-medium text-slate-500">Before</p>
         <p className="text-sm font-semibold">Low-res upload</p>
       </div>
-      <div className="absolute -right-6 bottom-6 bg-indigo-500 text-white rounded-2xl shadow-xl px-4 py-3 w-48">
+      <div className="absolute -right-6 bottom-6 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-xl px-4 py-3 w-48">
         <p className="text-xs uppercase tracking-[0.2em] text-white/80">After</p>
         <p className="text-sm font-semibold">Upscaled + mockups + ratios</p>
       </div>
@@ -291,38 +368,42 @@ function TestimonialsSection() {
 function PricingSection({ onStartFree }: { onStartFree: () => void }) {
   return (
     <section className="space-y-10">
-      <div className="space-y-3">
-        <p className="text-sm uppercase tracking-[0.3em] text-amber-200">💸 Plans for Every Seller</p>
-        <h2 className="text-3xl font-semibold">Replace the busywork with predictable plans.</h2>
+      <div className="space-y-3 text-center">
+        <p className="text-sm uppercase tracking-[0.3em] text-amber-200">💸 Choose Your Perfect Plan</p>
+        <h2 className="text-3xl font-semibold">Scale your Etsy business with predictable pricing.</h2>
+        <p className="text-slate-300">Start free, upgrade when you need more credits and automation.</p>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
-        {plans.map((plan) => (
+        {landingPricingPlans.map((plan) => (
           <div
             key={plan.name}
-            className={`rounded-3xl border ${plan.popular ? "border-indigo-400 shadow-2xl" : "border-white/5"} bg-gradient-to-br ${plan.accent} p-6 space-y-4 relative`}
+            className={`rounded-3xl border bg-slate-900/60 p-6 space-y-4 relative ${
+              plan.badge ? "border-indigo-400 shadow-lg shadow-indigo-500/30" : "border-white/5"
+            }`}
           >
-            {plan.popular && (
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white/20 text-white">Most popular</Badge>
+            {plan.badge && (
+              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white">{plan.badge}</Badge>
             )}
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-white/80">{plan.name}</p>
+            <div className="text-center space-y-2">
+              <p className="text-sm uppercase tracking-[0.2em] text-white/70">{plan.name}</p>
               <p className="text-4xl font-bold">{plan.price}</p>
-              <p className="text-sm text-white/80">{plan.subtitle}</p>
+              <p className="text-sm text-white/70">{plan.subtitle}</p>
             </div>
             <ul className="space-y-2 text-sm">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-2">
-                  <Star className="h-4 w-4 text-white/80" />
+                  <Star className="h-4 w-4 text-emerald-400" />
                   <span>{feature}</span>
                 </li>
               ))}
             </ul>
             <Button
-              className={`${plan.popular ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20"}`}
-              variant={plan.popular ? "default" : "secondary"}
+              size="lg"
+              className={plan.buttonVariant === "outline" ? "bg-white text-slate-900 hover:bg-white/90" : "bg-indigo-500 hover:bg-indigo-400"}
+              variant={plan.buttonVariant}
               onClick={onStartFree}
             >
-              {plan.name === "Free" ? "Start Free" : "Choose Plan"}
+              {plan.buttonText}
             </Button>
           </div>
         ))}
@@ -366,16 +447,21 @@ function FAQSection() {
 
 function FinalCTA({ onStartFree, onUpload }: { onStartFree: () => void; onUpload: () => void }) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-600 to-fuchsia-600 p-8 text-center space-y-6">
-      <h2 className="text-3xl font-semibold">Get Your First Etsy Listing Images in Minutes</h2>
-      <p className="text-white/90 text-lg max-w-2xl mx-auto">
-        Upload your artwork and try the new guided workflow — free.
+    <section className="rounded-3xl border border-white/10 bg-slate-900/80 p-8 text-center space-y-6">
+      <h2 className="text-3xl font-semibold text-white">Get Your First Etsy Listing Images in Minutes</h2>
+      <p className="text-slate-200 text-lg max-w-2xl mx-auto">
+        Upload your artwork, choose a listing bundle, and download every mockup, ratio, and enhanced file in a single click.
       </p>
       <div className="flex flex-wrap justify-center gap-4">
-        <Button size="lg" className="bg-white text-indigo-600 hover:bg-white/90" onClick={onStartFree}>
+        <Button size="lg" className="bg-white text-slate-900 hover:bg-white/90" onClick={onStartFree}>
           👉 Start Free
         </Button>
-        <Button size="lg" variant="outline" className="border-white/40 text-white" onClick={onUpload}>
+        <Button
+          size="lg"
+          variant="ghost"
+          className="border border-white/30 text-white hover:bg-white/10"
+          onClick={onUpload}
+        >
           👉 Upload Your First Artwork
         </Button>
       </div>
