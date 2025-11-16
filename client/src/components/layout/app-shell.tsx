@@ -14,6 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { WorkspaceMode } from "@/types/workspace";
+import { OnboardingManager } from "@/components/onboarding/OnboardingManager";
+import { OnboardingTips } from "@/components/onboarding/OnboardingTips";
 
 function formatProjectDisplayName(rawTitle: string | null | undefined): string {
   if (!rawTitle) {
@@ -315,6 +317,8 @@ export function AppShell({ children }: AppShellProps) {
         </header>
 
         <main className="flex-1 bg-slate-900/80 text-slate-100">
+          <OnboardingManager />
+          <OnboardingTips />
           {children}
         </main>
       </div>

@@ -58,6 +58,7 @@ export default function DownloadAssets({ items, onDownload, downloadReady, isPac
           disabled={!downloadReady || isPackaging}
           className="w-full bg-green-600 hover:bg-green-700"
           size="lg"
+          data-onboarding-target="download"
         >
           {isPackaging ? (
             <>

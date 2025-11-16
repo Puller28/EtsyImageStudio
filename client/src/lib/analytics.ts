@@ -220,6 +220,23 @@ export const analytics = {
       step_name: step,
       step_number: stepNumber
     });
+  },
+
+  // Onboarding events
+  onboardingStarted: () => {
+    trackEvent('onboarding_started', 'onboarding', 'ftux');
+  },
+
+  wizardStepCompleted: (stepNumber: number) => {
+    trackEvent('wizard_step_completed', 'onboarding', `step_${stepNumber}`, stepNumber);
+  },
+
+  onboardingCompleted: () => {
+    trackEvent('onboarding_completed', 'onboarding', 'ftux');
+  },
+
+  firstListingBundleGenerated: () => {
+    trackEvent('first_listing_bundle_generated', 'onboarding', 'listing_bundle');
   }
 };
 

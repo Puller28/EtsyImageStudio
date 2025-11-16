@@ -409,7 +409,10 @@ export function TemplateSelector({ uploadedFile, onMockupsGenerated, sourceProje
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
+              data-onboarding-target="mockups"
+            >
               {allTemplates.map((template) => {
                         const isSelected = selectedTemplates.some(t => 
                           t.room === template.room && t.id === template.id

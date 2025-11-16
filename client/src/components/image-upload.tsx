@@ -68,6 +68,7 @@ export default function ImageUpload({
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 ${
                 isDragActive ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary"
               }`}
+              data-onboarding-target="upload"
             >
               <input {...getInputProps()} />
               <div className="space-y-2">

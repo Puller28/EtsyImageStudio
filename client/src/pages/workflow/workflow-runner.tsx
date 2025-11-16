@@ -49,7 +49,11 @@ function SelectProjectStep({
         {projects.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/60 p-6 text-center text-sm text-slate-400">
             You have no projects yet.{" "}
-            <button onClick={onCreateNew} className="text-indigo-300 underline">
+            <button
+              onClick={onCreateNew}
+              className="text-indigo-300 underline"
+              data-onboarding-target="create-project"
+            >
               Create your first project
             </button>
           </div>
@@ -79,7 +83,11 @@ function SelectProjectStep({
           </RadioGroup>
         )}
         <div className="flex gap-2">
-          <Button className="bg-indigo-500 hover:bg-indigo-600" onClick={onCreateNew}>
+          <Button
+            className="bg-indigo-500 hover:bg-indigo-600"
+            onClick={onCreateNew}
+            data-onboarding-target="create-project"
+          >
             Create new project
           </Button>
           <Button

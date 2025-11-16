@@ -41,6 +41,7 @@ export function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
                 ? "bg-indigo-500 text-white shadow-sm"
                 : "text-slate-300 hover:text-white hover:bg-slate-800/70"
             )}
+            data-onboarding-target={item.value === "workflow" ? "nav-workflows" : "nav-tools"}
           >
             <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/20">
               {item.icon}
