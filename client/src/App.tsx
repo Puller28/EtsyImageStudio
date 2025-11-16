@@ -25,6 +25,7 @@ import BlogPostPage from "@/pages/blog-post";
 import ProjectsPage from "@/pages/projects";
 import ProjectDetailPage from "@/pages/project-detail";
 import Migration from "@/pages/migration";
+import EtsyDigitalArtPage from "@/pages/etsy-digital-art";
 import MockupOutpaintPage from "@/pages/mockup-outpaint";
 import MockupFramedPage from "@/pages/mockup-framed";
 import TemplateCreatePage from "@/pages/template-create";
@@ -113,6 +114,7 @@ function Router() {
               <Route path="/blog/:slug" component={BlogPostPage} />
               <Route path="/about-us" component={AboutUsPage} />
               <Route path="/features" component={FeaturesPage} />
+        <Route path="/etsy-digital-art" component={EtsyDigitalArtPage} />
               <Route path="/contact" component={ContactPage} />
               <Route path="/terms-of-service" component={TermsOfServicePage} />
               <Route path="/privacy-policy" component={PrivacyPolicyPage} />

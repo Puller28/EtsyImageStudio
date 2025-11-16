@@ -49,6 +49,11 @@ export default function HomePage() {
                   Learn More
                 </Button>
               </Link>
+              <Link href="/etsy-digital-art">
+                <Button variant="ghost" size="lg" className="px-8 py-6 text-lg" data-testid="button-etsy-digital-art">
+                  Etsy Digital Art Workflow
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -398,13 +403,13 @@ export default function HomePage() {
                 <Badge variant="secondary" className="w-fit mb-2">Image Processing</Badge>
                 <CardTitle className="text-lg group-hover:text-primary transition-colors">
                   <Link href="/blog/ai-image-upscaling-print-on-demand">
-                    The Complete Guide to AI Image Upscaling
+                    Mastering AI Image Upscaling for Print-on-Demand Success
                   </Link>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Learn how Real-ESRGAN AI upscaling transforms low-resolution artwork into stunning prints.
+                  Learn how to sharpen, enlarge, and prepare artwork for premium print quality with AI tools.
                 </p>
                 <Link href="/blog/ai-image-upscaling-print-on-demand">
                   <Button variant="ghost" size="sm">
@@ -414,6 +419,7 @@ export default function HomePage() {
                 </Link>
               </CardContent>
             </Card>
+
           </div>
 
           {/* Additional SEO Links - Prevents Orphan Pages */}
